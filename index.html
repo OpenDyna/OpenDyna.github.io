@@ -11,23 +11,42 @@
     gtag('js', new Date());
     gtag('config', 'G-W37NSMXN3X');
     </script>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-        }
-        h1 {
-            font-size: 3em;
-            color: #333;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Welcome to OpenDyna</h1>
+    <div class="window">
+        <div class="title-bar">
+            <div class="title-bar-text">OpenDyna</div>
+            <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+            </div>
+        </div>
+        <nav class="menu-bar">
+            <ul class="menu">
+                <li><a href="#">File</a></li>
+                <li><a href="#">Edit</a></li>
+                <li><a href="#">Help</a></li>
+            </ul>
+        </nav>
+        <main>
+            <h2>Welcome to OpenDyna</h2>
+            <p>Explore a collection of open-source engineering tools and projects.</p>
+            <div class="tools">
+                <h3>Toolbox</h3>
+                <ul>
+                    <li><a href="#">UFC Analysis Dashboard</a></li>
+                    <li><a href="#">Lap Time Simulation</a></li>
+                    <li><a href="#">Formula SAE Build</a></li>
+                    <li><a href="#">Multi-Body Dynamics Solver</a></li>
+                </ul>
+            </div>
+            <img src="OD_Logo_Wide.png" alt="Vaporwave Logo">
+        </main>
+        <footer>
+            <p>&copy; 2024 OpenDyna. All rights reserved.</p>
+        </footer>
+    </div>
 </body>
 </html>
