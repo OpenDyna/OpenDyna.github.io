@@ -1,17 +1,22 @@
-body {
+html, body {
     font-family: 'MS Sans Serif', 'Arial', sans-serif;
     margin: 0;
     padding: 0;
+    height: 100%;
     background-color: #372559; /* Background color */
+    overflow: auto; /* Ensure scrolling is enabled */
+}
+
+body {
     position: relative;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    box-sizing: border-box; /* Ensure padding and border are included in height calculations */
 }
 
 body::before {
     content: '';
-    position: absolute;
-    top: 50%;
+    position: fixed; /* Keep the background fixed */
+    top: 0;
     left: 50%;
     width: 200%;
     height: 200%;
@@ -30,8 +35,8 @@ body::before {
             transparent 100px
         );
     background-size: 100px 100px; /* Grid cell size */
-    transform: translate(-50%, -50%) perspective(600px) rotateX(45deg);
-    z-index: -1;
+    transform: translateX(-50%) translateY(-10%) perspective(600px) rotateX(45deg); /* Center horizontally and add perspective */
+    z-index: 0;
 }
 
 .window {
@@ -138,6 +143,7 @@ main {
     background: #fff;
     border-top: 2px solid #000;
     border-bottom: 2px solid #000;
+    box-sizing: border-box; /* Ensure padding and border are included in height calculations */
 }
 
 main h2 {
@@ -194,8 +200,21 @@ footer {
 }
 
 img {
-    max-width: 100%;
+    max-width: 99%;
     height: auto;
     border: 2px solid #000;
     margin-top: 10px;
+}
+
+.tools ul li a.disabled {
+    color: #a0a0a0; /* Grey text color */
+    background: #e0e0e0; /* Light grey background */
+    border: 2px solid #d0d0d0; /* Grey border */
+    cursor: not-allowed; /* Change cursor to indicate it's not clickable */
+    pointer-events: none; /* Disable clicking */
+}
+
+.disabled:hover {
+    background-color: #d3d3d3; /* Ensure no change on hover */
+    color: #a0a0a0; /* Ensure no change on hover */
 }
