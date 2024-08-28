@@ -6,7 +6,6 @@
     <title>UFC Analysis Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css" rel="stylesheet">
 
-
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-W37NSMXN3X"></script>
     <script>
     window.dataLayer = window.dataLayer || [];
@@ -155,17 +154,84 @@
         .minimized {
             flex: 0;
         }
-
-        /* Media Query for Mobile Devices */
-        @media (max-width: 768px) {
+        
+        @media (max-aspect-ratio: 3/4) {
             body {
                 flex-direction: column;
                 overflow-y: auto;
             }
 
+            h1 {
+                font-size: 16px;
+                text-align: center;
+                margin-bottom: 10px;
+                width: 100%;
+            }
+
             .container {
                 width: 100%;
-                padding: 10px;
+                padding: 5px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .form-wrapper {
+                display: flex;
+                justify-content: space-between;
+                width: 100%;
+                max-width: 900px;
+                gap: 5px;
+            }
+
+            .left-column, .middle-column, .right-column {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-around; /* Space out the elements more evenly */
+                height: 100%; /* Ensure columns are equal height */
+            }
+
+            .left-column, .middle-column {
+                width: 45%; /* Maintain width for dropdowns and sliders */
+            }
+
+            .right-column {
+                width: 20%; /* Maintain smaller width for buttons */
+            }
+
+            .dropdowns > div, .slider-group, .buttons > button {
+                margin-bottom: 10px; /* Increased spacing for better distribution */
+                flex-grow: 1; /* Allow elements to grow and distribute evenly */
+            }
+
+            .fighter-dropdown,
+            .metric-dropdown,
+            button {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+
+            .slider-group {
+                display: flex;
+                align-items: center;
+                width: 100%;
+            }
+
+            .slider-group label {
+                font-size: 10px;
+                width: 20%; /* Consistent width for labels */
+                margin-right: 5px;
+            }
+
+            .slider-group .slider {
+                flex-grow: 1;
+                margin-right: 5px;
+            }
+
+            .slider-group span {
+                font-size: 10px;
+                width: 15%;
+                text-align: right;
             }
 
             .charts-wrapper {
@@ -173,96 +239,87 @@
                 width: 100%;
                 height: auto;
                 padding-left: 0;
+                margin-top: 15px;
             }
 
             .chart-container {
-                height: 45vh; /* Adjust height as needed */
-            }
-
-            h1 {
-                font-size: 16px;
-            }
-
-            .fighter-dropdown,
-            .metric-dropdown,
-            button {
-                font-size: 12px;
-                padding: 6px;
-            }
-
-            .slider-group label {
-                font-size: 10px;
-                width: 35px;
-            }
-
-            .slider-group span {
-                font-size: 10px;
-                width: 20px;
+                width: 100%;
+                height: 45vh;
+                margin-bottom: 10px;
             }
 
             canvas {
                 height: 100% !important;
             }
         }
+
     </style>
 </head>
 <body>
     <div class="container">
         <h1>UFC Analysis Dashboard</h1>
-
-        <div class="dropdowns">
-            <div>
-                <label for="fighter1">Fighter 1:</label>
-                <select id="fighter1" class="fighter-dropdown"></select>
+    
+        <div class="form-wrapper">
+            <div class="left-column">
+                <div class="dropdowns">
+                    <div>
+                        <label for="fighter1">Fighter 1:</label>
+                        <select id="fighter1" class="fighter-dropdown"></select>
+                    </div>
+                    <div>
+                        <label for="fighter2">Fighter 2:</label>
+                        <select id="fighter2" class="fighter-dropdown"></select>
+                    </div>
+                    <div>
+                        <label for="metric">Metric:</label>
+                        <select id="metric" class="metric-dropdown"></select>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label for="fighter2">Fighter 2:</label>
-                <select id="fighter2" class="fighter-dropdown"></select>
+    
+            <div class="middle-column">
+                <div class="slider-container">
+                    <div class="slider-group">
+                        <label for="yearSlider">Year:</label>
+                        <input type="range" id="yearSlider" min="2000" max="2024" value="2024" class="slider">
+                        <span id="yearValue">2024</span>
+                    </div>
+                    <div class="slider-group">
+                        <label for="monthSlider">Month:</label>
+                        <input type="range" id="monthSlider" min="1" max="12" value="12" class="slider">
+                        <span id="monthValue">12</span>
+                    </div>
+                    <div class="slider-group">
+                        <label for="daySlider">Day:</label>
+                        <input type="range" id="daySlider" min="1" max="31" value="31" class="slider">
+                        <span id="dayValue">31</span>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label for="metric">Metric:</label>
-                <select id="metric" class="metric-dropdown"></select>
+    
+            <div class="right-column">
+                <div class="buttons">
+                    <button id="plotBtn">Plot Metrics</button>
+                    <button id="printBtn">Print to Clipboard</button>
+                    <button id="maximizeRadarBtn">Maximize Radar Plot</button>
+                    <button id="maximizeLineBtn">Maximize Line Plot</button>        
+                </div>
             </div>
         </div>
-
-        <div class="slider-container">
-            <div class="slider-group">
-                <label for="yearSlider">Year:</label>
-                <input type="range" id="yearSlider" min="2000" max="2024" value="2024" class="slider">
-                <span id="yearValue">2024</span>
-            </div>
-        
-            <div class="slider-group">
-                <label for="monthSlider">Month:</label>
-                <input type="range" id="monthSlider" min="1" max="12" value="12" class="slider">
-                <span id="monthValue">12</span>
-            </div>
-        
-            <div class="slider-group">
-                <label for="daySlider">Day:</label>
-                <input type="range" id="daySlider" min="1" max="31" value="31" class="slider">
-                <span id="dayValue">31</span>
-            </div>
-        </div>
-
-        <button id="plotBtn">Plot Metrics</button>
-        <button id="printBtn">Print to Clipboard</button>
-        <button id="maximizeRadarBtn">Maximize Radar Plot</button>
-        <button id="maximizeLineBtn">Maximize Line Plot</button>        
-
-    </div>
-
+    </div>    
+    
     <div class="charts-wrapper">
         <!-- Radar Chart -->
         <div class="chart-container">
             <canvas id="radarPlot"></canvas>
         </div>
-
+    
         <!-- Line Chart -->
         <div class="chart-container">
             <canvas id="plot"></canvas>
         </div>
     </div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js"></script>
