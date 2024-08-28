@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFC Analysis Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css" rel="stylesheet">
+
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W37NSMXN3X"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-W37NSMXN3X');
+    </script>
+
+    <style>
+        @font-face {
+            font-family: 'Berthold Akzidenz Grotesk';
+            src: url('../assets/Berthold Akzidenz Grotesk Bold Condensed.otf') format('opentype');
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
+            display: flex;
+            flex-direction: row;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 250px;
+            padding: 10px;
+            box-sizing: border-box;
+            background-color: #e0e0e0;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0;
+            padding-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .dropdowns {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        label {
+            margin-bottom: 3px;
+            font-size: 12px;
+        }
+
+        .fighter-dropdown,
+        .metric-dropdown {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 8px;
+            font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
+        }
+
+        button {
+            padding: 8px 0;
+            border: none;
+            border-radius: 4px;
+            background-color: #28a745;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 8px;
+            font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
+            transition: background-color 0.3s ease;
+        }
+
+        button.active {
+            background-color: #218838;
+            color: #ffffff;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .charts-wrapper {
+            flex-grow: 1;
+            display: flex;
+            width: calc(100% - 250px);
+            height: 100%;
+            overflow: hidden;
+            padding-left: 10px;
+        }
+
+        .chart-container {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+            margin-top: 5px;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .slider-group label {
+            width: 40px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .slider-group .slider {
+            flex-grow: 1;
+        }
+
+        .slider-group span {
+            width: 25px;
+            text-align: right;
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .maximized {
+            flex: 1 1 100%;
+        }
+
+        .minimized {
+            flex: 0;
+        }
+
+        /* Media Query for Mobile Devices */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+
+            .container {
+                width: 100%;
+                padding: 10px;
+            }
+
+            .charts-wrapper {
+                flex-direction: column;
+                width: 100%;
+                height: auto;
+                padding-left: 0;
+            }
+
+            .chart-container {
+                height: 45vh; /* Adjust height as needed */
+            }
+
+            h1 {
+                font-size: 16px;
+            }
+
+            .fighter-dropdown,
+            .metric-dropdown,
+            button {
+                font-size: 12px;
+                padding: 6px;
+            }
+
+            .slider-group label {
+                font-size: 10px;
+                width: 35px;
+            }
+
+            .slider-group span {
+                font-size: 10px;
+                width: 20px;
+            }
+
+            canvas {
+                height: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>UFC Analysis Dashboard</h1>
+
+        <div class="dropdowns">
+            <div>
+                <label for="fighter1">Fighter 1:</label>
+                <select id="fighter1" class="fighter-dropdown"></select>
+            </div>
+            <div>
+                <label for="fighter2">Fighter 2:</label>
+                <select id="fighter2" class="fighter-dropdown"></select>
+            </div>
+            <div>
+                <label for="metric">Metric:</label>
+                <select id="metric" class="metric-dropdown"></select>
+            </div>
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-group">
+                <label for="yearSlider">Year:</label>
+                <input type="range" id="yearSlider" min="2000" max="2024" value="2024" class="slider">
+                <span id="yearValue">2024</span>
+            </div>
+        
+            <div class="slider-group">
+                <label for="monthSlider">Month:</label>
+                <input type="range" id="monthSlider" min="1" max="12" value="12" class="slider">
+                <span id="monthValue">12</span>
+            </div>
+        
+            <div class="slider-group">
+                <label for="daySlider">Day:</label>
+                <input type="range" id="daySlider" min="1" max="31" value="31" class="slider">
+                <span id="dayValue">31</span>
+            </div>
+        </div>
+
+        <button id="plotBtn">Plot Metrics</button>
+        <button id="printBtn">Print to Clipboard</button>
+        <button id="maximizeRadarBtn">Maximize Radar Plot</button>
+        <button id="maximizeLineBtn">Maximize Line Plot</button>        
+
+    </div>
+
+    <div class="charts-wrapper">
+        <!-- Radar Chart -->
+        <div class="chart-container">
+            <canvas id="radarPlot"></canvas>
+        </div>
+
+        <!-- Line Chart -->
+        <div class="chart-container">
+            <canvas id="plot"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+
+        function populateDropdowns(data) {
+            const fighters = new Set();
+            const metrics = new Set();
+
+            data.forEach(row => {
+                const redFighter = row['Red Fighter'] ? row['Red Fighter'].trim() : null;
+                const blueFighter = row['Blue Fighter'] ? row['Blue Fighter'].trim() : null;
+
+                if (redFighter) fighters.add(redFighter);
+                if (blueFighter) fighters.add(blueFighter);
+
+                Object.keys(row).forEach(key => {
+                    if (key.endsWith('Post')) {
+                        const baseMetric = key.replace(/^(Red|Blue) /, '').replace('Post', '').trim();
+                        metrics.add(baseMetric);
+                    }
+                });
+            });
+
+            const uniqueFighters = Array.from(fighters).sort();
+            const uniqueMetrics = Array.from(metrics).sort();
+
+            const fighterDropdowns = document.querySelectorAll('.fighter-dropdown');
+            fighterDropdowns.forEach(dropdown => {
+                dropdown.innerHTML = '';
+                uniqueFighters.forEach(fighter => {
+                    const option = document.createElement('option');
+                    option.value = fighter;
+                    option.textContent = fighter;
+                    dropdown.appendChild(option);
+                });
+            });
+
+            const metricDropdown = document.getElementById('metric');
+            metricDropdown.innerHTML = '';
+            uniqueMetrics.forEach(metric => {
+                const option = document.createElement('option');
+                option.value = metric;
+                option.textContent = metric;
+                metricDropdown.appendChild(option);
+            });
+
+            const defaultFighter1 = 'Conor McGregor';
+            const defaultFighter2 = 'Khabib Nurmagomedov';
+            const defaultMetric = 'ELO';
+
+            document.getElementById('fighter1').value = defaultFighter1;
+            document.getElementById('fighter2').value = defaultFighter2;
+            document.getElementById('metric').value = defaultMetric;
+
+            $('#fighter1, #fighter2, #metric').chosen({
+                width: '100%'
+            }).trigger('chosen:updated');
+        }
+
+        function plotMetrics(fighter1, fighter2, metric, data) {
+            const metricWithPost = metric + ' Post';
+
+            let valuesFighter1 = [0];
+            let valuesFighter2 = [0];
+
+            if (metric.startsWith('ELO')) {
+                valuesFighter1 = [400];
+                valuesFighter2 = [400];
+            }
+            const labels = [0];
+
+            const radarMetrics = [
+                'ELO (Ctrl Time)',
+                'ELO (TD Off)',
+                'ELO (KD)',
+                'ELO (Str Clch Off)',
+                'ELO (Str Dist Off)',
+                'ELO (Str Grnd Off)'
+            ];
+
+            const radarLabels = [
+                'Control',
+                'Wrestling',
+                'Power',
+                'Clinch',
+                'Stand-Up',
+                'Ground & Pound'
+            ];
+
+            let radarDataFighter1 = [];
+            let radarDataFighter2 = [];
+
+            let maxFights = 0;
+
+            // Get the selected date from the sliders
+            const selectedYear = document.getElementById('yearSlider').value;
+            const selectedMonth = document.getElementById('monthSlider').value;
+            const selectedDay = document.getElementById('daySlider').value;
+            const selectedDate = new Date(`${selectedYear}-${selectedMonth}-${selectedDay}`);
+
+            let fighter1Data = [];
+            let fighter2Data = [];
+
+            data.forEach(row => {
+                // Parse the date from the CSV
+                const fightDate = new Date(row['Date']);
+
+                // Only include data before or on the selected date
+                if (fightDate <= selectedDate) {
+                    if (row['Red Fighter'] === fighter1 || row['Blue Fighter'] === fighter1) {
+                        fighter1Data.push(row);
+                    }
+                    if (row['Red Fighter'] === fighter2 || row['Blue Fighter'] === fighter2) {
+                        fighter2Data.push(row);
+                    }
+                }
+            });
+
+            radarMetrics.forEach(metric => {
+                const metricFighter1 = fighter1Data.slice(-6).map(row => {
+                    if (row['Red Fighter'] === fighter1) {
+                        return parseFloat(row[`Red ${metric} Post`] || 0);
+                    } else {
+                        return parseFloat(row[`Blue ${metric} Post`] || 0);
+                    }
+                });
+                radarDataFighter1.push(metricFighter1.slice(-1)[0]);
+            });
+
+            radarMetrics.forEach(metric => {
+                const metricFighter2 = fighter2Data.slice(-6).map(row => {
+                    if (row['Red Fighter'] === fighter2) {
+                        return parseFloat(row[`Red ${metric} Post`] || 0);
+                    } else {
+                        return parseFloat(row[`Blue ${metric} Post`] || 0);
+                    }
+                });
+                radarDataFighter2.push(metricFighter2.slice(-1)[0]);
+            });
+
+            let fightNumber = 1;
+            fighter1Data.forEach(row => {
+                const isFighter1Red = row['Red Fighter'] === fighter1;
+                const isFighter1Blue = row['Blue Fighter'] === fighter1;
+
+                if (isFighter1Red || isFighter1Blue) {
+                    labels.push(fightNumber);
+                    if (isFighter1Red) {
+                        valuesFighter1.push(parseFloat(row[`Red ${metricWithPost}`] || 0));
+                    } else if (isFighter1Blue) {
+                        valuesFighter1.push(parseFloat(row[`Blue ${metricWithPost}`] || 0));
+                    }
+                    fightNumber++;
+                }
+            });
+
+            maxFights = fightNumber - 1;
+
+            fightNumber = 1;
+            fighter2Data.forEach(row => {
+                const isFighter2Red = row['Red Fighter'] === fighter2;
+                const isFighter2Blue = row['Blue Fighter'] === fighter2;
+
+                if (isFighter2Red || isFighter2Blue) {
+                    if (isFighter2Red) {
+                        valuesFighter2.push(parseFloat(row[`Red ${metricWithPost}`] || 0));
+                    } else if (isFighter2Blue) {
+                        valuesFighter2.push(parseFloat(row[`Blue ${metricWithPost}`] || 0));
+                    }
+                    fightNumber++;
+                }
+            });
+
+            maxFights = Math.max(maxFights, fightNumber - 1);
+
+            for (let i = labels.length + 1; i <= maxFights; i++) {
+                labels.push(i);
+            }
+
+            const ctx = document.getElementById('plot').getContext('2d');
+            if (window.myChart) {
+                window.myChart.destroy();
+            }
+            window.myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: `${fighter1}`,
+                            data: valuesFighter1,
+                            backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                            borderColor: 'rgba(255, 0, 0, 1)',
+                            borderWidth: 3, // Line thickness
+                            pointRadius: 6, // Point size
+                            fill: true
+                        },
+                        {
+                            label: `${fighter2}`,
+                            data: valuesFighter2,
+                            backgroundColor: 'rgba(0, 0, 255, 0.2)',
+                            borderColor: 'rgba(0, 0, 255, 1)',
+                            borderWidth: 3, // Line thickness
+                            pointRadius: 6, // Point size
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Fight Number',
+                                font: {
+                                    family: 'Berthold Akzidenz Grotesk',
+                                    size: 18 // Larger font size
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Berthold Akzidenz Grotesk',
+                                    size: 16 // Larger font size
+                                },
+                                stepSize: 1,
+                                beginAtZero: true,
+                                max: maxFights
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: `${metric}`,
+                                font: {
+                                    family: 'Berthold Akzidenz Grotesk',
+                                    size: 18 // Larger font size
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Berthold Akzidenz Grotesk',
+                                    size: 16 // Larger font size
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: {
+                                    family: 'Berthold Akzidenz Grotesk',
+                                    size: 16 // Larger font size
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const radarCtx = document.getElementById('radarPlot').getContext('2d');
+            if (window.myRadarChart) {
+                window.myRadarChart.destroy();
+            }
+            window.myRadarChart = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: radarLabels,
+                    datasets: [
+                        {
+                            label: `${fighter1}`,
+                            data: radarDataFighter1,
+                            backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                            borderColor: 'rgba(255, 0, 0, 1)',
+                            pointBackgroundColor: 'rgba(255, 0, 0, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(255, 0, 0, 1)'
+                        },
+                        {
+                            label: `${fighter2}`,
+                            data: radarDataFighter2,
+                            backgroundColor: 'rgba(0, 0, 255, 0.2)',
+                            borderColor: 'rgba(0, 0, 255, 1)',
+                            pointBackgroundColor: 'rgba(0, 0, 255, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(0, 0, 255, 1)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            pointLabels: {
+                                font: {
+                                    family: 'Berthold Akzidenz Grotesk',
+                                    size: 18 // Larger font size
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Berthold Akzidenz Grotesk',
+                                    size: 16 // Larger font size
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: {
+                                    family: 'Berthold Akzidenz Grotesk',
+                                    size: 16 // Larger font size
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        async function copyChartsToClipboard() {
+            const radarCanvas = document.getElementById('radarPlot');
+            const lineCanvas = document.getElementById('plot');
+            const radarContainer = document.querySelector('.chart-container:first-child');
+            const lineContainer = document.querySelector('.chart-container:last-child');
+
+            // Create a temporary canvas to combine your charts
+            const combinedCanvas = document.createElement('canvas');
+            const ctx = combinedCanvas.getContext('2d');
+
+            // Determine the size of the canvas based on visible charts
+            combinedCanvas.width = radarCanvas.width + lineCanvas.width;
+            combinedCanvas.height = Math.max(radarCanvas.height, lineCanvas.height);
+
+            // Set the background color to white
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+
+            // Conditional drawing based on whether the plots are minimized
+            if (!radarContainer.classList.contains('minimized')) {
+                ctx.drawImage(radarCanvas, 0, 0);
+            }
+            if (!lineContainer.classList.contains('minimized')) {
+                ctx.drawImage(lineCanvas, radarContainer.classList.contains('minimized') ? 0 : radarCanvas.width, 0);
+            }
+
+            // Add a watermark after drawing the charts
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Semi-transparent black text
+
+            // Define the text lines
+            const text1 = '@TheAidenWagner';
+            const text2 = 'opendyna.com';
+
+            // Determine the base font size relative to canvas width or height
+            const baseFontSize = Math.min(combinedCanvas.width, combinedCanvas.height) / 5; // Adjust the divisor as needed
+
+            // Set the font for both lines, scaling with the canvas size
+            ctx.font = `${baseFontSize}px Berthold Akzidenz Grotesk`;
+
+            // Measure the text dimensions for both lines
+            const metrics1 = ctx.measureText(text1);
+            const textWidth1 = metrics1.width;
+            const textHeight1 = metrics1.actualBoundingBoxAscent + metrics1.actualBoundingBoxDescent;
+
+            const metrics2 = ctx.measureText(text2);
+            const textWidth2 = metrics2.width;
+            const textHeight2 = metrics2.actualBoundingBoxAscent + metrics2.actualBoundingBoxDescent;
+
+            // Calculate total height of both lines of text
+            const totalTextHeight = textHeight1 + textHeight2 + (baseFontSize * 0.5); // 50% of base font size as spacing between lines
+
+            // Calculate positions for centering the text block
+            const x1 = (combinedCanvas.width - textWidth1) / 2; // Center horizontally for the first line
+            const x2 = (combinedCanvas.width - textWidth2) / 2; // Center horizontally for the second line
+
+            const y1 = (combinedCanvas.height - totalTextHeight) / 2 + textHeight1; // Vertical position for the first line
+            const y2 = y1 + textHeight2 + (baseFontSize * 0.5); // Vertical position for the second line, with dynamic spacing
+
+            // Draw the first line of text
+            ctx.fillText(text1, x1, y1);
+
+            // Draw the second line of text
+            ctx.fillText(text2, x2, y2);
+
+            // Convert canvas to Blob and write to clipboard
+            try {
+                combinedCanvas.toBlob(async (blob) => {
+                    const item = new ClipboardItem({'image/png': blob});
+                    await navigator.clipboard.write([item]);
+                    console.log('Image copied to clipboard');
+                });
+            } catch (error) {
+                console.error('Failed to copy image to clipboard:', error);
+                alert('Failed to copy image to clipboard. Please check your permissions or try again.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const csvFilePath = '../data/dat.dat';
+            Papa.parse(csvFilePath, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    const data = results.data;
+                    populateDropdowns(data);
+
+                    document.getElementById('plotBtn').addEventListener('click', () => {
+                        const fighter1 = document.getElementById('fighter1').value;
+                        const fighter2 = document.getElementById('fighter2').value;
+                        const metric = document.getElementById('metric').value;
+
+                        plotMetrics(fighter1, fighter2, metric, data);
+                    });
+
+                    document.getElementById('printBtn').addEventListener('click', () => {
+                        copyChartsToClipboard();
+                    });
+                }
+            });
+        });
+
+        document.getElementById('yearSlider').addEventListener('input', function() {
+            document.getElementById('yearValue').textContent = this.value;
+        });
+
+        document.getElementById('monthSlider').addEventListener('input', function() {
+            document.getElementById('monthValue').textContent = this.value;
+        });
+
+        document.getElementById('daySlider').addEventListener('input', function() {
+            document.getElementById('dayValue').textContent = this.value;
+        });
+
+        document.getElementById('maximizeRadarBtn').addEventListener('click', function() {
+            const radarContainer = document.querySelector('.chart-container:first-child');
+            const lineContainer = document.querySelector('.chart-container:last-child');
+            const btn = this; // Reference to the button
+
+            // Toggle maximized for radar and minimized for line
+            if (radarContainer.classList.contains('maximized')) {
+                radarContainer.classList.remove('maximized');
+                lineContainer.classList.remove('minimized');
+                btn.classList.remove('active');
+                btn.textContent = 'Maximize Radar Plot';
+            } else {
+                radarContainer.classList.add('maximized');
+                lineContainer.classList.add('minimized');
+                btn.classList.add('active');
+                btn.textContent = 'Restore Plots';
+                document.getElementById('maximizeLineBtn').classList.remove('active');
+                document.getElementById('maximizeLineBtn').textContent = 'Maximize Line Plot';
+            }
+        });
+
+        document.getElementById('maximizeLineBtn').addEventListener('click', function() {
+            const radarContainer = document.querySelector('.chart-container:first-child');
+            const lineContainer = document.querySelector('.chart-container:last-child');
+            const btn = this; // Reference to the button
+
+            // Toggle maximized for line and minimized for radar
+            if (lineContainer.classList.contains('maximized')) {
+                lineContainer.classList.remove('maximized');
+                radarContainer.classList.remove('minimized');
+                btn.classList.remove('active');
+                btn.textContent = 'Maximize Line Plot';
+            } else {
+                lineContainer.classList.add('maximized');
+                radarContainer.classList.add('minimized');
+                btn.classList.add('active');
+                btn.textContent = 'Restore Plots';
+                document.getElementById('maximizeRadarBtn').classList.remove('active');
+                document.getElementById('maximizeRadarBtn').textContent = 'Maximize Radar Plot';
+            }
+        });
+
+    </script>
+</body>
+</html>
