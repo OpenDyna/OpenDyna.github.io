@@ -56,7 +56,7 @@
         .dropdowns {
             display: flex;
             flex-direction: column;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         label {
@@ -276,6 +276,14 @@
             <div class="left-column">
                 <div class="dropdowns">
                     <div>
+                        <label for="metric">Metric:</label>
+                        <select id="metric" class="metric-dropdown"></select>
+                    </div>
+                    <label></label>
+                    <label></label>
+                    <label></label>
+                    <button id="plotRankingsBtn">Plot Rankings</button>
+                    <div>
                         <label for="fighter1">Fighter 1:</label>
                         <select id="fighter1" class="fighter-dropdown"></select>
                     </div>
@@ -283,10 +291,10 @@
                         <label for="fighter2">Fighter 2:</label>
                         <select id="fighter2" class="fighter-dropdown"></select>
                     </div>
-                    <div>
-                        <label for="metric">Metric:</label>
-                        <select id="metric" class="metric-dropdown"></select>
-                    </div>
+                    <label></label>
+                    <label></label>
+                    <label></label>
+                    <button id="nextEventBtn">Upcoming Bouts</button>
                 </div>
             </div>
     
@@ -312,23 +320,19 @@
     
             <div class="right-column">
                 <div class="buttons">
-                    <button id="plotBtn">Plot Metrics</button>
+                    <button id="plotMatchupBtn">Plot Matchup</button>
+                    <button id="cyclePlotsBtn">Cycle Charts</button>
                     <button id="printBtn">Print to Clipboard</button>
-                    <button id="maximizeRadarBtn">Maximize Radar Plot</button>
-                    <button id="maximizeLineBtn">Maximize Line Plot</button>        
                 </div>
             </div>
         </div>
     </div>    
     
     <div class="charts-wrapper">
-        <!-- Radar Chart -->
-        <div class="chart-container">
+        <div class="chart-container" id="radarContainer">
             <canvas id="radarPlot"></canvas>
         </div>
-    
-        <!-- Line Chart -->
-        <div class="chart-container">
+        <div class="chart-container" id="lineContainer">
             <canvas id="plot"></canvas>
         </div>
     </div>
@@ -383,8 +387,8 @@
                 metricDropdown.appendChild(option);
             });
 
-            const defaultFighter1 = 'Conor McGregor';
-            const defaultFighter2 = 'Khabib Nurmagomedov';
+            const defaultFighter1 = 'Alex Pereira';
+            const defaultFighter2 = 'Magomed Ankalaev';
             const defaultMetric = 'ELO';
 
             document.getElementById('fighter1').value = defaultFighter1;
@@ -509,6 +513,9 @@
                 }
             });
 
+            console.log(valuesFighter1)
+            console.log(valuesFighter2)
+
             maxFights = Math.max(maxFights, fightNumber - 1);
 
             for (let i = labels.length + 1; i <= maxFights; i++) {
@@ -548,6 +555,14 @@
                 }
             };
 
+            const maxLength = Math.max(valuesFighter1.length, valuesFighter2.length);
+
+            const paddedValuesFighter1 = valuesFighter1.concat(Array(maxLength - valuesFighter1.length).fill(NaN));
+            const paddedValuesFighter2 = valuesFighter2.concat(Array(maxLength - valuesFighter2.length).fill(NaN));
+
+            console.log(paddedValuesFighter1)
+            console.log(paddedValuesFighter2)
+
             window.myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -555,7 +570,7 @@
                     datasets: [
                         {
                             label: `${fighter1}`,
-                            data: valuesFighter1,
+                            data: paddedValuesFighter1.map((value, index) => ({ x: index, y: value })),
                             backgroundColor: 'rgba(220, 20, 60,0.2)',
                             borderColor: 'rgba(220, 20, 60,1.0)',
                             borderWidth: 3,
@@ -567,7 +582,7 @@
                         },
                         {
                             label: `${fighter2}`,
-                            data: valuesFighter2,
+                            data: paddedValuesFighter2.map((value, index) => ({ x: index, y: value })),
                             backgroundColor: 'rgb(65, 105, 225,0.2)',
                             borderColor: 'rgb(65, 105, 225,1.0)',
                             borderWidth: 3,
@@ -584,6 +599,7 @@
                     maintainAspectRatio: false,
                     scales: {
                         x: {
+                            type: 'linear',
                             min: 0,
                             title: {
                                 display: true,
@@ -805,7 +821,7 @@
                     const data = results.data;
                     populateDropdowns(data);
 
-                    document.getElementById('plotBtn').addEventListener('click', () => {
+                    document.getElementById('plotMatchupBtn').addEventListener('click', () => {
                         const fighter1 = document.getElementById('fighter1').value;
                         const fighter2 = document.getElementById('fighter2').value;
                         const metric = document.getElementById('metric').value;
@@ -832,44 +848,31 @@
             document.getElementById('dayValue').textContent = this.value;
         });
 
-        document.getElementById('maximizeRadarBtn').addEventListener('click', function() {
-            const radarContainer = document.querySelector('.chart-container:first-child');
-            const lineContainer = document.querySelector('.chart-container:last-child');
-            const btn = this;
+        let currentView = 0; // 0 - Both, 1 - Only Radar, 2 - Only Line
 
-            // Toggle maximized for radar and minimized for line
-            if (radarContainer.classList.contains('maximized')) {
-                radarContainer.classList.remove('maximized');
-                lineContainer.classList.remove('minimized');
-                btn.classList.remove('active');
-                btn.textContent = 'Maximize Radar Plot';
-            } else {
-                radarContainer.classList.add('maximized');
-                lineContainer.classList.add('minimized');
-                btn.classList.add('active');
-                btn.textContent = 'Restore Plots';
-                document.getElementById('maximizeLineBtn').classList.remove('active');
-                document.getElementById('maximizeLineBtn').textContent = 'Maximize Line Plot';
-            }
-        });
+        document.getElementById('cyclePlotsBtn').addEventListener('click', function() {
+            const radarContainer = document.getElementById('radarContainer');
+            const lineContainer = document.getElementById('lineContainer');
 
-        document.getElementById('maximizeLineBtn').addEventListener('click', function() {
-            const radarContainer = document.querySelector('.chart-container:first-child');
-            const lineContainer = document.querySelector('.chart-container:last-child');
-            const btn = this;
-            
-            if (lineContainer.classList.contains('maximized')) {
-                lineContainer.classList.remove('maximized');
-                radarContainer.classList.remove('minimized');
-                btn.classList.remove('active');
-                btn.textContent = 'Maximize Line Plot';
-            } else {
-                lineContainer.classList.add('maximized');
-                radarContainer.classList.add('minimized');
-                btn.classList.add('active');
-                btn.textContent = 'Restore Plots';
-                document.getElementById('maximizeRadarBtn').classList.remove('active');
-                document.getElementById('maximizeRadarBtn').textContent = 'Maximize Radar Plot';
+            currentView = (currentView + 1) % 3; // Cycle through views
+
+            switch (currentView) {
+                case 0: // Both views
+                    radarContainer.style.flex = '1';
+                    lineContainer.style.flex = '1';
+                    radarContainer.style.display = 'block';
+                    lineContainer.style.display = 'block';
+                    break;
+                case 1: // Only Radar
+                    radarContainer.style.flex = '1';
+                    lineContainer.style.display = 'none';
+                    radarContainer.style.display = 'block';
+                    break;
+                case 2: // Only Line
+                    lineContainer.style.flex = '1';
+                    radarContainer.style.display = 'none';
+                    lineContainer.style.display = 'block';
+                    break;
             }
         });
 
