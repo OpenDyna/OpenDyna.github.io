@@ -164,6 +164,44 @@
             flex: 0;
         }
 
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+
+        .modal-content {
+            background-color: #333333;
+            margin: 5% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: none; /* Remove border */
+            width: 40%; /* Could be more or less, depending on screen size */
+            color: #ffffff;
+            border-radius: 10px; /* Rounded corners */
+        }
+
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
         @media (max-aspect-ratio: 3/4) {
             body {
                 flex-direction: column;
@@ -337,11 +375,32 @@
         </div>
     </div>
 
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>Select a Bout:</p>
+            <button id="fight1">Gilbert Burns vs. Sean Brady</button>
+            <button id="fight2">Jessica Andrade vs. Natalia Silva</button>
+            <button id="fight3">Steve Garcia vs. Kyle Nelson</button>
+            <button id="fight4">Matt Schnell vs. Cody Durden</button>
+            <button id="fight5">Trevor Peek vs. Yanal Ashmouz</button>
+            <button id="fight6">Rongzhu vs. Chris Padilla</button>
+            <button id="fight7">Isaac Dulgarian vs. Brendon Marotte</button>
+            <button id="fight8">Felipe dos Santos vs. Andre Lima</button>
+            <button id="fight9">Yizha vs. Gabriel Santos</button>
+            <button id="fight10">Jaqueline Amorim vs. Vanessa Demopoulos</button>
+            <button id="fight11">Andre Petroski vs. Dylan Budka</button>
+            <button id="fight12">Zygimantas Ramaska vs. Nathan Fletcher</button>
+            <button id="cancelButton">Cancel</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 
     <script>
         
@@ -783,33 +842,21 @@
             });
         }
 
-        async function copyChartsToClipboard() {
-            const radarCanvas = document.getElementById('radarPlot');
-            const lineCanvas = document.getElementById('plot');
+        function copyChartsToClipboard() {
+            const chartArea = document.querySelector('.charts-wrapper'); // Ensure this selector targets your chart area
 
-            const combinedCanvas = document.createElement('canvas');
-            const ctx = combinedCanvas.getContext('2d');
-
-            combinedCanvas.width = radarCanvas.width + lineCanvas.width;
-            combinedCanvas.height = Math.max(radarCanvas.height, lineCanvas.height);
-
-            ctx.drawImage(radarCanvas, 0, 0);
-            ctx.drawImage(lineCanvas, radarCanvas.width, 0);
-
-            try {
-                const blob = await new Promise((resolve) => combinedCanvas.toBlob(resolve));
-                const item = new ClipboardItem({ 'image/png': blob });
-                await navigator.clipboard.write([item]);
-                console.log('Image copied to clipboard');
-            } catch (error) {
-                console.error('Failed to copy image to clipboard, downloading instead...', error);
-
-                const dataUrl = combinedCanvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = dataUrl;
-                link.download = 'combined_chart.png';
-                link.click();
-            }
+            html2canvas(chartArea, { scale: 1 }).then(canvas => {
+                canvas.toBlob(function(blob) {
+                    const item = new ClipboardItem({ "image/png": blob });
+                    navigator.clipboard.write([item]).then(() => {
+                        console.log('Chart image copied to clipboard successfully.');
+                    }).catch(err => {
+                        console.error('Failed to copy chart image to clipboard.', err);
+                    });
+                });
+            }).catch(error => {
+                console.error('Failed to capture chart image:', error);
+            });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -874,6 +921,54 @@
                     lineContainer.style.display = 'block';
                     break;
             }
+        });
+
+        var modal = document.getElementById("myModal");
+        var btn = document.getElementById("nextEventBtn");
+        var span = document.getElementsByClassName("close")[0];
+        var cancelButton = document.getElementById("cancelButton");
+        btn.onclick = function() {
+            modal.style.display = "block";
+        }
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+        cancelButton.onclick = function() {
+            modal.style.display = "none";
+        }
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const fightButtons = document.querySelectorAll('#myModal button[id^="fight"]');
+            fightButtons.forEach(button => {
+                button.onclick = function() {
+                    const fighters = this.textContent.split(' vs. ');
+                    if (fighters.length === 2) {
+                        document.getElementById('fighter1').value = fighters[0].trim();
+                        document.getElementById('fighter2').value = fighters[1].trim();
+                        $('#fighter1, #fighter2').trigger('chosen:updated'); // Update chosen dropdowns
+                    }
+                    modal.style.display = "none"; // Close the modal after selection
+                };
+            });
+
+            var modal = document.getElementById("myModal");
+            var closeModalSpan = document.getElementsByClassName("close")[0];
+            var cancelButton = document.getElementById("cancelButton");
+
+            closeModalSpan.onclick = cancelButton.onclick = function() {
+                modal.style.display = "none";
+            };
+
+            window.onclick = function(event) {
+                if (event.target === modal) {
+                    modal.style.display = "none";
+                }
+            };
         });
 
     </script>
