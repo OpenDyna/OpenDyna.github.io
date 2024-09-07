@@ -465,8 +465,26 @@
         function plotMetrics(fighter1, fighter2, metric, data) {
             const metricWithPost = metric + ' Post';
 
-            let valuesFighter1 = [0];
-            let valuesFighter2 = [0];
+            let valuesFighter1    = [0];
+            let valuesFighter2    = [0];
+            let opponentsFighter1 = [''];
+            let opponentsFighter2 = [''];
+            let eventsFighter1    = [''];
+            let eventsFighter2    = [''];
+            let datesFighter1     = [''];
+            let datesFighter2     = [''];
+            let locationsFighter1 = [''];
+            let locationsFighter2 = [''];
+            let weightsFighter1   = [''];
+            let weightsFighter2   = [''];
+            let refereesFighter1  = [''];
+            let refereesFighter2  = [''];
+            let roundsFighter1    = [''];
+            let roundsFighter2    = [''];
+            let timesFighter1     = [''];
+            let timesFighter2     = [''];
+            let methodsFighter1   = [''];
+            let methodsFighter2   = [''];
 
             if (metric.startsWith('ELO')) {
                 valuesFighter1 = [400];
@@ -548,9 +566,19 @@
                     labels.push(fightNumber);
                     if (isFighter1Red) {
                         valuesFighter1.push(parseFloat(row[`Red ${metricWithPost}`] || 0));
+                        opponentsFighter1.push(row['Blue Fighter']);
                     } else if (isFighter1Blue) {
                         valuesFighter1.push(parseFloat(row[`Blue ${metricWithPost}`] || 0));
+                        opponentsFighter1.push(row['Red Fighter']);
                     }
+                    eventsFighter1.push(row['Event Name']);
+                    datesFighter1.push(row['Date']);
+                    locationsFighter1.push(row['Location']);
+                    weightsFighter1.push(row['Weight']);
+                    refereesFighter1.push(row['Referee']);
+                    roundsFighter1.push(row['Round']);
+                    timesFighter1.push(row['Time']);
+                    methodsFighter1.push(row['Method']);
                     fightNumber++;
                 }
             });
@@ -565,15 +593,22 @@
                 if (isFighter2Red || isFighter2Blue) {
                     if (isFighter2Red) {
                         valuesFighter2.push(parseFloat(row[`Red ${metricWithPost}`] || 0));
+                        opponentsFighter2.push(row['Blue Fighter']);
                     } else if (isFighter2Blue) {
                         valuesFighter2.push(parseFloat(row[`Blue ${metricWithPost}`] || 0));
+                        opponentsFighter2.push(row['Red Fighter']);
                     }
+                    eventsFighter2.push(row['Event Name']);
+                    datesFighter2.push(row['Date']);
+                    locationsFighter2.push(row['Location']);
+                    weightsFighter2.push(row['Weight']);
+                    refereesFighter2.push(row['Referee']);
+                    roundsFighter2.push(row['Round']);
+                    timesFighter2.push(row['Time']);
+                    methodsFighter2.push(row['Method']);
                     fightNumber++;
                 }
             });
-
-            console.log(valuesFighter1)
-            console.log(valuesFighter2)
 
             maxFights = Math.max(maxFights, fightNumber - 1);
 
@@ -619,9 +654,6 @@
             const paddedValuesFighter1 = valuesFighter1.concat(Array(maxLength - valuesFighter1.length).fill(NaN));
             const paddedValuesFighter2 = valuesFighter2.concat(Array(maxLength - valuesFighter2.length).fill(NaN));
 
-            console.log(paddedValuesFighter1)
-            console.log(paddedValuesFighter2)
-
             window.myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -629,7 +661,7 @@
                     datasets: [
                         {
                             label: `${fighter1}`,
-                            data: paddedValuesFighter1.map((value, index) => ({ x: index, y: value })),
+                            data: paddedValuesFighter1.map((value, index) => ({ x: index, y: value, opponent: opponentsFighter1[index], event: eventsFighter1[index], date: datesFighter1[index], location: locationsFighter1[index], weight: weightsFighter1[index], referee: refereesFighter1[index], round: roundsFighter1[index], time: timesFighter1[index], method: methodsFighter1[index] })),
                             backgroundColor: 'rgba(220, 20, 60,0.2)',
                             borderColor: 'rgba(220, 20, 60,1.0)',
                             borderWidth: 3,
@@ -641,7 +673,7 @@
                         },
                         {
                             label: `${fighter2}`,
-                            data: paddedValuesFighter2.map((value, index) => ({ x: index, y: value })),
+                            data: paddedValuesFighter2.map((value, index) => ({ x: index, y: value, opponent: opponentsFighter2[index], event: eventsFighter2[index], date: datesFighter2[index], location: locationsFighter2[index], weight: weightsFighter2[index], referee: refereesFighter2[index], round: roundsFighter2[index], time: timesFighter2[index], method: methodsFighter2[index] })),
                             backgroundColor: 'rgb(65, 105, 225,0.2)',
                             borderColor: 'rgb(65, 105, 225,1.0)',
                             borderWidth: 3,
@@ -718,6 +750,29 @@
                         },
                         chartAreaBackground: {
                             color: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        tooltip: {
+                            bodyFont: {
+                                size: 24,
+                                family: 'Berthold Akzidenz Grotesk'
+                            },
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    const dataset = tooltipItem.dataset;
+                                    const dataIndex = tooltipItem.dataIndex;
+                                    const value = dataset.data[dataIndex].y;
+                                    const opponent = dataset.data[dataIndex].opponent || 'N/A';
+                                    const event    = dataset.data[dataIndex].event || 'N/A';
+                                    const date     = dataset.data[dataIndex].date || 'N/A';
+                                    const location = dataset.data[dataIndex].location || 'N/A';
+                                    const weight   = dataset.data[dataIndex].weight || 'N/A';
+                                    const referee  = dataset.data[dataIndex].referee || 'N/A';
+                                    const round    = dataset.data[dataIndex].round || 'N/A';
+                                    const time     = dataset.data[dataIndex].time || 'N/A';
+                                    const method   = dataset.data[dataIndex].method || 'N/A';
+                                    return [`Value: ${value}`, `Opponent: ${opponent}`, `Date: ${date}`, `Location: ${location}`, `Weight: ${weight}`, `Referee: ${referee}`, `Result: Round ${round} at ${time} via ${method}`];
+                                }
+                            }
                         }
                     }
                 },
@@ -843,7 +898,7 @@
         }
 
         function copyChartsToClipboard() {
-            const chartArea = document.querySelector('.charts-wrapper'); // Ensure this selector targets your chart area
+            const chartArea = document.querySelector('.charts-wrapper');
 
             html2canvas(chartArea, { scale: 1 }).then(canvas => {
                 canvas.toBlob(function(blob) {
@@ -895,27 +950,27 @@
             document.getElementById('dayValue').textContent = this.value;
         });
 
-        let currentView = 0; // 0 - Both, 1 - Only Radar, 2 - Only Line
+        let currentView = 0;
 
         document.getElementById('cyclePlotsBtn').addEventListener('click', function() {
             const radarContainer = document.getElementById('radarContainer');
             const lineContainer = document.getElementById('lineContainer');
 
-            currentView = (currentView + 1) % 3; // Cycle through views
+            currentView = (currentView + 1) % 3;
 
             switch (currentView) {
-                case 0: // Both views
+                case 0:
                     radarContainer.style.flex = '1';
                     lineContainer.style.flex = '1';
                     radarContainer.style.display = 'block';
                     lineContainer.style.display = 'block';
                     break;
-                case 1: // Only Radar
+                case 1:
                     radarContainer.style.flex = '1';
                     lineContainer.style.display = 'none';
                     radarContainer.style.display = 'block';
                     break;
-                case 2: // Only Line
+                case 2:
                     lineContainer.style.flex = '1';
                     radarContainer.style.display = 'none';
                     lineContainer.style.display = 'block';
@@ -950,9 +1005,9 @@
                     if (fighters.length === 2) {
                         document.getElementById('fighter1').value = fighters[0].trim();
                         document.getElementById('fighter2').value = fighters[1].trim();
-                        $('#fighter1, #fighter2').trigger('chosen:updated'); // Update chosen dropdowns
+                        $('#fighter1, #fighter2').trigger('chosen:updated');
                     }
-                    modal.style.display = "none"; // Close the modal after selection
+                    modal.style.display = "none";
                 };
             });
 
