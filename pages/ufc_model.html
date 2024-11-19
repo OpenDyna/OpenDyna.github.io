@@ -1,411 +1,1211 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UFC Analysis Dashboard</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css" rel="stylesheet">
-
+    <link rel="icon" type="image/png" sizes="64x64" href="../OD_Logo_64x64.ico">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-W37NSMXN3X"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-W37NSMXN3X');
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-W37NSMXN3X');
     </script>
-
+    <title>OcatagonIQ</title>
     <style>
+
         @font-face {
             font-family: 'Berthold Akzidenz Grotesk';
             src: url('../assets/BERTHOLD AKZIDENZ GROTESK BOLD CONDENSED.OTF') format('opentype');
         }
 
-        html, body {
-            height: 100%;
+        body, html {
+            font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
+            background-color: rgba(30,30,30,1);
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            background-color: #222222;
-            color: #ffffff;
-        }
-
-        body {
-            font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
-            display: flex;
-            flex-direction: row;
+            height: 100%;
         }
 
         .container {
             display: flex;
-            flex-direction: column;
-            width: 250px;
-            padding: 10px;
-            box-sizing: border-box;
-            background-color: #333333;
-            color: #ffffff;
+            min-height: 100vh;
+            flex-direction: row;
         }
 
-        h1 {
-            text-align: center;
-            margin: 0;
-            padding-bottom: 10px;
-            font-size: 20px;
-            color: #ffffff;
-        }
-
-        .dropdowns {
+        .control-panel {
+            background-color: rgba(50, 50, 50, 1);
+            width: 250px; /* Fixed width */
+            min-width: 250px;
+            max-width: 250px;
+            color: white;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            margin-bottom: 15px;
-        }
-
-        label {
-            margin-bottom: 3px;
-            font-size: 12px;
-            color: #ffffff;
-        }
-
-        .fighter-dropdown,
-        .metric-dropdown {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #555555;
-            font-size: 14px;
-            width: 100%;
-            margin-bottom: 8px;
-            font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
-            background-color: #222222;
-            color: #ffffff;
+            gap: 15px; /* Space between elements */
         }
 
         button {
-            padding: 8px 0;
+            padding: 8px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             background-color: rgb(188,161,88);
             color: #ffffff;
             font-size: 14px;
             cursor: pointer;
             width: 100%;
-            margin-bottom: 8px;
+            margin-top: 8px;
             font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
             transition: background-color 0.3s ease;
         }
 
-        button.active {
-            background-color: rgb(140,113,42);
-            color: #ffffff;
+        .grid-container {
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px; /* Space between individual grid items */
+            padding: 10px; /* Padding around the entire grid container */
         }
 
-        button:hover {
-            background-color: rgb(160,133,62);
-        }
-
-        .charts-wrapper {
-            flex-grow: 1;
-            display: flex;
-            width: calc(100% - 250px);
-            height: 100%;
-            overflow: hidden;
-            padding-left: 10px;
-            background-color: #222222;
-        }
-
-        .chart-container {
-            flex: 1;
-            position: relative;
-            min-height: 0;
-        }
-
-        canvas {
-            width: 100% !important;
-            height: 100% !important;
-            display: block;
-            background-color: #222222;
-        }
-
-        .slider-container {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 10px;
-            margin-top: 5px;
-        }
-
-        .slider-group {
+        .grid-item {
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
+            justify-content: center;
+            color: white;
+            grid-column: auto; /* Ensure default positioning */
+            grid-row: auto;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
         }
 
-        .slider-group label {
-            width: 40px;
-            font-size: 12px;
-            margin-right: 5px;
-            color: #ffffff;
+        .grid-item:nth-child(1) {
+            background-color: rgba(30,30,30,1);
+            color: white;
         }
 
-        .slider-group .slider {
-            flex-grow: 1;
+        .grid-item:nth-child(2) {
+            background-color: rgba(50, 50, 50, 1);
+            color: white;
         }
 
-        .slider-group span {
-            width: 25px;
-            text-align: right;
-            margin-left: 5px;
-            font-size: 12px;
-            color: #ffffff;
+        .grid-item:nth-child(3) {
+            background-color: rgba(50, 50, 50, 1);
+            color: white;
         }
 
-        .maximized {
-            flex: 1 1 100%;
+        .grid-item:nth-child(4) {
+            background-color: rgba(50, 50, 50, 1);
+            color: white;
         }
 
-        .minimized {
-            flex: 0;
+        #div2, #div3, #div4 {
+            border-radius: 20px; /* Adjust the radius as needed */
+            overflow: hidden; /* Ensure content stays within the rounded corners */
         }
 
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1; /* Sit on top */
-            left: 0;
-            top: 0;
+        .hidden {
+            display: none;
+        }
+
+        .full-width {
+            grid-column: 1 / span 2;
+            grid-row: 1 / span 2;
+        }
+
+        .grid-item canvas {
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            object-fit: contain; /* Ensures the canvas scales properly */
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
             width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgb(0,0,0); /* Fallback color */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
         }
 
-        .modal-content {
-            background-color: #333333;
-            margin: 5% auto; /* 15% from the top and centered */
-            padding: 20px;
-            border: none; /* Remove border */
-            width: 40%; /* Could be more or less, depending on screen size */
-            color: #ffffff;
-            border-radius: 10px; /* Rounded corners */
-        }
-
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: #000;
-            text-decoration: none;
+        .dropbtn {
+            padding: 10px;
+            font-size: 16px;
+            background-color: rgba(50, 50, 50, 1);
+            color: white;
+            border: 1px solid rgba(100, 100, 100, 1);
+            border-radius: 5px;
+            width: 100%; /* Full width for the button */
+            text-align: left;
             cursor: pointer;
+            font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
+            box-sizing: border-box; /* Ensures padding does not affect width */
         }
 
-        @media (max-aspect-ratio: 3/4) {
-            body {
-                flex-direction: column;
-                overflow-y: auto;
-            }
+        .dropbtn:after {
+            content: '\25BC'; /* Down arrow Unicode */
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+        }
 
-            h1 {
-                font-size: 16px;
-                text-align: center;
-                margin-bottom: 10px;
-                width: 100%;
-                color: #ffffff;
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%; /* Expands the dropdown directly below the button */
+            left: 0; /* Align dropdown content with button */
+            background-color: rgba(50, 50, 50, 1);
+            min-width: 100%; /* Matches the width of the button */
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            border-radius: 5px;
+            border: 1px solid rgba(100, 100, 100, 1);
+        }
+
+        .dropdown-content input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: none;
+            background-color: rgba(30,30,30,1);
+            color: white;
+        }
+
+        .dropdown-content a {
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            color: white;
+            background-color: rgba(40, 40, 40, 1);
+            transition: background-color 0.3s ease;
+        }
+
+        .dropdown-content a:hover {
+            background-color: rgba(70, 70, 70, 1);
+        }
+
+        .show {
+            display: block;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        .top-left-container {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            align-items: stretch; /* Ensure children span the full height */
+        }
+
+        .side-image {
+            height: 100%;
+            width: auto;
+            max-width: 30%;
+            object-fit: contain;
+        }
+
+        .left-image {
+            transform: scaleX(-1);
+        }
+
+        .table-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 10px;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            overflow: hidden;
+            background-color: rgba(50, 50, 50, 1);
+        }
+
+        .info-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            background-color: rgba(50, 50, 50, 1);
+            table-layout: fixed;
+        }
+
+        .info-table td {
+            color: white;
+            border-bottom: 1px solid rgba(100, 100, 100, 0.3);
+            word-wrap: break-word;
+            position: relative;
+            text-align: center;
+        }
+
+        .info-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .info-table tr td:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 25%;
+            right: 0;
+            width: 1px;
+            height: 50%;
+            background-color: rgba(100, 100, 100, 0.3);
+        }
+
+        .info-table tr:hover td {
+            background-color: rgba(70, 70, 70, 1);
+        }
+
+        .stat-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            background-color: rgba(50, 50, 50, 1);
+            table-layout: fixed;
+        }
+
+        .stat-table td {
+            color: white;
+            border-bottom: 1px solid rgba(100, 100, 100, 0.3);
+            word-wrap: break-word;
+            position: relative;
+            line-height: 1; /* Maintain compact rows */
+            padding: 4px 8px; /* Adjust padding as needed */
+        }
+
+        .stat-table tr:not(:first-child) td:nth-child(3) {
+            border-right: 4px solid rgba(100, 100, 100, 1); /* Thicker border */
+        }
+
+        .stat-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .stat-table tr td:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 25%;
+            right: 0;
+            width: 1px;
+            height: 50%;
+            background-color: rgba(100, 100, 100, 0.3);
+        }
+
+        .stat-table tr:hover td {
+            background-color: rgba(70, 70, 70, 1);
+        }
+
+        .neutral-column {
+            text-align: center;
+            padding-right: 0px; /* Optional for spacing */
+            font-size: 16px;
+
+        }
+
+        .red-column {
+            text-align: right;
+            padding-right: 8px; /* Optional for spacing */
+            font-size: 16px;
+
+        }
+
+        .blue-column {
+            text-align: left;
+            padding-left: 8px; /* Optional for spacing */
+            font-size: 16px;
+        }
+
+        .thick-divider td {
+            border-bottom: 4px solid rgba(100, 100, 100, 1); /* Adjust the thickness and color as needed */
+        }
+
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(30, 30, 30, 0.9);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
+            font-size: 18px;
+        }
+
+        .spinner {
+            border: 8px solid rgba(255, 255, 255, 0.2);
+            border-top: 8px solid rgba(255, 255, 255, 1);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Mobile styles */
+        @media (max-aspect-ratio: 1/1) {
+
+            .control-panel label[for="metric"],
+            #metric,
+            #cycleBtn {
+                display: none;
             }
 
             .container {
-                width: 100%;
-                padding: 5px;
-                display: flex;
                 flex-direction: column;
-                align-items: center;
-                background-color: #333333;
-            }
-
-            .form-wrapper {
-                display: flex;
-                justify-content: space-between;
-                width: 100%;
-                max-width: 900px;
-                gap: 5px;
-            }
-
-            .left-column, .middle-column, .right-column {
-                display: flex;
-                flex-direction: column;
-                justify-content: space-around;
-                height: 100%;
-            }
-
-            .left-column, .middle-column {
-                width: 45%;
-            }
-
-            .right-column {
-                width: 20%;
-            }
-
-            .dropdowns > div, .slider-group, .buttons > button {
-                margin-bottom: 10px;
-                flex-grow: 1;
-            }
-
-            .fighter-dropdown,
-            .metric-dropdown,
-            button {
-                font-size: 12px;
-                padding: 4px 8px;
-            }
-
-            .slider-group {
-                display: flex;
-                align-items: center;
-                width: 100%;
-            }
-
-            .slider-group label {
-                font-size: 10px;
-                width: 20%;
-                margin-right: 5px;
-                color: #ffffff;
-            }
-
-            .slider-group .slider {
-                flex-grow: 1;
-                margin-right: 5px;
-            }
-
-            .slider-group span {
-                font-size: 10px;
-                width: 15%;
-                text-align: right;
-                color: #ffffff;
-            }
-
-            .charts-wrapper {
-                flex-direction: column;
-                width: 100%;
                 height: auto;
-                padding-left: 0;
-                margin-top: 15px;
             }
 
-            .chart-container {
+            .control-panel {
                 width: 100%;
-                height: 45vh;
-                margin-bottom: 10px;
+                padding-bottom: 20px;
+                min-width: none;
+                max-width: none;
             }
 
-            canvas {
-                height: 100% !important;
+            .grid-container {
+                display: grid;
+                grid-template-columns: 1fr;
+                grid-auto-rows: 1fr;
+                gap: 0;
+                overflow-y: auto;
+                height: auto;
+                gap: 10px; /* Space between individual grid items */
+                padding: 10px; /* Padding around the entire grid container */
+            }
+
+            .grid-item {
+                width: 100%;
+                aspect-ratio: 1 / 1;
             }
         }
 
     </style>
 </head>
 <body>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p>Loading, please wait...</p>
+    </div>
     <div class="container">
-        <h1>UFC Analysis Dashboard</h1>
-    
-        <div class="form-wrapper">
-            <div class="left-column">
-                <div class="dropdowns">
-                    <div>
-                        <label for="metric">Metric:</label>
-                        <select id="metric" class="metric-dropdown"></select>
-                    </div>
-                    <label></label>
-                    <label></label>
-                    <label></label>
-                    <button id="plotRankingsBtn">Plot Rankings</button>
-                    <div>
-                        <label for="fighter1">Fighter 1:</label>
-                        <select id="fighter1" class="fighter-dropdown"></select>
-                    </div>
-                    <div>
-                        <label for="fighter2">Fighter 2:</label>
-                        <select id="fighter2" class="fighter-dropdown"></select>
-                    </div>
-                    <label></label>
-                    <label></label>
-                    <label></label>
-                    <button id="nextEventBtn">Upcoming Bouts</button>
+        <div class="control-panel">
+            <label>Red Fighter:</label>
+            <div class="dropdown">
+                <div onclick="toggleDropdown('fighter1')" class="dropbtn" id="redDropbtn">Jon Jones</div>
+                <div id="fighter1" class="dropdown-content">
+                    <input type="text" id="searchInput1" onkeyup="filterFunction('fighter1', 'searchInput1')" placeholder="Search for options...">
                 </div>
             </div>
-    
-            <div class="middle-column">
-                <div class="slider-container">
-                    <div class="slider-group">
-                        <label for="yearSlider">Year:</label>
-                        <input type="range" id="yearSlider" min="2000" max="2024" value="2024" class="slider">
-                        <span id="yearValue">2024</span>
-                    </div>
-                    <div class="slider-group">
-                        <label for="monthSlider">Month:</label>
-                        <input type="range" id="monthSlider" min="1" max="12" value="12" class="slider">
-                        <span id="monthValue">12</span>
-                    </div>
-                    <div class="slider-group">
-                        <label for="daySlider">Day:</label>
-                        <input type="range" id="daySlider" min="1" max="31" value="31" class="slider">
-                        <span id="dayValue">31</span>
-                    </div>
+            <label>Blue Fighter:</label>
+            <div class="dropdown">
+                <div onclick="toggleDropdown('fighter2')" class="dropbtn" id="blueDropbtn">Stipe Miocic</div>
+                <div id="fighter2" class="dropdown-content">
+                    <input type="text" id="searchInput2" onkeyup="filterFunction('fighter2', 'searchInput2')" placeholder="Search for options...">
                 </div>
             </div>
-    
-            <div class="right-column">
-                <div class="buttons">
-                    <button id="plotMatchupBtn">Plot Matchup</button>
-                    <button id="cyclePlotsBtn">Cycle Charts</button>
-                    <button id="printBtn">Print to Clipboard</button>
+            <label for="metric">Metric:</label>
+            <div id="metric" class="dropdown">
+                <div onclick="toggleDropdown('metrics')" class="dropbtn" id="metricDropbtn">ELO</div>
+                <div id="metrics" class="dropdown-content">
+                    <input type="text" id="searchInput3" onkeyup="filterFunction('metrics', 'searchInput3')" placeholder="Search for options...">
                 </div>
             </div>
+            <button id="cycleBtn">Cycle Charts</button>
         </div>
-    </div>    
-    
-    <div class="charts-wrapper">
-        <div class="chart-container" id="radarContainer">
-            <canvas id="radarPlot"></canvas>
-        </div>
-        <div class="chart-container" id="lineContainer">
-            <canvas id="plot"></canvas>
+        <div class="grid-container">
+            <div class="grid-item" id="div1">
+                <div class="top-left-container">
+                    <img src="../data/bodyshots/Unknown_Fighter.png" alt="Image 1" class="side-image left-image" id="redFighterImage">
+                    <div class="table-container">
+                        <div class="table-wrapper">
+                            <table class="info-table">
+                                <tbody>
+                                    <!-- First Row: Single Column -->
+                                    <tr class="single-column-row">
+                                        <td colspan="10" class="single-cell">Tale of the Tape</td>
+                                    </tr>
+                                    <!-- Next 6 Rows: Three Columns -->
+                                    <tr class="three-column-row">
+                                        <td colspan="4" class="empty-cell right-align" id="redFighterName"></td>
+                                        <td colspan="2" class="center-align">Fighter</td>
+                                        <td colspan="4" class="empty-cell left-align" id="blueFighterName"></td>
+                                    </tr>
+                                    <tr class="three-column-row">
+                                        <td colspan="4" class="empty-cell right-align" id="redFighterRecord"></td>
+                                        <td colspan="2" class="center-align">UFC Record</td>
+                                        <td colspan="4" class="empty-cell left-align" id="blueFighterRecord"></td>
+                                    </tr>
+                                    <tr class="three-column-row">
+                                        <td colspan="4" class="empty-cell right-align" id="redFighterAge"></td>
+                                        <td colspan="2" class="center-align">Age</td>
+                                        <td colspan="4" class="empty-cell left-align" id="blueFighterAge"></td>
+                                    </tr>
+                                    <tr class="three-column-row">
+                                        <td colspan="4" class="empty-cell right-align" id="redFighterHeight"></td>
+                                        <td colspan="2" class="center-align">Height</td>
+                                        <td colspan="4" class="empty-cell left-align" id="blueFighterHeight"></td>
+                                    </tr>
+                                    <tr class="three-column-row">
+                                        <td colspan="4" class="empty-cell right-align" id="redFighterReach"></td>
+                                        <td colspan="2" class="center-align">Reach</td>
+                                        <td colspan="4" class="empty-cell left-align" id="blueFighterReach"></td>
+                                    </tr>
+                                    <tr class="three-column-row">
+                                        <td colspan="4" class="empty-cell right-align" id="redFighterStance"></td>
+                                        <td colspan="2" class="center-align">Stance</td>
+                                        <td colspan="4" class="empty-cell left-align" id="blueFighterStance"></td>
+                                    </tr>
+                                    <!-- Next 3 Rows: Two Columns -->
+                                    <tr class="two-column-row">
+                                        <td colspan="5" class="empty-cell right-align" id="redFighterOpponent1"><br><br></td>
+                                        <td colspan="5" class="empty-cell left-align" id="blueFighterOpponent1"><br><br></td>
+                                    </tr>
+                                    <tr class="two-column-row">
+                                        <td colspan="5" class="empty-cell right-align" id="redFighterOpponent2"><br><br></td>
+                                        <td colspan="5" class="empty-cell left-align" id="blueFighterOpponent2"><br><br></td>
+                                    </tr>
+                                    <tr class="two-column-row">
+                                        <td colspan="5" class="empty-cell right-align" id="redFighterOpponent3"><br><br></td>
+                                        <td colspan="5" class="empty-cell left-align" id="blueFighterOpponent3"><br><br></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <img src="../data/bodyshots/Unknown_Fighter.png" alt="Image 2" class="side-image right-image" id="blueFighterImage">
+                </div>
+            </div>
+            <div class="grid-item" id="div2">
+                <table class="stat-table">
+                    <tbody>
+                        <!-- First Row: Single Column -->
+                        <tr class="single-column-row">
+                            <td colspan="4" class="center-align neutral-column">Stats</td>
+                            <td colspan="2" class="center-align neutral-column" id="redFighterName2">Total</td>
+                            <td colspan="2" class="center-align neutral-column" id="redFighterName2">Round 1</td>
+                            <td colspan="2" class="center-align neutral-column" id="redFighterName2">Round 2</td>
+                            <td colspan="2" class="center-align neutral-column" id="redFighterName2">Round 3</td>
+                            <td colspan="2" class="center-align neutral-column" id="redFighterName2">Round 4</td>
+                            <td colspan="2" class="center-align neutral-column" id="redFighterName2">Round 5</td>
+                        </tr>
+                        <!-- Next 6 Rows: Three Columns -->
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Avg. Ctrl Time</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlTime"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlTime"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlTimeRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlTimeRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlTimeRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlTimeRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlTimeRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlTimeRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlTimeRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlTimeRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlTimeRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlTimeRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Avg. Ctrld Time</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlledTime"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlledTime"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlledTimeRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlledTimeRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlledTimeRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlledTimeRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlledTimeRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlledTimeRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlledTimeRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlledTimeRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageControlledTimeRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageControlledTimeRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Avg. Takedown Vol.</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownVolume"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownVolume"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownVolumeRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownVolumeRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownVolumeRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownVolumeRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownVolumeRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownVolumeRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownVolumeRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownVolumeRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownVolumeRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownVolumeRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Takedown Acc.</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownAccuracy"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownAccuracy"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownAccuracyRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownAccuracyRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownAccuracyRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownAccuracyRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownAccuracyRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownAccuracyRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownAccuracyRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownAccuracyRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownAccuracyRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownAccuracyRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Takedown Def.</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownDefense"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownDefense"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownDefenseRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownDefenseRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownDefenseRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownDefenseRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownDefenseRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownDefenseRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownDefenseRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownDefenseRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageTakedownDefenseRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageTakedownDefenseRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Avg. Dist. Strike Vol.</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeVolume"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeVolume"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeVolumeRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeVolumeRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeVolumeRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeVolumeRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeVolumeRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeVolumeRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeVolumeRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeVolumeRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeVolumeRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeVolumeRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Dist. Strike Acc.</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeAccuracy"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeAccuracy"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeAccuracyRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeAccuracyRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeAccuracyRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeAccuracyRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeAccuracyRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeAccuracyRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeAccuracyRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeAccuracyRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeAccuracyRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeAccuracyRound5"></td>
+                        </tr>
+                        <tr class="three-column-row thick-divider">
+                            <td colspan="4" class="center-align neutral-column">Dist. Strike Def.</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeDefense"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeDefense"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeDefenseRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeDefenseRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeDefenseRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeDefenseRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeDefenseRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeDefenseRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeDefenseRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeDefenseRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterAverageDistanceStrikeDefenseRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterAverageDistanceStrikeDefenseRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Career Knockdowns</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockdowns"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockdowns"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockdownsRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockdownsRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockdownsRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockdownsRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockdownsRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockdownsRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockdownsRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockdownsRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockdownsRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockdownsRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Career Knockouts</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockouts"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockouts"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockoutsRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockoutsRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockoutsRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockoutsRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockoutsRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockoutsRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockoutsRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockoutsRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnockoutsRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnockoutsRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Career Knocked-downs</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-downs"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-downs"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-downsRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-downsRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-downsRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-downsRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-downsRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-downsRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-downsRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-downsRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-downsRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-downsRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Career Knocked-outs</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-outs"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-outs"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-outsRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-outsRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-outsRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-outsRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-outsRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-outsRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-outsRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-outsRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerKnocked-outsRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerKnocked-outsRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Career Submissions</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmissions"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmissions"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmissionsRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmissionsRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmissionsRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmissionsRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmissionsRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmissionsRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmissionsRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmissionsRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmissionsRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmissionsRound5"></td>
+                        </tr>
+                        <tr class="three-column-row">
+                            <td colspan="4" class="center-align neutral-column">Career Submitteds</td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmitteds"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmitteds"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmittedsRound1"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmittedsRound1"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmittedsRound2"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmittedsRound2"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmittedsRound3"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmittedsRound3"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmittedsRound4"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmittedsRound4"></td>
+                            <td colspan="1" class="center-align red-column" id= "redFighterCareerSubmittedsRound5"></td>
+                            <td colspan="1" class="center-align blue-column" id="blueFighterCareerSubmittedsRound5"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="grid-item" id="div3">
+                <canvas id="radarChart"></canvas>
+            </div>
+            <div class="grid-item" id="div4">
+                <canvas id="lineGraph"></canvas>
+            </div>
         </div>
     </div>
-
-    <div id="myModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <p>Select a Bout (UFC 306: Riyadh Season Noche UFC):</p>
-            <button id="fight1">Sean O'Malley vs. Merab Dvalishvili</button>
-            <button id="fight1">Alexa Grasso vs. Valentina Shevchenko</button>
-            <button id="fight1">Brian Ortega vs. Diego Lopes</button>
-            <button id="fight1">Daniel Zellhuber vs. Esteban Ribovics</button>
-            <button id="fight1">Ronaldo Rodriguez vs. Ode Osbourne</button>
-            <button id="fight1">Irene Aldana vs. Norma Dumont</button>
-            <button id="fight1">Manuel Torres vs. Ignacio Bahamondes</button>
-            <button id="fight1">Yazmin Jauregui vs. Ketlen Souza</button>
-            <button id="fight1">Edgar Chairez vs. Joshua Van</button>
-            <button id="fight1">Raul Rosas Jr. vs. Aoriqileng</button>
-            <button id="cancelButton">Cancel</button>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
 
     <script>
-        
+
+        const cycleBtn = document.getElementById('cycleBtn');
+        const div1     = document.getElementById('div1');
+        const div2     = document.getElementById('div2');
+        const div3     = document.getElementById('div3');
+        const div4     = document.getElementById('div4');
+        let viewState  = 0;
+
+        let paddedValuesFighter1 = [];
+        let paddedValuesFighter2 = [];
+        let maxFights = [];
+
+        let data;
+        let info;
+
+        const radarCtx = document.getElementById('radarChart').getContext('2d');
+
+        const textPluginRadar = {
+            id: 'textPluginRadar',
+            beforeDraw: (chart) => {
+                const { ctx, chartArea: { width, height }, scales: { r } } = chart;
+
+                ctx.save();
+
+                const fontSize = Math.min(width, height) * 0.25;
+                ctx.font = `${fontSize}px "Berthold Akzidenz Grotesk", Arial, sans-serif`;
+                ctx.fillStyle = 'rgba(255,255,255,0.03)';
+
+                const line1 = "@TheAidenWagner";
+                const line2 = "opendyna.com";
+
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const x = r.xCenter;
+                const y1 = r.yCenter - Math.min(width, height)*0.15;
+                const y2 = r.yCenter + Math.min(width, height)*0.15;
+
+                ctx.fillText(line1, x, y1);
+                ctx.fillText(line2, x, y2);
+
+                ctx.restore();
+            }
+        };
+
+        if (window.myRadarChart) {
+            window.myRadarChart.destroy();
+        }
+        window.myRadarChart = new Chart(radarCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Control', 'Wrestling', 'Power', 'Clinch', 'Stand-Up', 'Submission', 'Cardio', 'Ground & Pound'],
+                datasets: [
+                    {
+                        label: `${fighter1}`,
+                        data: [0, 0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(220, 20, 60,0.2)',
+                        borderColor: 'rgba(220, 20, 60,1.0)',
+                        pointRadius: 6,
+                        pointBackgroundColor: 'rgba(220, 20, 60,1.0)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(255, 0, 0, 1)'
+                    },
+                    {
+                        label: `${fighter2}`,
+                        data: [0, 0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgb(65, 105, 225,0.2)',
+                        borderColor: 'rgb(65, 105, 225,1.0)',
+                        pointRadius: 6,
+                        pointBackgroundColor: 'rgb(65, 105, 225,1.0)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(0, 0, 255, 1)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        grid:{
+                            color: '#888888'
+                        },
+                        angleLines: {
+                            color: '#888888'
+                        },
+                        pointLabels: {
+                            color: '#ffffff',
+                            font: {
+                                family: 'Berthold Akzidenz Grotesk',
+                                size: 18
+                            }
+                        },
+                        ticks: {
+                            backdropColor: 'rgba(0, 0, 0, 0)',
+                            color: '#ffffff',
+                            font: {
+                                family: 'Berthold Akzidenz Grotesk',
+                                size: 16
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff',
+                            font: {
+                                family: 'Berthold Akzidenz Grotesk',
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [textPluginRadar]
+        });
+
+        const lineCtx = document.getElementById('lineGraph').getContext('2d');
+
+        const lineTextPlugin = {
+            id: 'lineTextPlugin',
+            beforeDraw: (chart) => {
+                const { ctx, chartArea: { left, right, top, bottom, width, height } } = chart;
+
+                ctx.save();
+
+                const fontSize = Math.min(width, height) * 0.25;
+                ctx.font = `${fontSize}px "Berthold Akzidenz Grotesk", Arial, sans-serif`;
+                ctx.fillStyle = 'rgba(255,255,255,0.03)';
+
+                const line1 = "@TheAidenWagner";
+                const line2 = "opendyna.com";
+
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const x = left + width / 2;
+                const y1 = top + height / 2 - Math.min(width, height) * 0.10;
+                const y2 = top + height / 2 + Math.min(width, height) * 0.25;
+
+                ctx.fillText(line1, x, y1);
+                ctx.fillText(line2, x, y2);
+
+                ctx.restore();
+            }
+        };
+
+        const customLegendPlugin = {
+            id: 'customLegend',
+            afterDraw: (chart) => {
+                const { ctx, chartArea: { left, right, top, bottom, width, height } } = chart;
+                ctx.save();
+
+                // Set the position for the legend
+                const legendX = 92;
+                const legendY = height - 40;
+
+                // Text and marker settings
+                const fontSize = 14;
+                const lineHeight = 25;
+                const markerSize = 15;
+
+                // Set font for legend text
+                ctx.font = `${fontSize}px 'Berthold Akzidenz Grotesk', Arial, sans-serif`;
+                ctx.fillStyle = '#ffffff'; // Legend text color
+
+                // Marker definitions
+                const markers = [
+                    { shape: 'circle', label: 'Decision', color: 'rgba(200, 0, 200,1.0)' },
+                    { shape: 'triangle', label: 'Submission', color: 'rgba(200, 0, 200, 1.0)' },
+                    { shape: 'rect', label: 'KO/TKO', color: 'rgba(200, 0, 200,1.0)' },
+                ];
+
+                // Calculate the size of the legend box
+                const boxPadding = 15;
+                const boxWidth = 105;
+                const boxHeight = markers.length * lineHeight + boxPadding - 5;
+
+                // Draw the background box
+                ctx.fillStyle = 'rgba(50, 50, 50, 0.5)'; // Dark background color for the legend
+                ctx.strokeStyle = 'rgba(125, 125, 125, 0.5)'; // Light border color for the legend
+                ctx.lineWidth = 2;
+                ctx.fillRect(legendX - boxPadding, legendY - boxPadding, boxWidth, boxHeight);
+                ctx.strokeRect(legendX - boxPadding, legendY - boxPadding, boxWidth, boxHeight);
+
+                // Draw each marker and its label
+                markers.forEach((marker, index) => {
+                    const x = legendX;
+                    const y = legendY + index * lineHeight;
+
+                    // Draw the shape (circle, triangle, or square)
+                    ctx.beginPath();
+                    if (marker.shape === 'circle') {
+                        ctx.arc(x, y, markerSize / 2, 0, Math.PI * 2);
+                    } else if (marker.shape === 'triangle') {
+                        ctx.moveTo(x, y - markerSize / 2);
+                        ctx.lineTo(x - markerSize / 2, y + markerSize / 2);
+                        ctx.lineTo(x + markerSize / 2, y + markerSize / 2);
+                        ctx.closePath();
+                    } else if (marker.shape === 'rect') {
+                        ctx.rect(x - markerSize / 2, y - markerSize / 2, markerSize, markerSize);
+                    }
+
+                    ctx.fillStyle = marker.color;
+                    ctx.fill();
+
+                    // Draw the label
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(marker.label, x + markerSize + 10, y + markerSize / 4);
+                });
+
+                ctx.restore();
+            }
+        };
+
+        if (window.myLineChart) {
+            window.myLineChart.destroy();
+        }
+        window.myLineChart = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: [0],
+                datasets: [
+                    {
+                        label: `${fighter1}`,
+                        data: paddedValuesFighter1.map((value, index) => ({ x: index, y: value, opponent: opponentsFighter1[index], event: eventsFighter1[index], date: datesFighter1[index], location: locationsFighter1[index], weight: weightsFighter1[index], referee: refereesFighter1[index], round: roundsFighter1[index], time: timesFighter1[index], method: methodsFighter1[index] })),
+                        backgroundColor: 'rgba(220, 20, 60,0.2)',
+                        borderColor: 'rgba(220, 20, 60,1.0)',
+                        borderWidth: 3,
+                        pointRadius: 6,
+                        pointBackgroundColor: 'rgba(220, 20, 60,1.0)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1,
+                        fill: true,
+                        pointStyle: paddedValuesFighter1.map((_, index) => getPointStyle(methodsFighter1[index])),
+                        pointRadius: paddedValuesFighter1.map((_, index) => getPointRadius(methodsFighter1[index]))
+                    },
+                    {
+                        label: `${fighter2}`,
+                        data: paddedValuesFighter2.map((value, index) => ({ x: index, y: value, opponent: opponentsFighter2[index], event: eventsFighter2[index], date: datesFighter2[index], location: locationsFighter2[index], weight: weightsFighter2[index], referee: refereesFighter2[index], round: roundsFighter2[index], time: timesFighter2[index], method: methodsFighter2[index] })),
+                        backgroundColor: 'rgba(65, 105, 225,0.2)',
+                        borderColor: 'rgba(65, 105, 225,1.0)',
+                        borderWidth: 3,
+                        pointRadius: 6,
+                        pointBackgroundColor: 'rgba(65, 105, 225,1.0)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1,
+                        fill: true,
+                        pointStyle: paddedValuesFighter2.map((_, index) => getPointStyle(methodsFighter2[index])),
+                        pointRadius: paddedValuesFighter2.map((_, index) => getPointRadius(methodsFighter2[index]))
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: 0,
+                        title: {
+                            display: true,
+                            text: 'Fight Number',
+                            color: '#ffffff',
+                            font: {
+                                family: 'Berthold Akzidenz Grotesk',
+                                size: 18
+                            }
+                        },
+                        ticks: {
+                            color: '#ffffff',
+                            font: {
+                                family: 'Berthold Akzidenz Grotesk',
+                                size: 16
+                            },
+                            stepSize: 1,
+                            beginAtZero: true,
+                            max: maxFights
+                        },
+                        grid: {
+                            color: '#888888'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: `${metric}`,
+                            color: '#ffffff',
+                            font: {
+                                family: 'Berthold Akzidenz Grotesk',
+                                size: 18
+                            }
+                        },
+                        ticks: {
+                            color: '#ffffff',
+                            font: {
+                                family: 'Berthold Akzidenz Grotesk',
+                                size: 16
+                            }
+                        },
+                        grid: {
+                            color: '#888888'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff',
+                            font: {
+                                family: 'Berthold Akzidenz Grotesk',
+                                size: 16
+                            }
+                        }
+                    },
+                    chartAreaBackground: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    tooltip: {
+                        bodyFont: {
+                            size: 24,
+                            family: 'Berthold Akzidenz Grotesk'
+                        },
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                const dataset = tooltipItem.dataset;
+                                const dataIndex = tooltipItem.dataIndex;
+                                const value = dataset.data[dataIndex].y;
+                                const opponent = dataset.data[dataIndex].opponent || 'N/A';
+                                const event    = dataset.data[dataIndex].event || 'N/A';
+                                const date     = dataset.data[dataIndex].date || 'N/A';
+                                const location = dataset.data[dataIndex].location || 'N/A';
+                                const weight   = dataset.data[dataIndex].weight || 'N/A';
+                                const referee  = dataset.data[dataIndex].referee || 'N/A';
+                                const round    = dataset.data[dataIndex].round || 'N/A';
+                                const time     = dataset.data[dataIndex].time || 'N/A';
+                                const method   = dataset.data[dataIndex].method || 'N/A';
+                                return [`Value: ${value}`, `Opponent: ${opponent}`, `Event: ${event}`, `Date: ${date}`, `Location: ${location}`, `Weight: ${weight}`, `Referee: ${referee}`, `Result: Round ${round} at ${time} via ${method}`];
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [{
+                id: 'chartAreaBackground',
+                beforeDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    const chartArea = chart.chartArea;
+                    ctx.save();
+                    ctx.fillStyle = chart.options.plugins.chartAreaBackground.color || 'black';
+                    ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+                    ctx.restore();
+                }
+            },lineTextPlugin,customLegendPlugin]
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.style.display = 'flex';
+            Papa.parse('../data/dat.dat', {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    data = results.data;
+                    Papa.parse('../data/info.dat', {
+                        download: true,
+                        header: true,
+                        complete: function(results) {
+                            info = results.data;
+                            populateDropdowns(data);
+                            updateChart();
+                            loadingScreen.style.display = 'none';
+                        }
+                    })
+                }
+            })
+        })
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.dropbtn') && !event.target.matches('.dropdown-content input')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        cycleBtn.addEventListener('click', () => {
+
+            function resetGrid() {
+                [div1, div2, div3, div4].forEach(div => {
+                    div.classList.remove('hidden', 'full-width');
+                });
+            }
+
+            function showOnly(div) {
+                [div1, div2, div3, div4].forEach(d => d.classList.add('hidden'));
+                div.classList.remove('hidden');
+                div.classList.add('full-width');
+            }
+
+            viewState = (viewState + 1) % 5; // Cycles through 5 states
+            resetGrid(); // Reset grid to default
+
+            switch (viewState) {
+                case 1:
+                    showOnly(div1);
+                    break;
+                case 2:
+                    showOnly(div2);
+                    break;
+                case 3:
+                    showOnly(div3);
+                    break;
+                case 4:
+                    showOnly(div4);
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const input = dropdown.querySelector('input');
+            const options = dropdown.querySelectorAll('a');
+            dropdown.classList.toggle("show");
+            if (dropdown.classList.contains("show")) {
+                input.value = "";
+                input.focus();
+                dropdown.scrollTop = 0;
+                options.forEach(option => {
+                    option.style.display = "";
+                });
+                input.addEventListener('keydown', function handleEnter(event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        const firstVisibleOption = Array.from(options).find(option => option.style.display !== "none");
+
+                        if (firstVisibleOption) {
+                            firstVisibleOption.click();
+                        }
+                        dropdown.classList.remove("show");
+                        input.removeEventListener('keydown', handleEnter);
+                    }
+                });
+            }
+        }
+
+        function updateChart() {
+            const fighter1 = document.getElementById('redDropbtn').textContent;
+            const fighter2 = document.getElementById('blueDropbtn').textContent;
+            const metric   = document.getElementById('metricDropbtn').textContent;
+            updateData(fighter1, fighter2, metric, data, info);
+        }
+
         function populateDropdowns(data) {
             const fighters = new Set();
             const metrics = new Set();
 
+            // Extract fighters and metrics from data
             data.forEach(row => {
                 const redFighter = row['Red Fighter'] ? row['Red Fighter'].trim() : null;
                 const blueFighter = row['Blue Fighter'] ? row['Blue Fighter'].trim() : null;
@@ -422,45 +1222,94 @@
             });
 
             const uniqueFighters = Array.from(fighters).sort();
-            const uniqueMetrics = Array.from(metrics).sort();
 
-            const fighterDropdowns = document.querySelectorAll('.fighter-dropdown');
-            fighterDropdowns.forEach(dropdown => {
-                dropdown.innerHTML = '';
-                uniqueFighters.forEach(fighter => {
-                    const option = document.createElement('option');
-                    option.value = fighter;
-                    option.textContent = fighter;
-                    dropdown.appendChild(option);
+            // Populate Red Fighter dropdown
+            const redDropdown = document.getElementById('fighter1');
+            const redSearchInput = redDropdown.querySelector('input');
+            redDropdown.innerHTML = '';
+            redDropdown.appendChild(redSearchInput);
+
+            // Reference to the dropbtn for red fighter
+            const redDropbtn = document.getElementById('redDropbtn');
+
+            uniqueFighters.forEach(fighter => {
+                const option = document.createElement('a');
+                option.href = '#';
+                option.textContent = fighter;
+                option.addEventListener('click', function() {
+                    redDropbtn.textContent = fighter;
+                    redDropdown.classList.remove('show');
+                    updateChart();
                 });
+                redDropdown.appendChild(option);
             });
 
-            const metricDropdown = document.getElementById('metric');
-            metricDropdown.innerHTML = '';
-            uniqueMetrics.forEach(metric => {
-                const option = document.createElement('option');
-                option.value = metric;
-                option.textContent = metric;
-                metricDropdown.appendChild(option);
+            // Populate Blue Fighter dropdown
+            const blueDropdown = document.getElementById('fighter2');
+            const blueSearchInput = blueDropdown.querySelector('input');
+            blueDropdown.innerHTML = '';
+            blueDropdown.appendChild(blueSearchInput);
+
+            // Reference to the dropbtn for blue fighter
+            const blueDropbtn = document.getElementById('blueDropbtn');
+
+            uniqueFighters.forEach(fighter => {
+                const option = document.createElement('a');
+                option.href = '#';
+                option.textContent = fighter;
+                option.addEventListener('click', function() {
+                    blueDropbtn.textContent = fighter;
+                    blueDropdown.classList.remove('show');
+                    updateChart();
+                });
+                blueDropdown.appendChild(option);
             });
 
-            const defaultFighter1 = 'Alex Pereira';
-            const defaultFighter2 = 'Magomed Ankalaev';
-            const defaultMetric = 'ELO';
+            // Populate Metric dropdown (if applicable)
+            if (window.innerWidth > 768) {
+                const uniqueMetrics = Array.from(metrics).sort();
 
-            document.getElementById('fighter1').value = defaultFighter1;
-            document.getElementById('fighter2').value = defaultFighter2;
-            document.getElementById('metric').value = defaultMetric;
+                const metricDropdown = document.getElementById('metrics');
+                const metricSearchInput = metricDropdown.querySelector('input');
+                metricDropdown.innerHTML = '';
+                metricDropdown.appendChild(metricSearchInput);
 
-            $('#fighter1, #fighter2, #metric').chosen({
-                width: '100%'
-            }).trigger('chosen:updated').css({
-                'background-color': '#333333',
-                'color': '#ffffff'
-            });
+                // Reference to the dropbtn for metrics
+                const metricDropbtn = document.getElementById('metricDropbtn');
+
+                uniqueMetrics.forEach(metric => {
+                    const option = document.createElement('a');
+                    option.href = '#';
+                    option.textContent = metric;
+                    option.addEventListener('click', function() {
+                        metricDropbtn.textContent = metric;
+                        metricDropdown.classList.remove('show');
+                        updateChart();
+                    });
+                    metricDropdown.appendChild(option);
+                });
+            }
         }
 
-        function plotMetrics(fighter1, fighter2, metric, data) {
+        function filterFunction(dropdownId, inputId) {
+            var input, filter, dropdown, items, i;
+            input = document.getElementById(inputId);
+            filter = input.value.toUpperCase();
+            dropdown = document.getElementById(dropdownId);
+            items = dropdown.getElementsByTagName("a");
+
+            for (i = 0; i < items.length; i++) {
+                let txtValue = items[i].textContent || items[i].innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    items[i].style.display = "";
+                } else {
+                    items[i].style.display = "none";
+                }
+            }
+        }
+
+        function updateData(fighter1, fighter2, metric, data, info) {
+
             const metricWithPost = metric + ' Post';
 
             let valuesFighter1    = [0];
@@ -490,13 +1339,30 @@
             }
             const labels = [0];
 
+            const getPointStyle = (method) => {
+                if (!method) return 'circle';
+                if (method.includes('Decision')) return 'circle';
+                if (method.includes('Submission')) return 'triangle';
+                if (method.includes('KO') || method.includes('TKO')) return 'rect';
+                return 'circle';
+            };
+
+            const getPointRadius = (method) => {
+                if (!method) return 8;
+                if (method.includes('Submission')) return 10;
+                if (method.includes('KO') || method.includes('TKO')) return 10;
+                return 8;
+            };
+
             const radarMetrics = [
                 'ELO (Ctrl Time)',
                 'ELO (TD Off)',
                 'ELO (KD)',
                 'ELO (Str Clch Off)',
                 'ELO (Str Dist Off)',
-                'ELO (Str Grnd Off)'
+                'ELO (Submission)',
+                'ELO (Str Volume)',
+                'ELO (Str Grnd Off)',
             ];
 
             const radarLabels = [
@@ -505,7 +1371,9 @@
                 'Power',
                 'Clinch',
                 'Stand-Up',
-                'Ground & Pound'
+                'Submission',
+                'Cardio',
+                'Ground & Pound',
             ];
 
             let radarDataFighter1 = [];
@@ -513,25 +1381,19 @@
 
             let maxFights = 0;
 
-            const selectedYear  = document.getElementById('yearSlider').value;
-            const selectedMonth = document.getElementById('monthSlider').value;
-            const selectedDay   = document.getElementById('daySlider').value;
-            const selectedDate  = new Date(`${selectedYear}-${selectedMonth}-${selectedDay}`);
-
             let fighter1Data = [];
             let fighter2Data = [];
 
             data.forEach(row => {
-                const fightDate = new Date(row['Date']);
-                if (fightDate <= selectedDate) {
-                    if (row['Red Fighter'] === fighter1 || row['Blue Fighter'] === fighter1) {
-                        fighter1Data.push(row);
-                    }
-                    if (row['Red Fighter'] === fighter2 || row['Blue Fighter'] === fighter2) {
-                        fighter2Data.push(row);
-                    }
+                if (row['Red Fighter'] === fighter1 || row['Blue Fighter'] === fighter1) {
+                    fighter1Data.push(row);
+                }
+                if (row['Red Fighter'] === fighter2 || row['Blue Fighter'] === fighter2) {
+                    fighter2Data.push(row);
                 }
             });
+
+            console.log(fighter1Data);
 
             radarMetrics.forEach(metric => {
                 const metricFighter1 = fighter1Data.slice(-6).map(row => {
@@ -613,416 +1475,262 @@
             for (let i = labels.length + 1; i <= maxFights; i++) {
                 labels.push(i);
             }
-            
-            const ctx = document.getElementById('plot').getContext('2d');
-            if (window.myChart) {
-                window.myChart.destroy();
-            }
-
-            const textPlugin = {
-                id: 'textPlugin',
-                beforeDraw: (chart) => {
-                    const { ctx, chartArea: { left, right, top, bottom, width, height } } = chart;
-
-                    ctx.save();
-
-                    const fontSize = Math.min(width, height) * 0.15;
-                    ctx.font = `${fontSize}px "Berthold Akzidenz Grotesk", Arial, sans-serif`;
-                    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-
-                    const line1 = "@TheAidenWagner";
-                    const line2 = "opendyna.com";
-
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-
-                    const x = left + width / 2;
-                    const y1 = top + height / 2 - 40;
-                    const y2 = top + height / 2 + 40;
-
-                    ctx.fillText(line1, x, y1);
-                    ctx.fillText(line2, x, y2);
-
-                    ctx.restore();
-                }
-            };
 
             const maxLength = Math.max(valuesFighter1.length, valuesFighter2.length);
 
             const paddedValuesFighter1 = valuesFighter1.concat(Array(maxLength - valuesFighter1.length).fill(NaN));
             const paddedValuesFighter2 = valuesFighter2.concat(Array(maxLength - valuesFighter2.length).fill(NaN));
 
-            window.myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: `${fighter1}`,
-                            data: paddedValuesFighter1.map((value, index) => ({ x: index, y: value, opponent: opponentsFighter1[index], event: eventsFighter1[index], date: datesFighter1[index], location: locationsFighter1[index], weight: weightsFighter1[index], referee: refereesFighter1[index], round: roundsFighter1[index], time: timesFighter1[index], method: methodsFighter1[index] })),
-                            backgroundColor: 'rgba(220, 20, 60,0.2)',
-                            borderColor: 'rgba(220, 20, 60,1.0)',
-                            borderWidth: 3,
-                            pointRadius: 6,
-                            pointBackgroundColor: 'rgba(220, 20, 60,1.0)',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 1,
-                            fill: true
-                        },
-                        {
-                            label: `${fighter2}`,
-                            data: paddedValuesFighter2.map((value, index) => ({ x: index, y: value, opponent: opponentsFighter2[index], event: eventsFighter2[index], date: datesFighter2[index], location: locationsFighter2[index], weight: weightsFighter2[index], referee: refereesFighter2[index], round: roundsFighter2[index], time: timesFighter2[index], method: methodsFighter2[index] })),
-                            backgroundColor: 'rgb(65, 105, 225,0.2)',
-                            borderColor: 'rgb(65, 105, 225,1.0)',
-                            borderWidth: 3,
-                            pointRadius: 6,
-                            pointBackgroundColor: 'rgb(65, 105, 225,1.0)',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 1,
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            min: 0,
-                            title: {
-                                display: true,
-                                text: 'Fight Number',
-                                color: '#ffffff',
-                                font: {
-                                    family: 'Berthold Akzidenz Grotesk',
-                                    size: 18
-                                }
-                            },
-                            ticks: {
-                                color: '#ffffff',
-                                font: {
-                                    family: 'Berthold Akzidenz Grotesk',
-                                    size: 16
-                                },
-                                stepSize: 1,
-                                beginAtZero: true,
-                                max: maxFights
-                            },
-                            grid: {
-                                color: '#888888'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: `${metric}`,
-                                color: '#ffffff',
-                                font: {
-                                    family: 'Berthold Akzidenz Grotesk',
-                                    size: 18
-                                }
-                            },
-                            ticks: {
-                                color: '#ffffff',
-                                font: {
-                                    family: 'Berthold Akzidenz Grotesk',
-                                    size: 16
-                                }
-                            },
-                            grid: {
-                                color: '#888888'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#ffffff',
-                                font: {
-                                    family: 'Berthold Akzidenz Grotesk',
-                                    size: 16
-                                }
-                            }
-                        },
-                        chartAreaBackground: {
-                            color: 'rgba(255, 255, 255, 0.05)'
-                        },
-                        tooltip: {
-                            bodyFont: {
-                                size: 24,
-                                family: 'Berthold Akzidenz Grotesk'
-                            },
-                            callbacks: {
-                                label: function(tooltipItem) {
-                                    const dataset = tooltipItem.dataset;
-                                    const dataIndex = tooltipItem.dataIndex;
-                                    const value = dataset.data[dataIndex].y;
-                                    const opponent = dataset.data[dataIndex].opponent || 'N/A';
-                                    const event    = dataset.data[dataIndex].event || 'N/A';
-                                    const date     = dataset.data[dataIndex].date || 'N/A';
-                                    const location = dataset.data[dataIndex].location || 'N/A';
-                                    const weight   = dataset.data[dataIndex].weight || 'N/A';
-                                    const referee  = dataset.data[dataIndex].referee || 'N/A';
-                                    const round    = dataset.data[dataIndex].round || 'N/A';
-                                    const time     = dataset.data[dataIndex].time || 'N/A';
-                                    const method   = dataset.data[dataIndex].method || 'N/A';
-                                    return [`Value: ${value}`, `Opponent: ${opponent}`, `Date: ${date}`, `Location: ${location}`, `Weight: ${weight}`, `Referee: ${referee}`, `Result: Round ${round} at ${time} via ${method}`];
-                                }
-                            }
-                        }
-                    }
-                },
-                plugins: [{
-                    id: 'chartAreaBackground',
-                    beforeDraw: (chart) => {
-                        const ctx = chart.ctx;
-                        const chartArea = chart.chartArea;
-                        ctx.save();
-                        ctx.fillStyle = chart.options.plugins.chartAreaBackground.color || 'black';
-                        ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
-                        ctx.restore();
-                    }
-                },textPlugin]
-            });
+            const redFighterInfo  = getFighterInfo(fighter1, info);
+            const blueFighterInfo = getFighterInfo(fighter2, info);
 
-            const radarCtx = document.getElementById('radarPlot').getContext('2d');
-            if (window.myRadarChart) {
-                window.myRadarChart.destroy();
-            }
-            
-            const textPluginRadar = {
-                id: 'textPlugin',
-                beforeDraw: (chart) => {
-                    const { ctx, chartArea: { width, height }, scales: { r } } = chart;
-
-                    ctx.save();
-
-                    const fontSize = Math.min(width, height) * 0.075;
-                    ctx.font = `${fontSize}px "Berthold Akzidenz Grotesk", Arial, sans-serif`;
-                    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-
-                    const line1 = "@TheAidenWagner";
-                    const line2 = "opendyna.com";
-
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-
-                    const x = r.xCenter;
-                    const y1 = r.yCenter - 30;
-                    const y2 = r.yCenter + 30;
-
-                    ctx.fillText(line1, x, y1);
-                    ctx.fillText(line2, x, y2);
-
-                    ctx.restore();
-                }
-            };
-
-            window.myRadarChart = new Chart(radarCtx, {
-                type: 'radar',
-                data: {
-                    labels: radarLabels,
-                    datasets: [
-                        {
-                            label: `${fighter1}`,
-                            data: radarDataFighter1,
-                            backgroundColor: 'rgba(220, 20, 60,0.2)',
-                            borderColor: 'rgba(220, 20, 60,1.0)',
-                            pointRadius: 6,
-                            pointBackgroundColor: 'rgba(220, 20, 60,1.0)',
-                            pointBorderColor: '#fff',
-                            pointHoverBackgroundColor: '#fff',
-                            pointHoverBorderColor: 'rgba(255, 0, 0, 1)'
-                        },
-                        {
-                            label: `${fighter2}`,
-                            data: radarDataFighter2,
-                            backgroundColor: 'rgb(65, 105, 225,0.2)',
-                            borderColor: 'rgb(65, 105, 225,1.0)',
-                            pointRadius: 6,
-                            pointBackgroundColor: 'rgb(65, 105, 225,1.0)',
-                            pointBorderColor: '#fff',
-                            pointHoverBackgroundColor: '#fff',
-                            pointHoverBorderColor: 'rgba(0, 0, 255, 1)'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        r: {
-                            min: 0,
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            grid:{
-                                color: '#444444'
-                            },
-                            angleLines: {
-                                color: '#888888'
-                            },
-                            pointLabels: {
-                                color: '#ffffff',
-                                font: {
-                                    family: 'Berthold Akzidenz Grotesk',
-                                    size: 18
-                                }
-                            },
-                            ticks: {
-                                backdropColor: 'rgba(0, 0, 0, 0)',
-                                color: '#ffffff',
-                                font: {
-                                    family: 'Berthold Akzidenz Grotesk',
-                                    size: 16
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#ffffff',
-                                font: {
-                                    family: 'Berthold Akzidenz Grotesk',
-                                    size: 16
-                                }
-                            }
-                        }
-                    }
-                },
-                plugins: [textPluginRadar]
-            });
-        }
-
-        function copyChartsToClipboard() {
-            const chartArea = document.querySelector('.charts-wrapper');
-
-            html2canvas(chartArea, { scale: 1 }).then(canvas => {
-                canvas.toBlob(function(blob) {
-                    const item = new ClipboardItem({ "image/png": blob });
-                    navigator.clipboard.write([item]).then(() => {
-                        console.log('Chart image copied to clipboard successfully.');
-                    }).catch(err => {
-                        console.error('Failed to copy chart image to clipboard.', err);
-                    });
-                });
-            }).catch(error => {
-                console.error('Failed to capture chart image:', error);
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const csvFilePath = '../data/dat.dat';
-            Papa.parse(csvFilePath, {
-                download: true,
-                header: true,
-                complete: function(results) {
-                    const data = results.data;
-                    populateDropdowns(data);
-
-                    document.getElementById('plotMatchupBtn').addEventListener('click', () => {
-                        const fighter1 = document.getElementById('fighter1').value;
-                        const fighter2 = document.getElementById('fighter2').value;
-                        const metric = document.getElementById('metric').value;
-
-                        plotMetrics(fighter1, fighter2, metric, data);
-                    });
-
-                    document.getElementById('printBtn').addEventListener('click', () => {
-                        copyChartsToClipboard();
-                    });
-                }
-            });
-        });
-
-        document.getElementById('yearSlider').addEventListener('input', function() {
-            document.getElementById('yearValue').textContent = this.value;
-        });
-
-        document.getElementById('monthSlider').addEventListener('input', function() {
-            document.getElementById('monthValue').textContent = this.value;
-        });
-
-        document.getElementById('daySlider').addEventListener('input', function() {
-            document.getElementById('dayValue').textContent = this.value;
-        });
-
-        let currentView = 0;
-
-        document.getElementById('cyclePlotsBtn').addEventListener('click', function() {
-            const radarContainer = document.getElementById('radarContainer');
-            const lineContainer = document.getElementById('lineContainer');
-
-            currentView = (currentView + 1) % 3;
-
-            switch (currentView) {
-                case 0:
-                    radarContainer.style.flex = '1';
-                    lineContainer.style.flex = '1';
-                    radarContainer.style.display = 'block';
-                    lineContainer.style.display = 'block';
-                    break;
-                case 1:
-                    radarContainer.style.flex = '1';
-                    lineContainer.style.display = 'none';
-                    radarContainer.style.display = 'block';
-                    break;
-                case 2:
-                    lineContainer.style.flex = '1';
-                    radarContainer.style.display = 'none';
-                    lineContainer.style.display = 'block';
-                    break;
-            }
-        });
-
-        var modal = document.getElementById("myModal");
-        var btn = document.getElementById("nextEventBtn");
-        var span = document.getElementsByClassName("close")[0];
-        var cancelButton = document.getElementById("cancelButton");
-        btn.onclick = function() {
-            modal.style.display = "block";
-        }
-        span.onclick = function() {
-            modal.style.display = "none";
-        }
-        cancelButton.onclick = function() {
-            modal.style.display = "none";
-        }
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const fightButtons = document.querySelectorAll('#myModal button[id^="fight"]');
-            fightButtons.forEach(button => {
-                button.onclick = function() {
-                    const fighters = this.textContent.split(' vs. ');
-                    if (fighters.length === 2) {
-                        document.getElementById('fighter1').value = fighters[0].trim();
-                        document.getElementById('fighter2').value = fighters[1].trim();
-                        $('#fighter1, #fighter2').trigger('chosen:updated');
-                    }
-                    modal.style.display = "none";
+            //---Update Tale of the Tape Elements---//
+            document.getElementById('redFighterImage'   ).src         = `../data/bodyshots/${fighter1}.png`;
+            document.getElementById('redFighterImage').onerror        = function () { this.src = '../data/bodyshots/Unknown_Fighter.png'; };
+            document.getElementById('blueFighterImage'  ).src         = `../data/bodyshots/${fighter2}.png`;
+            document.getElementById('blueFighterImage').onerror       = function () { this.src = '../data/bodyshots/Unknown_Fighter.png'; };
+            document.getElementById('redFighterName'    ).textContent = fighter1;
+            document.getElementById('blueFighterName'   ).textContent = fighter2;
+            document.getElementById('redFighterRecord'  ).innerHTML   = calculateFighterRecord(fighter1, data);
+            document.getElementById('blueFighterRecord' ).innerHTML   = calculateFighterRecord(fighter2, data);
+            document.getElementById('redFighterAge'     ).textContent = redFighterInfo.age;
+            document.getElementById('blueFighterAge'    ).textContent = blueFighterInfo.age;
+            document.getElementById('redFighterHeight'  ).textContent = redFighterInfo.height;
+            document.getElementById('blueFighterHeight' ).textContent = blueFighterInfo.height;
+            document.getElementById('redFighterReach'   ).textContent = redFighterInfo.reach;
+            document.getElementById('blueFighterReach'  ).textContent = blueFighterInfo.reach;
+            document.getElementById('redFighterStance'  ).textContent = redFighterInfo.stance;
+            document.getElementById('blueFighterStance' ).textContent = blueFighterInfo.stance;
+            const fighter1Opponents = data.filter(row => row['Red Fighter'] === fighter1 || row['Blue Fighter'] === fighter1).slice(-3).reverse();
+            const fighter2Opponents = data.filter(row => row['Red Fighter'] === fighter2 || row['Blue Fighter'] === fighter2).slice(-3).reverse();
+            for (let i = 0; i < 3; i++) {
+                let fighter1Opponent = '';
+                let fighter2Opponent = '';
+                if (fighter1Opponents[i]) {
+                    const isRedFighter = fighter1Opponents[i]['Red Fighter'] === fighter1;
+                    fighter1Opponent = isRedFighter ? fighter1Opponents[i]['Blue Fighter'] : fighter1Opponents[i]['Red Fighter'];
+                    const result = getFightResult(fighter1, fighter1Opponents[i]['Red Result'], fighter1Opponents[i]['Blue Result'], isRedFighter);
+                    let details = fighter1Opponents[i]['Details'];
+                    if (fighter1Opponents[i]['Method'].includes('Decision') && details) {details = formatDecisionScores(details);}
+                    document.getElementById(`redFighterOpponent${i+1}`).innerHTML = `${fighter1Opponent} <span style="color:${result.color};">${result.text}</span><br><span style="font-size: 12px;">Round ${fighter1Opponents[i]['Round']} at ${fighter1Opponents[i]['Time']} ${fighter1Opponents[i]['Method']}${details ? `<br>${details}` : ''}</span>`;
                 };
+                if (fighter2Opponents[i]) {
+                    const isRedFighter = fighter2Opponents[i]['Red Fighter'] === fighter2;
+                    fighter2Opponent = isRedFighter ? fighter2Opponents[i]['Blue Fighter'] : fighter2Opponents[i]['Red Fighter'];
+                    const result = getFightResult(fighter2, fighter2Opponents[i]['Red Result'], fighter2Opponents[i]['Blue Result'], isRedFighter);
+                    let details = fighter2Opponents[i]['Details'];
+                    if (fighter2Opponents[i]['Method'].includes('Decision') && details) {details = formatDecisionScores(details);}
+                    document.getElementById(`blueFighterOpponent${i+1}`).innerHTML = `${fighter2Opponent} <span style="color:${result.color};">${result.text}</span><br><span style="font-size: 12px;">Round ${fighter2Opponents[i]['Round']} at ${fighter2Opponents[i]['Time']} ${fighter2Opponents[i]['Method']}${details ? `<br>${details}` : ''}</span>`;
+                };
+            };
+
+            //---Update Stats Table Elements---//
+            const metrics = [
+                { id: 'redFighterAverageControlTime', key: 'Average Control Ratio Post' },
+                { id: 'blueFighterAverageControlTime', key: 'Average Control Ratio Post' },
+                { id: 'redFighterAverageControlledTime', key: 'Average Controlled Ratio Post' },
+                { id: 'blueFighterAverageControlledTime', key: 'Average Controlled Ratio Post' },
+                { id: 'redFighterAverageTakedownVolume', key: 'Average Takedown Volume Post' },
+                { id: 'blueFighterAverageTakedownVolume', key: 'Average Takedown Volume Post' },
+                { id: 'redFighterAverageTakedownAccuracy', key: 'Average Takedowns Accuracy Post' },
+                { id: 'blueFighterAverageTakedownAccuracy', key: 'Average Takedowns Accuracy Post' },
+                { id: 'redFighterAverageTakedownDefense', key: 'Average Takedowns Defense Post' },
+                { id: 'blueFighterAverageTakedownDefense', key: 'Average Takedowns Defense Post' },
+                { id: 'redFighterAverageDistanceStrikeVolume', key: 'Average Distance Strike Volume Post' },
+                { id: 'blueFighterAverageDistanceStrikeVolume', key: 'Average Distance Strike Volume Post' },
+                { id: 'redFighterAverageDistanceStrikeAccuracy', key: 'Average Distance Strike Accuracy Post' },
+                { id: 'blueFighterAverageDistanceStrikeAccuracy', key: 'Average Distance Strike Accuracy Post' },
+                { id: 'redFighterAverageDistanceStrikeDefense', key: 'Average Distance Strike Defense Post' },
+                { id: 'blueFighterAverageDistanceStrikeDefense', key: 'Average Distance Strike Defense Post' },
+                { id: 'redFighterCareerKnockdowns', key: 'Career Knockdowns Post' },
+                { id: 'blueFighterCareerKnockdowns', key: 'Career Knockdowns Post' },
+                { id: 'redFighterCareerKnockouts', key: 'Career Knockouts Post' },
+                { id: 'blueFighterCareerKnockouts', key: 'Career Knockouts Post' },
+                { id: 'redFighterCareerKnocked-downs', key: 'Career Knocked-downs Post' },
+                { id: 'blueFighterCareerKnocked-downs', key: 'Career Knocked-downs Post' },
+                { id: 'redFighterCareerKnocked-outs', key: 'Career Knocked-outs Post' },
+                { id: 'blueFighterCareerKnocked-outs', key: 'Career Knocked-outs Post' },
+                { id: 'redFighterCareerSubmissions', key: 'Career Submissions Post' },
+                { id: 'blueFighterCareerSubmissions', key: 'Career Submissions Post' },
+                { id: 'redFighterCareerSubmitteds', key: 'Career Submitteds Post' },
+                { id: 'blueFighterCareerSubmitteds', key: 'Career Submitteds Post' }
+            ];
+            const rounds = ['', 'Round 1', 'Round 2', 'Round 3', 'Round 4', 'Round 5'];
+            rounds.forEach(round => {
+                const roundSuffix = round ? ` ${round}` : '';
+                metrics.forEach(({ id, key }) => {
+                    const roundId = id + (round ? round.replace(' ', '') : '');
+                    const roundKey = key.replace(' Post', `${roundSuffix} Post`);
+                    let fighterData, isRedFighter, opponentKey;
+                    if (id.startsWith('red')) {
+                        fighterData = fighter1Data[fighter1Data.length - 1];
+                        isRedFighter = fighterData && fighterData['Red Fighter'] === fighter1;
+                    } else {
+                        fighterData = fighter2Data[fighter2Data.length - 1];
+                        isRedFighter = fighterData && fighterData['Red Fighter'] === fighter2;
+                    }
+                    if (fighterData) {
+                        opponentKey = isRedFighter ? `Red ${roundKey}` : `Blue ${roundKey}`;
+                        let value = fighterData[opponentKey];
+                        if (roundId.includes('Time')) {
+                            value = convertSecondsToMinutes(value);
+                        } else if (!roundId.includes('Career')) {
+                            if (value >= 10) {
+                                value = Math.round(value);
+                            } else {
+                                const precision = 2;
+                                const scale = Math.pow(10, Math.floor(Math.log10(Math.abs(value))) + 1 - precision);
+                                value = Math.round(value / scale) * scale;
+                                value = parseFloat(value.toPrecision(2));
+                            }
+                        }
+                        if ((value === undefined || value === null || (isNaN(value)) && !String(value).includes(':'))) {
+                            value = '';
+                        }
+                        document.getElementById(roundId).innerHTML = `<span style="color:${id.startsWith('red') ? 'rgb(220, 20, 60)' : 'rgb(65, 105, 225)'};">${value}</span>`;
+                    }
+                });
             });
 
-            var modal = document.getElementById("myModal");
-            var closeModalSpan = document.getElementsByClassName("close")[0];
-            var cancelButton = document.getElementById("cancelButton");
 
-            closeModalSpan.onclick = cancelButton.onclick = function() {
-                modal.style.display = "none";
-            };
+            //---Update Radar Chart Data---//
+            const radarCanvas = document.getElementById('radarChart');
+            const radarChart  = Chart.getChart(radarCanvas);
+            radarChart.data.datasets[0].data  = radarDataFighter1;
+            radarChart.data.datasets[0].label = fighter1;
+            radarChart.data.datasets[1].data  = radarDataFighter2;
+            radarChart.data.datasets[1].label = fighter2;
+            radarChart.update();
 
-            window.onclick = function(event) {
-                if (event.target === modal) {
-                    modal.style.display = "none";
+            //---Update Line Graph Data---//
+            const lineCanvas = document.getElementById('lineGraph');
+            const lineChart  = Chart.getChart(lineCanvas);
+            lineChart.data.datasets[0].label = fighter1;
+            lineChart.data.datasets[1].label = fighter2;
+            window.myLineChart.options.scales.y.title.text = metric;
+            const fightersData = [
+                {
+                    values: valuesFighter1,
+                    opponents: opponentsFighter1,
+                    events: eventsFighter1,
+                    dates: datesFighter1,
+                    locations: locationsFighter1,
+                    weights: weightsFighter1,
+                    referees: refereesFighter1,
+                    rounds: roundsFighter1,
+                    times: timesFighter1,
+                    methods: methodsFighter1
+                },
+                {
+                    values: valuesFighter2,
+                    opponents: opponentsFighter2,
+                    events: eventsFighter2,
+                    dates: datesFighter2,
+                    locations: locationsFighter2,
+                    weights: weightsFighter2,
+                    referees: refereesFighter2,
+                    rounds: roundsFighter2,
+                    times: timesFighter2,
+                    methods: methodsFighter2
                 }
-            };
-        });
+            ];
+            fightersData.forEach((fighterData, i) => {
+                window.myLineChart.data.datasets[i].data = fighterData.values.map((value, index) => ({
+                    x: index,
+                    y: value,
+                    opponent: fighterData.opponents[index],
+                    event: fighterData.events[index],
+                    date: fighterData.dates[index],
+                    location: fighterData.locations[index],
+                    weight: fighterData.weights[index],
+                    referee: fighterData.referees[index],
+                    round: fighterData.rounds[index],
+                    time: fighterData.times[index],
+                    method: fighterData.methods[index]
+                }));
+                window.myLineChart.data.datasets[i].pointStyle = fighterData.methods.map(method => getPointStyle(method));
+                window.myLineChart.data.datasets[i].pointRadius = fighterData.methods.map(method => getPointRadius(method));
+            });
+            window.myLineChart.update();
+
+        }
+
+        function calculateFighterRecord(fighter, data) {
+            let wins = 0, losses = 0, draws = 0, noContests = 0;
+
+            data.forEach(fight => {
+                if (fight['Red Fighter'] === fighter || fight['Blue Fighter'] === fighter) {
+                    const isRed = fight['Red Fighter'] === fighter;
+                    const redResult = fight['Red Result'];
+                    const blueResult = fight['Blue Result'];
+
+                    if (isRed) {
+                        if (redResult == 1) wins++;
+                        else if (redResult == 0 && blueResult == 1) losses++;
+                        else if (redResult == 0 && blueResult == 0) noContests++;
+                        else if (redResult == 0.5) draws++;
+                    } else {
+                        if (blueResult == 1) wins++;
+                        else if (blueResult == 0 && redResult == 1) losses++;
+                        else if (blueResult == 0 && redResult == 0) noContests++;
+                        else if (blueResult == 0.5) draws++;
+                    }
+                }
+            });
+            return `${wins}-${losses}-${draws}&nbsp;&nbsp;&nbsp;${noContests} NC`;
+        };
+
+        function getFighterInfo(name, fighterInfo) {
+            const fighter = fighterInfo.find(f => f['Full Name'] === name);
+            if (!fighter) return { age: 'Unknown', height: 'Unknown', reach: 'Unknown', stance: 'Unknown' };
+
+            const height = fighter['Height'] || 'Unknown';
+            const reach = fighter['Reach'] || 'Unknown';
+            const stance = fighter['Stance'] || 'Unknown';
+            const dob = fighter['Date of Birth'] ? fighter['Date of Birth'].trim() : null;
+            const age = dob ? calculateAge(dob) : 'Unknown';
+
+            return { age, height, reach, stance };
+        }
+
+        function calculateAge(dob) {
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        function getFightResult(fighter, redResult, blueResult, isRed) {
+            if (isRed) {
+                if (redResult == 1) return { text: 'W', color: 'green' };
+                if (redResult == 0 && blueResult == 1) return { text: 'L', color: 'red' };
+                if (redResult == 0 && blueResult == 0) return { text: 'NC', color: 'gray' };
+                if (redResult == 0.5) return { text: 'D', color: 'yellow' };
+            } else {
+                if (blueResult == 1) return { text: 'W', color: 'green' };
+                if (blueResult == 0 && redResult == 1) return { text: 'L', color: 'red' };
+                if (blueResult == 0 && redResult == 0) return { text: 'NC', color: 'gray' };
+                if (blueResult == 0.5) return { text: 'D', color: 'yellow' };
+            }
+            return { text: '-', color: 'black' };
+        }
+
+        function formatDecisionScores(details) {
+            const scores = details.match(/\d+\s*-\s*\d+/g);
+            return scores ? scores.join(' | ') : details;
+        }
+
+        function convertSecondsToMinutes(seconds) {
+            seconds = Math.floor(seconds);
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            const formattedSeconds = remainingSeconds.toString().padStart(2, '0');
+            return `${minutes}:${formattedSeconds}`;
+        }
 
     </script>
 </body>
