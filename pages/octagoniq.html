@@ -5,6 +5,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-W37NSMXN3X"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
@@ -35,14 +36,14 @@
 
         .control-panel {
             background-color: rgba(50, 50, 50, 1);
-            width: 250px; /* Fixed width */
+            width: 250px;
             min-width: 250px;
             max-width: 250px;
             color: white;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Space between elements */
+            gap: 15px;
         }
 
         button {
@@ -65,8 +66,8 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-template-rows: repeat(2, 1fr);
-            gap: 10px; /* Space between individual grid items */
-            padding: 10px; /* Padding around the entire grid container */
+            gap: 10px;
+            padding: 10px;
         }
 
         .grid-item {
@@ -74,7 +75,7 @@
             align-items: center;
             justify-content: center;
             color: white;
-            grid-column: auto; /* Ensure default positioning */
+            grid-column: auto;
             grid-row: auto;
             min-width: 0;
             min-height: 0;
@@ -102,8 +103,8 @@
         }
 
         #div2, #div3, #div4 {
-            border-radius: 20px; /* Adjust the radius as needed */
-            overflow: hidden; /* Ensure content stays within the rounded corners */
+            border-radius: 20px;
+            overflow: hidden;
         }
 
         .hidden {
@@ -121,13 +122,13 @@
             max-width: 100%;
             max-height: 100%;
             display: block;
-            object-fit: contain; /* Ensures the canvas scales properly */
+            object-fit: contain;
         }
 
         .dropdown {
             position: relative;
             display: inline-block;
-            width: 100%; /* Full width */
+            width: 100%;
         }
 
         .dropbtn {
@@ -137,15 +138,15 @@
             color: white;
             border: 1px solid rgba(100, 100, 100, 1);
             border-radius: 5px;
-            width: 100%; /* Full width for the button */
+            width: 100%;
             text-align: left;
             cursor: pointer;
             font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;
-            box-sizing: border-box; /* Ensures padding does not affect width */
+            box-sizing: border-box;
         }
 
         .dropbtn:after {
-            content: '\25BC'; /* Down arrow Unicode */
+            content: '\25BC';
             position: absolute;
             right: 10px;
             top: 50%;
@@ -156,10 +157,10 @@
         .dropdown-content {
             display: none;
             position: absolute;
-            top: 100%; /* Expands the dropdown directly below the button */
-            left: 0; /* Align dropdown content with button */
+            top: 100%;
+            left: 0;
             background-color: rgba(50, 50, 50, 1);
-            min-width: 100%; /* Matches the width of the button */
+            min-width: 100%;
             max-height: 200px;
             overflow-y: auto;
             box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
@@ -203,14 +204,16 @@
             display: flex;
             height: 100%;
             width: 100%;
-            align-items: stretch; /* Ensure children span the full height */
+            align-items: stretch;
         }
 
         .side-image {
-            height: 100%;
-            width: auto;
-            max-width: 30%;
+            min-width: 20%;
+            max-width: 20%;
+            height: auto;
+            max-height: 90%;
             object-fit: contain;
+            margin: auto 0;
         }
 
         .left-image {
@@ -280,12 +283,12 @@
             border-bottom: 1px solid rgba(100, 100, 100, 0.3);
             word-wrap: break-word;
             position: relative;
-            line-height: 1; /* Maintain compact rows */
-            padding: 4px 8px; /* Adjust padding as needed */
+            line-height: 1;
+            padding: 4px 8px;
         }
 
         .stat-table tr:not(:first-child) td:nth-child(3) {
-            border-right: 4px solid rgba(100, 100, 100, 1); /* Thicker border */
+            border-right: 4px solid rgba(100, 100, 100, 1);
         }
 
         .stat-table tr:last-child td {
@@ -308,26 +311,26 @@
 
         .neutral-column {
             text-align: center;
-            padding-right: 0px; /* Optional for spacing */
+            padding-right: 0px;
             font-size: 16px;
 
         }
 
         .red-column {
             text-align: right;
-            padding-right: 8px; /* Optional for spacing */
+            padding-right: 8px;
             font-size: 16px;
 
         }
 
         .blue-column {
             text-align: left;
-            padding-left: 8px; /* Optional for spacing */
+            padding-left: 8px;
             font-size: 16px;
         }
 
         .thick-divider td {
-            border-bottom: 4px solid rgba(100, 100, 100, 1); /* Adjust the thickness and color as needed */
+            border-bottom: 4px solid rgba(100, 100, 100, 1);
         }
 
         #loading-screen {
@@ -366,6 +369,44 @@
             }
         }
 
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #333333;
+            margin: 5% auto;
+            padding: 20px;
+            border: none;
+            width: 40%;
+            color: #ffffff;
+            border-radius: 10px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
         /* Mobile styles */
         @media (max-aspect-ratio: 1/1) {
 
@@ -391,6 +432,11 @@
                 display: grid;
                 grid-template-columns: 1fr;
                 grid-auto-rows: 1fr;
+                grid-template-areas: 
+                    "div3"
+                    "div4"
+                    "div1"
+                    "div2";
                 gap: 0;
                 overflow-y: auto;
                 height: auto;
@@ -402,6 +448,129 @@
                 width: 100%;
                 aspect-ratio: 1 / 1;
             }
+
+            .grid-item:nth-child(1) {
+                grid-area: div1;
+            }
+
+            .grid-item:nth-child(2) {
+                grid-area: div2;
+            }
+
+            .grid-item:nth-child(3) {
+                grid-area: div3;
+            }
+
+            .grid-item:nth-child(4) {
+                grid-area: div4;
+            }
+
+            body, html {
+                font-size: 24px;
+            }
+
+            h1, h2, h3, h4, h5, h6 {
+                font-size: 1.5em;
+            }
+
+            button {
+                font-size: 14px;
+            }
+
+            .info-table td, .stat-table td {
+                font-size: 24px;
+            }
+
+            .side-image {
+                display: none;
+                /*height: 100%;*/
+                /*width: auto;*/
+                /*max-width: 30%;*/
+                /*object-fit: contain;*/
+            }
+
+            .control-panel {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto auto auto;
+                grid-gap: 10px;
+                align-items: center;
+                font-size: 36px;
+            }
+
+            .control-panel label:nth-of-type(1) {
+                grid-column: 1;
+                grid-row: 1;
+                text-align: center;
+            }
+
+            .control-panel label:nth-of-type(2) {
+                grid-column: 2;
+                grid-row: 1;
+                text-align: center;
+            }
+
+            .control-panel .dropdown:nth-of-type(1) {
+                grid-column: 1;
+                grid-row: 2;
+            }
+
+            .control-panel .dropdown:nth-of-type(2) {
+                grid-column: 2;
+                grid-row: 2;
+            }
+
+            .dropbtn {
+                font-size: 36px;
+                text-align: center;
+                padding: 10px;
+            }
+
+            .dropdown-content a {
+                font-size: 36px;
+                text-align: center;
+            }
+
+            .dropdown-content input {
+                font-size: 36px;
+                text-align: center;
+            }
+
+            #captureButton {
+                display: none;
+            }
+
+            #nextEventBtn {
+                grid-column: 1 / span 2;
+                grid-row: 3;
+                text-align: center;
+                font-size: 36px;
+            }
+
+            .modal-content {
+                width: 90%;
+                max-height: 90vh;
+                margin: 5%;
+                padding: 10px;
+                border-radius: 20px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .modal-content p {
+                text-align: center;
+                font-size: 36px;
+            }
+
+            .modal-content button {
+                font-size: 32px;
+            }
+
+            .stat-table td {
+                font-size: 20px;
+            }
+
         }
 
     </style>
@@ -411,22 +580,24 @@
         <div class="spinner"></div>
         <p>Loading, please wait...</p>
     </div>
+    <div id="copyNotification" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px 20px; border-radius: 5px; font-family: Arial, sans-serif; font-size: 14px; z-index: 9999; opacity: 0; transition: opacity 0.5s ease;"></div>
     <div class="container">
         <div class="control-panel">
             <label>Red Fighter:</label>
             <div class="dropdown">
-                <div onclick="toggleDropdown('fighter1')" class="dropbtn" id="redDropbtn">Jon Jones</div>
+                <div onclick="toggleDropdown('fighter1')" class="dropbtn" id="redDropbtn"></div>
                 <div id="fighter1" class="dropdown-content">
                     <input type="text" id="searchInput1" onkeyup="filterFunction('fighter1', 'searchInput1')" placeholder="Search for options...">
                 </div>
             </div>
             <label>Blue Fighter:</label>
             <div class="dropdown">
-                <div onclick="toggleDropdown('fighter2')" class="dropbtn" id="blueDropbtn">Stipe Miocic</div>
+                <div onclick="toggleDropdown('fighter2')" class="dropbtn" id="blueDropbtn"></div>
                 <div id="fighter2" class="dropdown-content">
                     <input type="text" id="searchInput2" onkeyup="filterFunction('fighter2', 'searchInput2')" placeholder="Search for options...">
                 </div>
             </div>
+            <button id="nextEventBtn">Upcoming Bouts</button>
             <label for="metric">Metric:</label>
             <div id="metric" class="dropdown">
                 <div onclick="toggleDropdown('metrics')" class="dropbtn" id="metricDropbtn">ELO</div>
@@ -435,6 +606,7 @@
                 </div>
             </div>
             <button id="cycleBtn">Cycle Charts</button>
+            <button id="captureButton">Copy to Clipboard</button>
         </div>
         <div class="grid-container">
             <div class="grid-item" id="div1">
@@ -734,6 +906,30 @@
             </div>
         </div>
     </div>
+
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>Select a Bout (UFC 310: Pantoja vs. Asakura):</p>
+            <button id="fight1">Alexandre Pantoja vs. Kai Asakura</button>
+            <button id="fight2">Shavkat Rakhmonov vs. Ian Machado Garry</button>
+            <button id="fight3">Ciryl Gane vs. Alexander Volkov</button>
+            <button id="fight4">Bryce Mitchell vs. Kron Gracie</button>
+            <button id="fight5">Nate Landwehr vs. Dooho Choi</button>
+            <button id="fight6">Dominick Reyes vs. Anthony Smith</button>
+            <button id="fight7">Vicente Luque vs. Themba Gorimbo</button>
+            <button id="fight8">Movsar Evloev vs. Aljamain Sterling</button>
+            <button id="fight9">Randy Brown vs. Bryan Battle</button>
+            <button id="fight10">Chris Weidman vs. Eryk Anders</button>
+            <button id="fight11">Cody Durden vs. Joshua Van</button>
+            <button id="fight12">Michael Chiesa vs. Max Griffin</button>
+            <button id="fight13">Clay Guida vs. Chase Hooper</button>
+            <button id="fight14">Kennedy Nzechukwu vs. Lukasz Brzeski</button>
+            <button id="cancelButton">Cancel</button>
+        </div>
+    </div>
+
+
 
     <script>
 
@@ -1112,6 +1308,7 @@
                         complete: function(results) {
                             info = results.data;
                             populateDropdowns(data);
+                            setInitialFightersFromModal();
                             updateChart();
                             loadingScreen.style.display = 'none';
                         }
@@ -1393,8 +1590,6 @@
                 }
             });
 
-            console.log(fighter1Data);
-
             radarMetrics.forEach(metric => {
                 const metricFighter1 = fighter1Data.slice(-6).map(row => {
                     if (row['Red Fighter'] === fighter1) {
@@ -1482,25 +1677,35 @@
             const paddedValuesFighter2 = valuesFighter2.concat(Array(maxLength - valuesFighter2.length).fill(NaN));
 
             const redFighterInfo  = getFighterInfo(fighter1, info);
+
+            console.log(fighter1)
+            console.log(redFighterInfo)
             const blueFighterInfo = getFighterInfo(fighter2, info);
 
             //---Update Tale of the Tape Elements---//
-            document.getElementById('redFighterImage'   ).src         = `../data/bodyshots/${fighter1}.png`;
-            document.getElementById('redFighterImage').onerror        = function () { this.src = '../data/bodyshots/Unknown_Fighter.png'; };
-            document.getElementById('blueFighterImage'  ).src         = `../data/bodyshots/${fighter2}.png`;
-            document.getElementById('blueFighterImage').onerror       = function () { this.src = '../data/bodyshots/Unknown_Fighter.png'; };
-            document.getElementById('redFighterName'    ).textContent = fighter1;
-            document.getElementById('blueFighterName'   ).textContent = fighter2;
-            document.getElementById('redFighterRecord'  ).innerHTML   = calculateFighterRecord(fighter1, data);
-            document.getElementById('blueFighterRecord' ).innerHTML   = calculateFighterRecord(fighter2, data);
-            document.getElementById('redFighterAge'     ).textContent = redFighterInfo.age;
-            document.getElementById('blueFighterAge'    ).textContent = blueFighterInfo.age;
-            document.getElementById('redFighterHeight'  ).textContent = redFighterInfo.height;
-            document.getElementById('blueFighterHeight' ).textContent = blueFighterInfo.height;
-            document.getElementById('redFighterReach'   ).textContent = redFighterInfo.reach;
-            document.getElementById('blueFighterReach'  ).textContent = blueFighterInfo.reach;
-            document.getElementById('redFighterStance'  ).textContent = redFighterInfo.stance;
-            document.getElementById('blueFighterStance' ).textContent = blueFighterInfo.stance;
+            document.getElementById(`redFighterOpponent1` ).innerHTML   = `<br><br>`;
+            document.getElementById(`redFighterOpponent2` ).innerHTML   = `<br><br>`;
+            document.getElementById(`redFighterOpponent3` ).innerHTML   = `<br><br>`;
+            document.getElementById(`blueFighterOpponent1`).innerHTML   = `<br><br>`;
+            document.getElementById(`blueFighterOpponent2`).innerHTML   = `<br><br>`;
+            document.getElementById(`blueFighterOpponent3`).innerHTML   = `<br><br>`;
+            document.getElementById('redFighterImage'     ).src         = `../data/bodyshots/${fighter1}.png`;
+            document.getElementById('redFighterImage'     ).onerror     = function () { this.src = '../data/bodyshots/Unknown_Fighter.png'; };
+            document.getElementById('blueFighterImage'    ).src         = `../data/bodyshots/${fighter2}.png`;
+            document.getElementById('blueFighterImage'    ).onerror     = function () { this.src = '../data/bodyshots/Unknown_Fighter.png'; };
+            document.getElementById('redFighterName'      ).textContent = fighter1;
+            document.getElementById('blueFighterName'     ).textContent = fighter2;
+            document.getElementById('redFighterRecord'    ).innerHTML   = calculateFighterRecord(fighter1, data);
+            document.getElementById('blueFighterRecord'   ).innerHTML   = calculateFighterRecord(fighter2, data);
+            document.getElementById('redFighterAge'       ).textContent = redFighterInfo.age;
+            document.getElementById('blueFighterAge'      ).textContent = blueFighterInfo.age;
+            document.getElementById('redFighterHeight'    ).textContent = redFighterInfo.height;
+            document.getElementById('blueFighterHeight'   ).textContent = blueFighterInfo.height;
+            document.getElementById('redFighterReach'     ).textContent = redFighterInfo.reach;
+            document.getElementById('blueFighterReach'    ).textContent = blueFighterInfo.reach;
+            document.getElementById('redFighterStance'    ).textContent = redFighterInfo.stance;
+            document.getElementById('blueFighterStance'   ).textContent = blueFighterInfo.stance;
+
             const fighter1Opponents = data.filter(row => row['Red Fighter'] === fighter1 || row['Blue Fighter'] === fighter1).slice(-3).reverse();
             const fighter2Opponents = data.filter(row => row['Red Fighter'] === fighter2 || row['Blue Fighter'] === fighter2).slice(-3).reverse();
             for (let i = 0; i < 3; i++) {
@@ -1512,7 +1717,7 @@
                     const result = getFightResult(fighter1, fighter1Opponents[i]['Red Result'], fighter1Opponents[i]['Blue Result'], isRedFighter);
                     let details = fighter1Opponents[i]['Details'];
                     if (fighter1Opponents[i]['Method'].includes('Decision') && details) {details = formatDecisionScores(details);}
-                    document.getElementById(`redFighterOpponent${i+1}`).innerHTML = `${fighter1Opponent} <span style="color:${result.color};">${result.text}</span><br><span style="font-size: 12px;">Round ${fighter1Opponents[i]['Round']} at ${fighter1Opponents[i]['Time']} ${fighter1Opponents[i]['Method']}${details ? `<br>${details}` : ''}</span>`;
+                    document.getElementById(`redFighterOpponent${i+1}`).innerHTML = `${fighter1Opponent} <span style="color:${result.color};">${result.text}</span><br><span>Round ${fighter1Opponents[i]['Round']} at ${fighter1Opponents[i]['Time']} ${fighter1Opponents[i]['Method']}${details ? `<br>${details}` : ''}</span>`;
                 };
                 if (fighter2Opponents[i]) {
                     const isRedFighter = fighter2Opponents[i]['Red Fighter'] === fighter2;
@@ -1520,7 +1725,7 @@
                     const result = getFightResult(fighter2, fighter2Opponents[i]['Red Result'], fighter2Opponents[i]['Blue Result'], isRedFighter);
                     let details = fighter2Opponents[i]['Details'];
                     if (fighter2Opponents[i]['Method'].includes('Decision') && details) {details = formatDecisionScores(details);}
-                    document.getElementById(`blueFighterOpponent${i+1}`).innerHTML = `${fighter2Opponent} <span style="color:${result.color};">${result.text}</span><br><span style="font-size: 12px;">Round ${fighter2Opponents[i]['Round']} at ${fighter2Opponents[i]['Time']} ${fighter2Opponents[i]['Method']}${details ? `<br>${details}` : ''}</span>`;
+                    document.getElementById(`blueFighterOpponent${i+1}`).innerHTML = `${fighter2Opponent} <span style="color:${result.color};">${result.text}</span><br><span>Round ${fighter2Opponents[i]['Round']} at ${fighter2Opponents[i]['Time']} ${fighter2Opponents[i]['Method']}${details ? `<br>${details}` : ''}</span>`;
                 };
             };
 
@@ -1556,6 +1761,15 @@
                 { id: 'blueFighterCareerSubmitteds', key: 'Career Submitteds Post' }
             ];
             const rounds = ['', 'Round 1', 'Round 2', 'Round 3', 'Round 4', 'Round 5'];
+            rounds.forEach(round => {
+                const roundSuffix = round ? ` ${round}` : '';
+                metrics.forEach(({ id, key }) => {
+                    const roundId = id + (round ? round.replace(' ', '') : '');
+                    const roundKey = key.replace(' Post', `${roundSuffix} Post`);
+                    value = '';
+                    document.getElementById(roundId).innerHTML = `<span style="color:${id.startsWith('red') ? 'rgb(220, 20, 60)' : 'rgb(65, 105, 225)'};">${value}</span>`;
+                })
+            });
             rounds.forEach(round => {
                 const roundSuffix = round ? ` ${round}` : '';
                 metrics.forEach(({ id, key }) => {
@@ -1731,6 +1945,115 @@
             const formattedSeconds = remainingSeconds.toString().padStart(2, '0');
             return `${minutes}:${formattedSeconds}`;
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById("myModal");
+            const openModalBtn = document.getElementById("nextEventBtn");
+            const closeModalSpan = document.querySelector(".close");
+            const cancelButton = document.getElementById("cancelButton");
+            openModalBtn.addEventListener("click", () => {
+                modal.style.display = "block";
+            });
+            closeModalSpan.onclick = cancelButton.onclick = () => {
+                modal.style.display = "none";
+            };
+            window.onclick = (event) => {
+                if (event.target === modal) {
+                    modal.style.display = "none";
+                }
+            };
+            const fightButtons = document.querySelectorAll('#myModal button[id^="fight"]');
+            fightButtons.forEach(button => {
+                button.onclick = function () {
+                    const fighters = this.textContent.split(' vs. ');
+                    if (fighters.length === 2) {
+                        document.getElementById('redDropbtn').textContent = fighters[0].trim();
+                        document.getElementById('blueDropbtn').textContent = fighters[1].trim();
+                        updateChart();
+                    }
+                    modal.style.display = "none";
+                };
+            });
+        });
+
+        document.getElementById("captureButton").addEventListener("click", () => {
+            const gridContainer = document.querySelector(".grid-container");
+            html2canvas(gridContainer, { 
+                scale: 4,
+                backgroundColor: "rgba(30,30,30,1)"
+            }).then((canvas) => {
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        console.error("Failed to create image blob.");
+                        return;
+                    }
+                    const item = new ClipboardItem({ "image/png": blob });
+                    navigator.clipboard.write([item]).then(() => {
+                        showNotification("Image copied to clipboard!");
+                    }).catch((err) => {
+                        console.error("Failed to copy to clipboard: ", err);
+                    });
+                });
+            }).catch((err) => {
+                console.error("Failed to capture grid container: ", err);
+            });
+        });
+
+        function showNotification(message) {
+            const notification = document.getElementById("copyNotification");
+            notification.textContent = message;
+            notification.style.display = "block";
+            notification.style.opacity = "1";
+            setTimeout(() => {
+                notification.style.opacity = "0";
+                setTimeout(() => {
+                    notification.style.display = "none";
+                }, 500);
+            }, 500);
+        }
+
+        function updateFontSizesBasedOnAspectRatio() {
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            const isMobile = aspectRatio < 1;
+            const fontSizeMultiplier = isMobile ? 2 : 1;
+            const markerSizeMultiplier = isMobile ? 2 : 1;
+            window.myRadarChart.options.scales.r.pointLabels.font.size = 18 * fontSizeMultiplier;
+            window.myRadarChart.options.scales.r.ticks.font.size = 16 * fontSizeMultiplier;
+            window.myRadarChart.options.plugins.legend.labels.font.size = 16 * fontSizeMultiplier;
+            window.myRadarChart.data.datasets.forEach(dataset => {
+                dataset.pointRadius = 6 * markerSizeMultiplier;
+                dataset.pointHoverRadius = 8 * markerSizeMultiplier;
+            });
+            window.myLineChart.options.scales.x.title.font.size = 18 * fontSizeMultiplier;
+            window.myLineChart.options.scales.x.ticks.font.size = 16 * fontSizeMultiplier;
+            window.myLineChart.options.scales.y.title.font.size = 18 * fontSizeMultiplier;
+            window.myLineChart.options.scales.y.ticks.font.size = 16 * fontSizeMultiplier;
+            window.myLineChart.options.plugins.legend.labels.font.size = 16 * fontSizeMultiplier;
+            window.myLineChart.data.datasets.forEach(dataset => {
+                dataset.pointRadius = 6 * markerSizeMultiplier;
+                dataset.pointHoverRadius = 8 * markerSizeMultiplier;
+            });
+            window.myLineChart.options.plugins.tooltip.bodyFont.size = 24 * fontSizeMultiplier;
+            window.myRadarChart.update();
+            window.myLineChart.update();
+        }
+
+        function setInitialFightersFromModal() {
+            const firstBoutButton = document.querySelector('#myModal button[id^="fight"]');
+            if (firstBoutButton) {
+                const fighters = firstBoutButton.textContent.split(' vs. ');
+                if (fighters.length === 2) {
+                    const [fighter1, fighter2] = fighters.map(f => f.trim());
+                    document.getElementById('redDropbtn').textContent = fighter1;
+                    document.getElementById('blueDropbtn').textContent = fighter2;
+                    updateChart();
+                }
+            }
+        }
+
+        window.addEventListener('resize', updateFontSizesBasedOnAspectRatio);
+
+        updateFontSizesBasedOnAspectRatio();
 
     </script>
 </body>
