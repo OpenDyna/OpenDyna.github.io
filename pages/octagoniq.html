@@ -214,6 +214,7 @@
             max-height: 90%;
             object-fit: contain;
             margin: auto 0;
+            padding: 0px 5px;
         }
 
         .left-image {
@@ -225,7 +226,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 10px 10px;
+            padding: 0px 0px;
         }
 
         .table-wrapper {
@@ -407,6 +408,23 @@
             cursor: pointer;
         }
 
+        #leaderboardTable {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+            text-align: left;
+        }
+
+        #leaderboardTable th,
+        #leaderboardTable td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #leaderboardTable th {
+            background-color: rgba(50, 50, 50, 0.8);
+        }
+
         /* Mobile styles */
         @media (max-aspect-ratio: 1/1) {
 
@@ -541,7 +559,14 @@
             }
 
             #nextEventBtn {
-                grid-column: 1 / span 2;
+                grid-column: 1 / span 1;
+                grid-row: 3;
+                text-align: center;
+                font-size: 36px;
+            }
+
+            #showLeaderboardBtn {
+                grid-column: 2 / span 1;
                 grid-row: 3;
                 text-align: center;
                 font-size: 36px;
@@ -605,6 +630,10 @@
                     <input type="text" id="searchInput3" onkeyup="filterFunction('metrics', 'searchInput3')" placeholder="Search for options...">
                 </div>
             </div>
+            <button id="showLeaderboardBtn">Show Leaderboards</button>
+            <label for="spacer"></label>
+            <label for="spacer"></label>
+            <label for="spacer"></label>
             <button id="cycleBtn">Cycle Charts</button>
             <button id="captureButton">Copy to Clipboard</button>
         </div>
@@ -929,6 +958,27 @@
         </div>
     </div>
 
+    <!-- Modal Structure -->
+    <div id="leaderboardModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeLeaderboard">&times;</span>
+            <h2>LEADERBOARD</h2>
+            <table id="leaderboardTable">
+                <thead>
+                    <tr>
+                        <th id="rankHeader">Rank</th>
+                        <th id="fighterHeader">Fighter</th>
+                        <th id="currentHeader" data-sort="current">Current {metric}</th>
+                        <th id="careerMaxHeader" data-sort="careerMax">Career Max {metric}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Leaderboard rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 
 
     <script>
@@ -946,6 +996,10 @@
 
         let data;
         let info;
+        let rost;
+
+        let sortColumn = 'current';
+        let sortOrder = 'desc';
 
         const radarCtx = document.getElementById('radarChart').getContext('2d');
 
@@ -1307,10 +1361,16 @@
                         header: true,
                         complete: function(results) {
                             info = results.data;
-                            populateDropdowns(data);
-                            setInitialFightersFromModal();
-                            updateChart();
-                            loadingScreen.style.display = 'none';
+                            Papa.parse('../data/rost.dat', {
+                                download: true,
+                                complete: function(results) {
+                                    rost = new Set(results.data.map(row => row[0].trim()));
+                                    populateDropdowns(data);
+                                    setInitialFightersFromModal();
+                                    updateChart();
+                                    loadingScreen.style.display = 'none';
+                                }
+                            })
                         }
                     })
                 }
@@ -2054,6 +2114,147 @@
         window.addEventListener('resize', updateFontSizesBasedOnAspectRatio);
 
         updateFontSizesBasedOnAspectRatio();
+
+        // Function to show the leaderboard modal
+        function showLeaderboard(metric) {
+            const modalTitle = document.querySelector('#leaderboardModal h2');
+            const currentHeader = document.getElementById('currentHeader');
+            const careerMaxHeader = document.getElementById('careerMaxHeader');
+
+            // Update modal title and headers based on the metric
+            if (metric === "ELO") {
+                modalTitle.textContent = "POUND-FOR-POUND RANKINGS";
+                currentHeader.textContent = `Current ${metric}`;
+                careerMaxHeader.textContent = `Career Max ${metric}`;
+            } else {
+                modalTitle.textContent = "LEADERBOARDS";
+                currentHeader.textContent = `Current ${metric}`;
+                careerMaxHeader.textContent = `Career Max ${metric}`;
+            }
+
+            // Calculate and display leaderboard data
+            const leaderboardData = calculateLeaderboard(metric, sortColumn, sortOrder);
+            const leaderboardTableBody = document.getElementById('leaderboardTable').querySelector('tbody');
+            leaderboardTableBody.innerHTML = ''; // Clear existing rows
+
+            leaderboardData.forEach((fighter, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${fighter.name}</td>
+                    <td>${fighter.current.toFixed(2)}</td>
+                    <td>${fighter.careerMax.toFixed(2)}</td>
+                `;
+                leaderboardTableBody.appendChild(row);
+            });
+        }
+
+
+        // Function to calculate the top 25 fighters for the given metric
+        function calculateLeaderboard(metric, sortColumn, sortOrder) {
+            const metricWithPost = `${metric} Post`;
+            const fighterStats = {};
+
+            // Iterate over the data to calculate current and career max values
+            data.forEach(row => {
+                const redFighter = row['Red Fighter'];
+                const blueFighter = row['Blue Fighter'];
+                const date = new Date(row['Date']); // Ensure dates are comparable
+
+                const redScore = parseFloat(row[`Red ${metricWithPost}`]) || 0;
+                const blueScore = parseFloat(row[`Blue ${metricWithPost}`]) || 0;
+
+                // Update Red Fighter stats
+                if (redFighter && rost.has(redFighter)) { // Filter by roster
+                    if (!fighterStats[redFighter]) {
+                        fighterStats[redFighter] = { 
+                            name: redFighter, 
+                            current: redScore, 
+                            careerMax: redScore, 
+                            date 
+                        };
+                    } else {
+                        // Update career max score
+                        fighterStats[redFighter].careerMax = Math.max(fighterStats[redFighter].careerMax, redScore);
+                        // Update current score if this is the most recent fight
+                        if (date > fighterStats[redFighter].date) {
+                            fighterStats[redFighter].current = redScore;
+                            fighterStats[redFighter].date = date;
+                        }
+                    }
+                }
+
+                // Update Blue Fighter stats
+                if (blueFighter && rost.has(blueFighter)) { // Filter by roster
+                    if (!fighterStats[blueFighter]) {
+                        fighterStats[blueFighter] = { 
+                            name: blueFighter, 
+                            current: blueScore, 
+                            careerMax: blueScore, 
+                            date 
+                        };
+                    } else {
+                        // Update career max score
+                        fighterStats[blueFighter].careerMax = Math.max(fighterStats[blueFighter].careerMax, blueScore);
+                        // Update current score if this is the most recent fight
+                        if (date > fighterStats[blueFighter].date) {
+                            fighterStats[blueFighter].current = blueScore;
+                            fighterStats[blueFighter].date = date;
+                        }
+                    }
+                }
+            });
+
+            // Convert the stats object to an array and sort by the selected column
+            const sortedStats = Object.values(fighterStats)
+                .sort((a, b) => {
+                    const comparison = a[sortColumn] - b[sortColumn];
+                    return sortOrder === 'asc' ? comparison : -comparison;
+                });
+
+            // Return the top 25
+            return sortedStats.slice(0, 25);
+        }
+
+        // Event listeners for the modal
+        document.getElementById('showLeaderboardBtn').addEventListener('click', () => {
+            const metric = document.getElementById('metricDropbtn').textContent.trim();
+            document.getElementById('leaderboardModal').style.display = 'block';
+            showLeaderboard(metric);
+        });
+
+        document.getElementById('closeLeaderboard').addEventListener('click', () => {
+            document.getElementById('leaderboardModal').style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('leaderboardModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        document.getElementById('currentHeader').addEventListener('click', () => {
+            toggleSort('current');
+        });
+
+        document.getElementById('careerMaxHeader').addEventListener('click', () => {
+            toggleSort('careerMax');
+        });
+
+        function toggleSort(column) {
+            if (sortColumn === column) {
+                // If the column is already selected, toggle the sort order
+                sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                // Otherwise, change the column and reset to descending order
+                sortColumn = column;
+                sortOrder = 'desc';
+            }
+
+            const metric = document.getElementById('metricDropbtn').textContent;
+            showLeaderboard(metric);
+        }
 
     </script>
 </body>
