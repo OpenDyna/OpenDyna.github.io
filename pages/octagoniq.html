@@ -6,6 +6,7 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-W37NSMXN3X"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@2.9.1/dist/dom-to-image-more.min.js"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
@@ -36,9 +37,9 @@
 
         .control-panel {
             background-color: rgba(50, 50, 50, 1);
-            width: 250px;
-            min-width: 250px;
-            max-width: 250px;
+            width: 300px;
+            min-width: 300px;
+            max-width: 300px;
             color: white;
             padding: 20px;
             display: flex;
@@ -208,13 +209,11 @@
         }
 
         .side-image {
-            min-width: 20%;
-            max-width: 20%;
             height: auto;
-            max-height: 90%;
+            max-height: 100%;
             object-fit: contain;
             margin: auto 0;
-            padding: 0px 5px;
+            padding: 0px 7px;
         }
 
         .left-image {
@@ -558,6 +557,14 @@
                 display: none;
             }
 
+            #prevFightBtn {
+                display: none;  
+            }
+
+            #nextFightBtn {
+                display: none;  
+            }
+
             #nextEventBtn {
                 grid-column: 1 / span 1;
                 grid-row: 3;
@@ -623,6 +630,10 @@
                 </div>
             </div>
             <button id="nextEventBtn">Upcoming Bouts</button>
+            <div style="display:flex; gap:15px;">
+                <button id="prevFightBtn">← Prev Fight</button>
+                <button id="nextFightBtn">Next Fight →</button>
+            </div>
             <label for="metric">Metric:</label>
             <div id="metric" class="dropdown">
                 <div onclick="toggleDropdown('metrics')" class="dropbtn" id="metricDropbtn">ELO</div>
@@ -637,7 +648,7 @@
             <button id="cycleBtn">Cycle Charts</button>
             <button id="captureButton">Copy to Clipboard</button>
         </div>
-        <div class="grid-container">
+        <div class="grid-container" id="worksheet">
             <div class="grid-item" id="div1">
                 <div class="top-left-container">
                     <img src="../data/bodyshots/Unknown_Fighter.png" alt="Image 1" class="side-image left-image" id="redFighterImage">
@@ -939,21 +950,20 @@
     <div id="myModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <p>Select a Bout (UFC 310: Pantoja vs. Asakura):</p>
-            <button id="fight1">Alexandre Pantoja vs. Kai Asakura</button>
-            <button id="fight2">Shavkat Rakhmonov vs. Ian Machado Garry</button>
-            <button id="fight3">Ciryl Gane vs. Alexander Volkov</button>
-            <button id="fight4">Bryce Mitchell vs. Kron Gracie</button>
-            <button id="fight5">Nate Landwehr vs. Dooho Choi</button>
-            <button id="fight6">Dominick Reyes vs. Anthony Smith</button>
-            <button id="fight7">Vicente Luque vs. Themba Gorimbo</button>
-            <button id="fight8">Movsar Evloev vs. Aljamain Sterling</button>
-            <button id="fight9">Randy Brown vs. Bryan Battle</button>
-            <button id="fight10">Chris Weidman vs. Eryk Anders</button>
-            <button id="fight11">Cody Durden vs. Joshua Van</button>
-            <button id="fight12">Michael Chiesa vs. Max Griffin</button>
-            <button id="fight13">Clay Guida vs. Chase Hooper</button>
-            <button id="fight14">Kennedy Nzechukwu vs. Lukasz Brzeski</button>
+            <p>Select a Bout (UFC Fight Night: Covington vs. Buckley):</p>
+            <button id="fight1">Colby Covington vs. Joaquin Buckley</button>
+            <button id="fight2">Cub Swanson vs. Billy Quarantillo</button>
+            <button id="fight3">Manel Kape vs. Bruno Silva</button>
+            <button id="fight4">Vitor Petrino vs. Dustin Jacoby</button>
+            <button id="fight5">Adrian Yanez vs. Daniel Marcos</button>
+            <button id="fight6">Navajo Stirling vs. Tuco Tokkos</button>
+            <button id="fight7">Michael Johnson vs. Ottman Azaitar</button>
+            <button id="fight8">Joel Alvarez vs. Drakkar Klose</button>
+            <button id="fight9">Sean Woodson vs. Fernando Padilla</button>
+            <button id="fight10">Miles Johns vs. Felipe Lima</button>
+            <button id="fight11">Miranda Maverick vs. Jamey-Lyn Horth</button>
+            <button id="fight12">Davey Grant vs. Ramon Taveras</button>
+            <button id="fight13">Josefine Knutsson vs. Piera Rodriguez</button>
             <button id="cancelButton">Cancel</button>
         </div>
     </div>
@@ -1351,6 +1361,36 @@
         document.addEventListener('DOMContentLoaded', () => {
             const loadingScreen = document.getElementById('loading-screen');
             loadingScreen.style.display = 'flex';
+
+            const fightButtons = document.querySelectorAll('#myModal button[id^="fight"]');
+            const fights = Array.from(fightButtons).map(button => button.textContent.trim());
+
+            let currentFightIndex = 0;
+
+            function setFight(index) {
+                if (index < 0) {
+                    index = fights.length - 1;
+                } else if (index >= fights.length) {
+                    index = 0;
+                }
+
+                currentFightIndex = index;
+                const fightStr = fights[currentFightIndex];
+                const [redFighter, blueFighter] = fightStr.split(' vs. ').map(f => f.trim());
+
+                document.getElementById('redDropbtn').textContent = redFighter;
+                document.getElementById('blueDropbtn').textContent = blueFighter;
+                updateChart();
+            }
+
+            document.getElementById('prevFightBtn').addEventListener('click', () => {
+                setFight(currentFightIndex - 1);
+            });
+
+            document.getElementById('nextFightBtn').addEventListener('click', () => {
+                setFight(currentFightIndex + 1);
+            });
+
             Papa.parse('../data/dat.dat', {
                 download: true,
                 header: true,
@@ -1369,6 +1409,7 @@
                                     setInitialFightersFromModal();
                                     updateChart();
                                     loadingScreen.style.display = 'none';
+                                    setFight(0);
                                 }
                             })
                         }
@@ -1737,9 +1778,6 @@
             const paddedValuesFighter2 = valuesFighter2.concat(Array(maxLength - valuesFighter2.length).fill(NaN));
 
             const redFighterInfo  = getFighterInfo(fighter1, info);
-
-            console.log(fighter1)
-            console.log(redFighterInfo)
             const blueFighterInfo = getFighterInfo(fighter2, info);
 
             //---Update Tale of the Tape Elements---//
@@ -2037,11 +2075,17 @@
         });
 
         document.getElementById("captureButton").addEventListener("click", () => {
+
             const gridContainer = document.querySelector(".grid-container");
+            const originalStyles = gridContainer.style.cssText; // Save original styles
+
             html2canvas(gridContainer, { 
-                scale: 4,
+                scale: 1,
+                width: gridContainer.offsetWidth,
+                height: gridContainer.offsetHeight,
                 backgroundColor: "rgba(30,30,30,1)"
             }).then((canvas) => {
+                gridContainer.style.cssText = originalStyles; // Restore styles
                 canvas.toBlob((blob) => {
                     if (!blob) {
                         console.error("Failed to create image blob.");
@@ -2056,7 +2100,9 @@
                 });
             }).catch((err) => {
                 console.error("Failed to capture grid container: ", err);
+                gridContainer.style.cssText = originalStyles; // Ensure styles are restored
             });
+            
         });
 
         function showNotification(message) {
@@ -2115,7 +2161,6 @@
 
         updateFontSizesBasedOnAspectRatio();
 
-        // Function to show the leaderboard modal
         function showLeaderboard(metric) {
             const modalTitle = document.querySelector('#leaderboardModal h2');
             const currentHeader = document.getElementById('currentHeader');
@@ -2149,8 +2194,6 @@
             });
         }
 
-
-        // Function to calculate the top 25 fighters for the given metric
         function calculateLeaderboard(metric, sortColumn, sortOrder) {
             const metricWithPost = `${metric} Post`;
             const fighterStats = {};
@@ -2216,7 +2259,6 @@
             return sortedStats.slice(0, 25);
         }
 
-        // Event listeners for the modal
         document.getElementById('showLeaderboardBtn').addEventListener('click', () => {
             const metric = document.getElementById('metricDropbtn').textContent.trim();
             document.getElementById('leaderboardModal').style.display = 'block';
