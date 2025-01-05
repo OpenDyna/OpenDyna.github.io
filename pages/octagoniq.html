@@ -126,6 +126,14 @@
             object-fit: contain;
         }
 
+        .grid-item.full-width .info-table td {
+            font-size: 32px;
+        }
+
+        .grid-item.full-width .stat-table td {
+            font-size: 40px;
+        }
+
         .dropdown {
             position: relative;
             display: inline-block;
@@ -211,6 +219,7 @@
         .side-image {
             height: auto;
             max-height: 100%;
+            min-height: 100%;
             object-fit: contain;
             margin: auto 0;
             padding: 0px 7px;
@@ -951,19 +960,20 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <p>Select a Bout (UFC Fight Night: Covington vs. Buckley):</p>
-            <button id="fight1">Colby Covington vs. Joaquin Buckley</button>
-            <button id="fight2">Cub Swanson vs. Billy Quarantillo</button>
-            <button id="fight3">Manel Kape vs. Bruno Silva</button>
-            <button id="fight4">Vitor Petrino vs. Dustin Jacoby</button>
-            <button id="fight5">Adrian Yanez vs. Daniel Marcos</button>
-            <button id="fight6">Navajo Stirling vs. Tuco Tokkos</button>
-            <button id="fight7">Michael Johnson vs. Ottman Azaitar</button>
-            <button id="fight8">Joel Alvarez vs. Drakkar Klose</button>
-            <button id="fight9">Sean Woodson vs. Fernando Padilla</button>
-            <button id="fight10">Miles Johns vs. Felipe Lima</button>
-            <button id="fight11">Miranda Maverick vs. Jamey-Lyn Horth</button>
-            <button id="fight12">Davey Grant vs. Ramon Taveras</button>
-            <button id="fight13">Josefine Knutsson vs. Piera Rodriguez</button>
+            <button id="fight1">Mackenzie Dern vs. Amanda Ribas</button>
+            <button id="fight2">Cesar Almeida vs. Abdul Razak Alhassan</button>
+            <button id="fight3">Chris Curtis vs. Roman Kopylov</button>
+            <button id="fight4">Marco Tulio vs. Ihor Potieria</button>
+            <button id="fight5">Thiago Moises vs. Trey Ogden</button>
+            <button id="fight6">Magomed Gadzhiyasulov vs. Bruno Lopes</button>
+            <button id="fight7">Christian Rodriguez vs. Austin Bashi</button>
+            <button id="fight8">Santiago Ponzinibbio vs. Carlston Harris</button>
+            <button id="fight9">Punahele Soriano vs. Uros Medic</button>
+            <button id="fight10">Jose Johnson vs. Felipe Bunes</button>
+            <button id="fight11">Nurullo Aliev vs. Yanal Ashmouz</button>
+            <button id="fight12">Ernesta Kareckaite vs. Nicolle Caliari</button>
+            <button id="fight13">Preston Parsons vs. Andreas Gustafsson</button>
+            <button id="fight14">Fatima Kline vs. Viktoriia Dudakova</button>
             <button id="cancelButton">Cancel</button>
         </div>
     </div>
@@ -972,6 +982,27 @@
     <div id="leaderboardModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeLeaderboard">&times;</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom:20px;">
+                <select id="weightClassSelect" style="background-color: rgba(50, 50, 50, 1); color: white; border: 1px solid rgba(100, 100, 100, 1); padding: 10px; font-family: 'Berthold Akzidenz Grotesk', Arial, sans-serif;">
+                    <option>Pound-for-Pound</option>
+                    <option>Flyweight</option>
+                    <option>Bantamweight</option>
+                    <option>Featherweight</option>
+                    <option>Lightweight</option>
+                    <option>Welterweight</option>
+                    <option>Middleweight</option>
+                    <option>Light Heavyweight</option>
+                    <option>Heavyweight</option>
+                    <option>Women's Pound-for-Pound</option>
+                    <option>Women's Strawweight</option>
+                    <option>Women's Flyweight</option>
+                    <option>Women's Bantamweight</option>
+                </select>
+                <label style="color:white; font-family:'Berthold Akzidenz Grotesk', Arial, sans-serif; display:flex; align-items:center;">
+                    <input type="checkbox" id="activeFightersCheckbox" style="transform: scale(1.5); margin-right:10px;" checked>
+                    Active Fighters Only
+                </label>
+            </div>
             <h2>LEADERBOARD</h2>
             <table id="leaderboardTable">
                 <thead>
@@ -2165,28 +2196,74 @@
             const modalTitle = document.querySelector('#leaderboardModal h2');
             const currentHeader = document.getElementById('currentHeader');
             const careerMaxHeader = document.getElementById('careerMaxHeader');
+            const selectedWeightClass = document.getElementById('weightClassSelect').value;
+            const activeOnly = document.getElementById('activeFightersCheckbox').checked;
 
-            // Update modal title and headers based on the metric
-            if (metric === "ELO") {
-                modalTitle.textContent = "POUND-FOR-POUND RANKINGS";
-                currentHeader.textContent = `Current ${metric}`;
-                careerMaxHeader.textContent = `Career Max ${metric}`;
-            } else {
-                modalTitle.textContent = "LEADERBOARDS";
-                currentHeader.textContent = `Current ${metric}`;
-                careerMaxHeader.textContent = `Career Max ${metric}`;
-            }
+            // Update modal title based on the dropdown selection, in all caps
+            modalTitle.textContent = "OpenDyna UFC " + selectedWeightClass + " Rankings";
+            currentHeader.textContent = `Current ${metric}`;
+            careerMaxHeader.textContent = `Career Max ${metric}`;
 
-            // Calculate and display leaderboard data
-            const leaderboardData = calculateLeaderboard(metric, sortColumn, sortOrder);
+            // Identify the last event
+            const lastEventName = (function getLastEvent(data) {
+                const eventsByDate = {};
+                data.forEach(row => {
+                    const eventName = row['Event Name'];
+                    const date = new Date(row['Date']);
+                    if (!eventsByDate[eventName] || date > eventsByDate[eventName]) {
+                        eventsByDate[eventName] = date;
+                    }
+                });
+
+                let lastEvent = null;
+                let lastEventDate = new Date(0);
+                for (let e in eventsByDate) {
+                    if (eventsByDate[e] > lastEventDate) {
+                        lastEventDate = eventsByDate[e];
+                        lastEvent = e;
+                    }
+                }
+                return lastEvent;
+            })(data);
+
+            // Pre-Final Rankings: usePreForLastEvent = true
+            const preFinalRankings = calculateLeaderboard(metric, sortColumn, sortOrder, selectedWeightClass, activeOnly, true, lastEventName);
+            // Post-Final Rankings: usePreForLastEvent = false
+            const postFinalRankings = calculateLeaderboard(metric, sortColumn, sortOrder, selectedWeightClass, activeOnly, false, lastEventName);
+
+            // Create a map of Pre-Final ranks
+            const preFinalRankMap = {};
+            preFinalRankings.forEach((fighter, index) => {
+                preFinalRankMap[fighter.name] = index + 1; // ranks are 1-based
+            });
+
             const leaderboardTableBody = document.getElementById('leaderboardTable').querySelector('tbody');
             leaderboardTableBody.innerHTML = ''; // Clear existing rows
 
-            leaderboardData.forEach((fighter, index) => {
+            postFinalRankings.forEach((fighter, index) => {
+                const currentRank = index + 1;
+                const oldRank = preFinalRankMap[fighter.name];
+                let rankChangeSymbol = '';
+
+                if (oldRank !== undefined) {
+                    const diff = oldRank - currentRank;
+                    if (diff > 0) {
+                        // Moved up
+                        rankChangeSymbol = `<span style="color:green;">▲ +${diff}</span>`;
+                    } else if (diff < 0) {
+                        // Moved down
+                        rankChangeSymbol = `<span style="color:red;">▼ ${diff}</span>`;
+                    }
+                    // If diff == 0, no change symbol
+                } else {
+                    // Fighter not in preFinalRankings (new entry)
+                    rankChangeSymbol = `<span style="color:blue;">● NEW</span>`;
+                }
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${fighter.name}</td>
+                    <td>${currentRank}</td>
+                    <td>${fighter.name} ${rankChangeSymbol}</td>
                     <td>${fighter.current.toFixed(2)}</td>
                     <td>${fighter.careerMax.toFixed(2)}</td>
                 `;
@@ -2194,70 +2271,97 @@
             });
         }
 
-        function calculateLeaderboard(metric, sortColumn, sortOrder) {
-            const metricWithPost = `${metric} Post`;
+
+        function calculateLeaderboard(metric, sortColumn, sortOrder, weightClass, activeOnly, usePreForLastEvent, lastEventName) {
             const fighterStats = {};
 
-            // Iterate over the data to calculate current and career max values
             data.forEach(row => {
                 const redFighter = row['Red Fighter'];
                 const blueFighter = row['Blue Fighter'];
-                const date = new Date(row['Date']); // Ensure dates are comparable
+                const eventName = row['Event Name'];
+                const date = new Date(row['Date']); 
+                const fightWeightClass = normalizeWeightClass(row['Weight'] ? row['Weight'].trim() : '');
 
-                const redScore = parseFloat(row[`Red ${metricWithPost}`]) || 0;
-                const blueScore = parseFloat(row[`Blue ${metricWithPost}`]) || 0;
+                // Determine metric suffix based on whether this fight is in the last event and if we are using pre-final logic
+                const metricSuffix = (usePreForLastEvent && eventName === lastEventName) ? 'Pre' : 'Post';
 
-                // Update Red Fighter stats
-                if (redFighter && rost.has(redFighter)) { // Filter by roster
+                console.log(metricSuffix)
+
+                const redScore = parseFloat(row[`Red ${metric} ${metricSuffix}`]) || 0;
+                const blueScore = parseFloat(row[`Blue ${metric} ${metricSuffix}`]) || 0;
+
+                const considerRed = redFighter && (!activeOnly || rost.has(redFighter));
+                const considerBlue = blueFighter && (!activeOnly || rost.has(blueFighter));
+
+                if (considerRed) {
                     if (!fighterStats[redFighter]) {
                         fighterStats[redFighter] = { 
                             name: redFighter, 
                             current: redScore, 
                             careerMax: redScore, 
-                            date 
+                            date, 
+                            weightClass: fightWeightClass
                         };
                     } else {
-                        // Update career max score
                         fighterStats[redFighter].careerMax = Math.max(fighterStats[redFighter].careerMax, redScore);
-                        // Update current score if this is the most recent fight
                         if (date > fighterStats[redFighter].date) {
                             fighterStats[redFighter].current = redScore;
                             fighterStats[redFighter].date = date;
+                            fighterStats[redFighter].weightClass = fightWeightClass;
                         }
                     }
                 }
 
-                // Update Blue Fighter stats
-                if (blueFighter && rost.has(blueFighter)) { // Filter by roster
+                if (considerBlue) {
                     if (!fighterStats[blueFighter]) {
                         fighterStats[blueFighter] = { 
                             name: blueFighter, 
                             current: blueScore, 
                             careerMax: blueScore, 
-                            date 
+                            date, 
+                            weightClass: fightWeightClass
                         };
                     } else {
-                        // Update career max score
                         fighterStats[blueFighter].careerMax = Math.max(fighterStats[blueFighter].careerMax, blueScore);
-                        // Update current score if this is the most recent fight
                         if (date > fighterStats[blueFighter].date) {
                             fighterStats[blueFighter].current = blueScore;
                             fighterStats[blueFighter].date = date;
+                            fighterStats[blueFighter].weightClass = fightWeightClass;
                         }
                     }
                 }
             });
 
-            // Convert the stats object to an array and sort by the selected column
-            const sortedStats = Object.values(fighterStats)
-                .sort((a, b) => {
-                    const comparison = a[sortColumn] - b[sortColumn];
-                    return sortOrder === 'asc' ? comparison : -comparison;
-                });
+            let sortedStats = Object.values(fighterStats);
 
-            // Return the top 25
-            return sortedStats.slice(0, 25);
+            const p4pClasses = [
+                "Flyweight", "Bantamweight", "Featherweight",
+                "Lightweight", "Welterweight", "Middleweight",
+                "Light Heavyweight", "Heavyweight"
+            ];
+
+            const wp4pClasses = [
+                "Women's Strawweight",
+                "Women's Flyweight",
+                "Women's Bantamweight"
+            ];
+
+            if (weightClass === "Pound-for-Pound") {
+                sortedStats = sortedStats.filter(fighter => p4pClasses.includes(fighter.weightClass));
+            } else if (weightClass === "Women's Pound-for-Pound") {
+                sortedStats = sortedStats.filter(fighter => wp4pClasses.includes(fighter.weightClass));
+            } else if (weightClass !== "Pound-for-Pound" && weightClass !== "Women's Pound-for-Pound") {
+                sortedStats = sortedStats.filter(fighter => fighter.weightClass === weightClass);
+            }
+
+            sortedStats.sort((a, b) => {
+                const comparison = a[sortColumn] - b[sortColumn];
+                return sortOrder === 'asc' ? comparison : -comparison;
+            });
+
+            return sortedStats;
         }
+
 
         document.getElementById('showLeaderboardBtn').addEventListener('click', () => {
             const metric = document.getElementById('metricDropbtn').textContent.trim();
@@ -2297,6 +2401,28 @@
             const metric = document.getElementById('metricDropbtn').textContent;
             showLeaderboard(metric);
         }
+
+        function normalizeWeightClass(rawClass) {
+            if (!rawClass) return '';
+
+            // Remove leading "UFC " (case-insensitive)
+            let normalized = rawClass.replace(/^UFC\s+/i, '');
+
+            // Remove trailing " Title" (case-insensitive)
+            normalized = normalized.replace(/\s+Title$/i, '');
+
+            return normalized.trim();
+        }
+
+        document.getElementById('weightClassSelect').addEventListener('change', () => {
+            const metric = document.getElementById('metricDropbtn').textContent.trim();
+            showLeaderboard(metric);
+        });
+
+        document.getElementById('activeFightersCheckbox').addEventListener('change', () => {
+            const metric = document.getElementById('metricDropbtn').textContent.trim();
+            showLeaderboard(metric);
+        });
 
     </script>
 </body>
