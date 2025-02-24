@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChronoFrame</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      box-sizing: border-box;
+    }
+    #leftPanel {
+      width: 300px;
+      min-width: 200px;
+      max-width: 400px;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+    }
+    #controls {
+      padding: 16px;
+      flex-shrink: 0;
+      border-bottom: 1px solid #ccc;
+    }
+    #rectangleList {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    #rectangleList h2 {
+      margin-top: 0;
+    }
+    #rectangleList table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #rectangleList th,
+    #rectangleList td {
+      border: 1px solid #ccc;
+      padding: 4px;
+      text-align: left;
+    }
+    #mainContent {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #ffffff;
+      overflow: hidden;
+    }
+    #videoContainer {
+      position: relative;
+      width: 95%;
+      aspect-ratio: 16 / 9;
+      background-color: #000;
+      overflow: hidden;
+    }
+    #video,
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    /* 1px solid border, we'll override color dynamically via JS */
+    .rectangle {
+      position: absolute;
+      border: 1px solid red;   /* default color, overridden per rectangle */
+      background: rgba(255, 0, 0, 0.2); /* low alpha fill, also overridden */
+    }
+    button,
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 0 0 8px 0;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <div id="leftPanel">
+    <div id="controls">
+      <h1 style="font-size: 18px; margin: 0 0 10px;">ChronoFrame</h1>
+      <input type="file" id="videoUpload" accept="video/*" />
+
+      <!-- Default sample rate to 2 Hz, labeled accordingly -->
+      <input
+        type="number"
+        id="frameRateInput"
+        placeholder="Sample Rate (Hz)"
+        step="0.1"
+        min="1"
+        value="2"
+      />
+
+      <button id="addRect">Add Rectangle</button>
+
+      <!-- Automatic processing -->
+      <button id="processVideo">Process Video</button>
+      <button id="pauseProcess">Pause</button>
+      <button id="continueProcess">Continue</button>
+      <button id="stopProcess">Stop</button>
+
+      <!-- Manual stepping -->
+      <button id="stepBack">Step Back</button>
+      <button id="stepForward">Step Forward</button>
+    </div>
+
+    <div id="rectangleList">
+      <h2 style="margin-top: 0;">Rectangles</h2>
+      <!-- Removed "Index" / "Type" columns; just "Signal" + "Last Value" -->
+      <table>
+        <thead>
+          <tr>
+            <th>Signal</th>
+            <th>Last Value</th>
+          </tr>
+        </thead>
+        <tbody id="rectangleTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="mainContent">
+    <div id="videoContainer">
+      <video id="video" controls></video>
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- External Libraries -->
+  <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
+  <script src="https://unpkg.com/tesseract.js@4.0.0/dist/tesseract.min.js"></script>
+  <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const videoUpload = document.getElementById('videoUpload');
+    const frameRateInput = document.getElementById('frameRateInput');
+    const addRectBtn = document.getElementById('addRect');
+    const stepBackBtn = document.getElementById('stepBack');
+    const stepForwardBtn = document.getElementById('stepForward');
+
+    // Automatic processing
+    const processVideoBtn = document.getElementById('processVideo');
+    const pauseBtn = document.getElementById('pauseProcess');
+    const continueBtn = document.getElementById('continueProcess');
+    const stopBtn = document.getElementById('stopProcess');
+
+    const rectangleTableBody = document.getElementById('rectangleTableBody');
+    const videoContainer = document.getElementById('videoContainer');
+
+    let rectangles = [];
+    let data = []; // for CSV
+    let videoNaturalWidth = 0;
+    let videoNaturalHeight = 0;
+
+    // Sample rate defaults to 2 Hz
+    let frameRate = 2;
+
+    // Auto-processing flags
+    let stopProcessFlag = false;
+    let pauseProcessFlag = false;
+    let isProcessing = false;
+
+    // Color palette for rectangles
+    const colorPalette = [
+      'red',
+      'blue',
+      'green',
+      'purple',
+      'orange',
+      'brown',
+      'magenta',
+      'teal',
+      'navy',
+      'maroon'
+    ];
+    let colorIndex = 0;
+
+    // ============================
+    // Load & Analyze Video
+    // ============================
+    videoUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      video.src = URL.createObjectURL(file);
+
+      // Once video loads, set up canvas size
+      video.onloadedmetadata = () => {
+        videoNaturalWidth = video.videoWidth;
+        videoNaturalHeight = video.videoHeight;
+        console.log(`Video size: ${videoNaturalWidth} x ${videoNaturalHeight}`);
+        adjustCanvasSize();
+        // We do NOT override sample rate from video data
+      };
+    });
+
+    // If user changes sample rate manually
+    frameRateInput.addEventListener('change', () => {
+      if (frameRateInput.value) {
+        frameRate = parseFloat(frameRateInput.value);
+        console.log(`Sample Rate updated to: ${frameRate} Hz`);
+      }
+    });
+
+    // ============================
+    // Resize / Canvas Sync
+    // ============================
+    window.addEventListener('resize', adjustCanvasSize);
+    function adjustCanvasSize() {
+      const rect = video.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+
+    // ============================
+    // Add Rectangle (Text only)
+    // ============================
+    addRectBtn.addEventListener('click', () => {
+      const signalName = prompt('Enter signal name:') || 'Unnamed';
+
+      // Cycle to next color
+      const color = colorPalette[colorIndex % colorPalette.length];
+      colorIndex++;
+
+      // Create rectangle object
+      const rectObj = {
+        signalName,
+        lastValue: 'N/A',
+        valueCell: null,
+        xNorm: 0.1,
+        yNorm: 0.1,
+        wNorm: 0.2,
+        hNorm: 0.1,
+        color: color,
+        element: document.createElement('div'),
+      };
+      rectObj.element.className = 'rectangle';
+
+      // Style the rectangle with 1px border, low alpha fill
+      rectObj.element.style.border = `1px solid ${color}`;
+      rectObj.element.style.backgroundColor = convertColorToRGBA(color, 0.2);
+
+      // Add to DOM
+      videoContainer.appendChild(rectObj.element);
+
+      // Draggable & resizable
+      interact(rectObj.element)
+        .draggable({
+          listeners: {
+            move(event) {
+              const vidRect = video.getBoundingClientRect();
+              const displayWidth = vidRect.width;
+              const displayHeight = vidRect.height;
+
+              const leftPx = parseFloat(rectObj.element.style.left) || 0;
+              const topPx = parseFloat(rectObj.element.style.top) || 0;
+
+              const newLeft = leftPx + event.dx;
+              const newTop = topPx + event.dy;
+
+              rectObj.element.style.left = `${newLeft}px`;
+              rectObj.element.style.top = `${newTop}px`;
+
+              rectObj.xNorm = newLeft / displayWidth;
+              rectObj.yNorm = newTop / displayHeight;
+            },
+          },
+        })
+        .resizable({
+          edges: { left: true, right: true, bottom: true, top: true },
+        })
+        .on('resizemove', (event) => {
+          let x = parseFloat(rectObj.element.style.left) || 0;
+          let y = parseFloat(rectObj.element.style.top) || 0;
+          let w = parseFloat(rectObj.element.style.width) || 50;
+          let h = parseFloat(rectObj.element.style.height) || 50;
+
+          if (event.edges.left) {
+            x += event.deltaRect.left;
+            w -= event.deltaRect.left;
+          }
+          if (event.edges.right) {
+            w += event.deltaRect.right;
+          }
+          if (event.edges.top) {
+            y += event.deltaRect.top;
+            h -= event.deltaRect.top;
+          }
+          if (event.edges.bottom) {
+            h += event.deltaRect.bottom;
+          }
+
+          x = Math.round(x);
+          y = Math.round(y);
+          w = Math.round(w);
+          h = Math.round(h);
+
+          rectObj.element.style.left = x + 'px';
+          rectObj.element.style.top = y + 'px';
+          rectObj.element.style.width = w + 'px';
+          rectObj.element.style.height = h + 'px';
+
+          const vidRect = video.getBoundingClientRect();
+          const displayWidth = vidRect.width;
+          const displayHeight = vidRect.height;
+
+          rectObj.xNorm = x / displayWidth;
+          rectObj.yNorm = y / displayHeight;
+          rectObj.wNorm = w / displayWidth;
+          rectObj.hNorm = h / displayHeight;
+        });
+
+      rectangles.push(rectObj);
+      addRectangleToTable(rectObj);
+      updateRectanglePosition(rectangles.length - 1);
+      console.log(`Added rectangle for "${signalName}" with color ${color}`);
+    });
+
+    // Convert a named color into an RGBA with a given alpha
+    function convertColorToRGBA(color, alpha) {
+      // Quick approach: If the user uses named colors, we can rely on the browser's color parser:
+      const tempEl = document.createElement('div');
+      tempEl.style.color = color;
+      document.body.appendChild(tempEl);
+
+      // getComputedStyle will return 'rgba(r, g, b, 1)' for named color
+      const computedColor = getComputedStyle(tempEl).color;
+      document.body.removeChild(tempEl);
+
+      // computedColor might be 'rgb(...)' or 'rgba(...)'
+      // We can parse out r,g,b if it's something like "rgb(255, 0, 0)"
+      const match = computedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+      if (!match) {
+        // fallback
+        return color; // best effort
+      }
+
+      const r = match[1], g = match[2], b = match[3];
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    function addRectangleToTable(rectObj) {
+      // Only 2 columns: [Signal], [Last Value]
+      const row = rectangleTableBody.insertRow();
+
+      // "Signal" cell
+      const signalCell = row.insertCell();
+      signalCell.textContent = rectObj.signalName;
+      // match color
+      signalCell.style.color = rectObj.color;
+
+      // "Last Value" cell
+      rectObj.valueCell = row.insertCell();
+      rectObj.valueCell.textContent = rectObj.lastValue;
+      rectObj.valueCell.style.color = rectObj.color;
+    }
+
+    function updateRectanglePosition(index) {
+      const rectObj = rectangles[index];
+      const vidRect = video.getBoundingClientRect();
+      const displayWidth = vidRect.width;
+      const displayHeight = vidRect.height;
+
+      const leftPx = rectObj.xNorm * displayWidth;
+      const topPx = rectObj.yNorm * displayHeight;
+      const wPx = rectObj.wNorm * displayWidth;
+      const hPx = rectObj.hNorm * displayHeight;
+
+      rectObj.element.style.left = Math.round(leftPx) + 'px';
+      rectObj.element.style.top = Math.round(topPx) + 'px';
+      rectObj.element.style.width = Math.round(wPx) + 'px';
+      rectObj.element.style.height = Math.round(hPx) + 'px';
+    }
+
+    function updateAllRectangles() {
+      for (let i = 0; i < rectangles.length; i++) {
+        updateRectanglePosition(i);
+      }
+    }
+
+    // ============================
+    // Manual Stepping
+    // ============================
+    stepBackBtn.addEventListener('click', () => {
+      stepVideo(-1);
+    });
+    stepForwardBtn.addEventListener('click', () => {
+      stepVideo(1);
+    });
+
+    function stepVideo(step) {
+      // We interpret "sample rate" as 1/frameRate seconds step
+      const frameStep = 1 / frameRate;
+      let newTime = video.currentTime + step * frameStep;
+      newTime = Math.max(0, Math.min(video.duration, newTime));
+
+      video.currentTime = newTime;
+      video.addEventListener('seeked', onSeeked, { once: true });
+
+      function onSeeked() {
+        adjustCanvasSize();
+        updateAllRectangles();
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        handleFrame();
+      }
+    }
+
+    async function handleFrame() {
+      console.log(`Frame at ${video.currentTime.toFixed(2)}s`);
+      for (const rect of rectangles) {
+        const xCanvas = Math.round(rect.xNorm * canvas.width);
+        const yCanvas = Math.round(rect.yNorm * canvas.height);
+        const wCanvas = Math.round(rect.wNorm * canvas.width);
+        const hCanvas = Math.round(rect.hNorm * canvas.height);
+
+        try {
+          // Only text rectangles now
+          const text = await extractText(xCanvas, yCanvas, wCanvas, hCanvas);
+          rect.lastValue = text;
+          rect.valueCell.textContent = text;
+          console.log(`Rect "${rect.signalName}" => "${text}"`);
+        } catch (err) {
+          console.error(`Rect "${rect.signalName}" error:`, err);
+        }
+      }
+    }
+
+    // ============================
+    // OCR (Text only)
+    // ============================
+    async function extractText(x, y, width, height) {
+      if (x < 0 || y < 0 || x + width > canvas.width || y + height > canvas.height) {
+        throw new Error(`Invalid coords for OCR region: ${x},${y},${width},${height}`);
+      }
+
+      const tmpCanvas = document.createElement('canvas');
+      tmpCanvas.width = width;
+      tmpCanvas.height = height;
+      const tmpCtx = tmpCanvas.getContext('2d');
+
+      const frameData = ctx.getImageData(x, y, width, height);
+      tmpCtx.putImageData(frameData, 0, 0);
+
+      // Basic numeric Tesseract config
+      const options = {
+        tessedit_char_whitelist: '0123456789.:',
+        tessedit_char_blacklist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz()[]{}',
+        tessedit_pageseg_mode: 7
+      };
+
+      const { data: { text } } = await Tesseract.recognize(tmpCanvas, 'eng', options);
+
+      let cleaned = text.trim();
+      // If there's any unwanted char, discard entire string
+      if (/[^\d.:]/.test(cleaned)) {
+        cleaned = '';
+      }
+      return cleaned;
+    }
+
+    // ============================
+    // Automated Processing & CSV
+    // ============================
+    processVideoBtn.addEventListener('click', async () => {
+      if (isProcessing) {
+        console.log("Already processing!");
+        return;
+      }
+
+      stopProcessFlag = false;
+      pauseProcessFlag = false;
+      isProcessing = true;
+
+      // Clear old data
+      data = [];
+
+      // Start at time=0
+      video.currentTime = 0;
+
+      await processFrames();
+
+      if (!stopProcessFlag && !pauseProcessFlag) {
+        exportToCSV();
+      }
+
+      isProcessing = false;
+      console.log("Done processing!");
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (isProcessing) {
+        pauseProcessFlag = true;
+        console.log("Pause requested.");
+      }
+    });
+
+    continueBtn.addEventListener('click', async () => {
+      if (isProcessing && pauseProcessFlag) {
+        console.log("Continuing from paused state...");
+        pauseProcessFlag = false;
+        await processFrames();
+        if (!stopProcessFlag && !pauseProcessFlag) {
+          exportToCSV();
+        }
+        isProcessing = false;
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (isProcessing) {
+        stopProcessFlag = true;
+        pauseProcessFlag = false;
+        console.log("Stop requested. Will export data so far...");
+      }
+    });
+
+    async function processFrames() {
+      const stepSec = 1 / frameRate;
+      while (video.currentTime < video.duration) {
+        if (stopProcessFlag) {
+          console.log("Stopping early, exporting partial data...");
+          exportToCSV();
+          return;
+        }
+        if (pauseProcessFlag) {
+          console.log("Paused. Return from loop, no export yet...");
+          return;
+        }
+
+        await seekAndAnalyze(video.currentTime);
+
+        video.currentTime += stepSec;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    }
+
+    function seekAndAnalyze(targetTime) {
+      return new Promise((resolve) => {
+        video.currentTime = Math.min(targetTime, video.duration);
+        video.addEventListener('seeked', async function onSeeked() {
+          video.removeEventListener('seeked', onSeeked);
+
+          adjustCanvasSize();
+          updateAllRectangles();
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          const frameData = {};
+          for (const rect of rectangles) {
+            const xCanvas = Math.round(rect.xNorm * canvas.width);
+            const yCanvas = Math.round(rect.yNorm * canvas.height);
+            const wCanvas = Math.round(rect.wNorm * canvas.width);
+            const hCanvas = Math.round(rect.hNorm * canvas.height);
+            try {
+              // text only
+              const text = await extractText(xCanvas, yCanvas, wCanvas, hCanvas);
+              frameData[rect.signalName] = text;
+              rect.lastValue = text;
+              rect.valueCell.textContent = text;
+            } catch (err) {
+              console.error('Error in rectangle processing:', err);
+              frameData[rect.signalName] = 'Error';
+            }
+          }
+          data.push(frameData);
+          resolve();
+        });
+      });
+    }
+
+    function exportToCSV() {
+      if (!data.length) {
+        alert('No data to export');
+        return;
+      }
+      const headers = Object.keys(data[0]).join(',');
+      const rows = data.map(row => Object.values(row).join(',')).join('\n');
+      const csv = `${headers}\n${rows}`;
+      const blob = new Blob([csv], { type: 'text/csv' });
+      saveAs(blob, 'race_data.csv');
+    }
+  </script>
+</body>
+</html>
