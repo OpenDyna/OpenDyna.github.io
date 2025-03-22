@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Lap Times Viewer with Chart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            color: #ffffff;
+        }
+        th, td {
+            border: 1px solid #888888;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #333333;
+        }
+        select, button {
+            padding: 5px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            background-color: #333333;
+            color: #ffffff;
+            border: 1px solid #888888;
+        }
+        /* Container for the lap metric chart */
+        #chart-container {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        /* Container for the speed trace chart */
+        #speed-chart-container {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        h1, h2 {
+            color: #ffffff;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>F1 Lap Times Viewer with Chart</h1>
+    <p>Select a year, meeting, session, and driver to view lap times. Use the chart options to compare two drivers.</p>
+
+    <!-- Dropdowns -->
+    <label for="year">Year:</label>
+    <select id="year">
+        <option value="">Select Year</option>
+        <option value="2025">2025</option>
+        <option value="2024">2024</option>
+        <option value="2023">2023</option>
+        <option value="2022">2022</option>
+        <option value="2021">2021</option>
+        <option value="2020">2020</option>
+        <option value="2019">2019</option>
+        <option value="2018">2018</option>
+    </select>
+    <br>
+
+    <label for="meeting">Meeting:</label>
+    <select id="meeting">
+        <option value="">Select Meeting</option>
+    </select>
+    <br>
+
+    <label for="session">Session:</label>
+    <select id="session">
+        <option value="">Select Session</option>
+    </select>
+    <br>
+
+    <label for="driver">Driver (for Table):</label>
+    <select id="driver">
+        <option value="">Select Driver</option>
+    </select>
+    <br><br>
+
+    <div id="table-container"></div>
+
+    <!-- Chart Options for Lap Metrics -->
+    <h2>Chart Options</h2>
+    <label for="compare-driver">Compare with:</label>
+    <select id="compare-driver" disabled>
+        <option value="">Select Driver to Compare</option>
+    </select>
+    <br>
+
+    <label for="metric">Metric to Plot:</label>
+    <select id="metric">
+        <option value="">Select Metric</option>
+        <option value="lap_duration">Lap Time</option>
+        <option value="duration_sector_1">Sector 1 Time</option>
+        <option value="duration_sector_2">Sector 2 Time</option>
+        <option value="duration_sector_3">Sector 3 Time</option>
+        <option value="i1_speed">I1 Speed</option>
+        <option value="i2_speed">I2 Speed</option>
+        <option value="st_speed">ST Speed</option>
+    </select>
+    <br>
+
+    <button id="generate-chart">Generate Chart</button>
+    <br><br>
+
+    <!-- Chart Container for Lap Metrics -->
+    <div id="chart-container">
+        <canvas id="lapChart"></canvas>
+    </div>
+
+    <!-- Speed Trace Comparison Section -->
+    <h2>Speed Trace Comparison</h2>
+    <label for="speed-driver1">Driver 1:</label>
+    <select id="speed-driver1"></select>
+    <label for="speed-lap1">Lap for Driver 1:</label>
+    <select id="speed-lap1"></select>
+    <br>
+    <label for="speed-driver2">Driver 2:</label>
+    <select id="speed-driver2"></select>
+    <label for="speed-lap2">Lap for Driver 2:</label>
+    <select id="speed-lap2"></select>
+    <br>
+    <button id="generate-speed-chart">Generate Speed Trace Chart</button>
+    <br><br>
+    <div id="speed-chart-container">
+        <canvas id="speedChart"></canvas>
+    </div>
+
+    <script>
+        let sessionDrivers = [];
+        let sessionLapData = [];
+        let mainDriverLapData = [];
+
+        // **Event Listeners**
+        document.getElementById('year').addEventListener('change', () => {
+            const year = document.getElementById('year').value;
+            if (year) fetchMeetings(year);
+            else clearMeetings();
+        });
+
+        document.getElementById('meeting').addEventListener('change', () => {
+            const meetingKey = document.getElementById('meeting').value;
+            if (meetingKey) fetchSessions(meetingKey);
+            else clearSessions();
+        });
+
+        document.getElementById('session').addEventListener('change', () => {
+            const sessionKey = document.getElementById('session').value;
+            if (sessionKey) fetchSessionData(sessionKey);
+            else {
+                clearDrivers();
+                clearCompareDriver();
+                clearTable();
+                clearSpeedTraceDropdowns();
+            }
+        });
+
+        document.getElementById('driver').addEventListener('change', () => {
+            const driverNumber = document.getElementById('driver').value;
+            if (driverNumber) {
+                mainDriverLapData = getDriverLaps(driverNumber);
+                renderTable(mainDriverLapData);
+                populateCompareDriverDropdown(driverNumber);
+            } else {
+                clearTable();
+                clearCompareDriver();
+            }
+        });
+
+        document.getElementById('generate-chart').addEventListener('click', generateChart);
+
+        // Speed Trace Event Listeners
+        document.getElementById('speed-driver1').addEventListener('change', () => {
+            const driverNumber = document.getElementById('speed-driver1').value;
+            if (driverNumber) {
+                populateLapDropdown(driverNumber, 'speed-lap1');
+            } else {
+                document.getElementById('speed-lap1').innerHTML = '<option value="">Select Lap</option>';
+            }
+        });
+
+        document.getElementById('speed-driver2').addEventListener('change', () => {
+            const driverNumber = document.getElementById('speed-driver2').value;
+            if (driverNumber) {
+                populateLapDropdown(driverNumber, 'speed-lap2');
+            } else {
+                document.getElementById('speed-lap2').innerHTML = '<option value="">Select Lap</option>';
+            }
+        });
+
+        document.getElementById('generate-speed-chart').addEventListener('click', generateSpeedChart);
+
+        // **Fetch Functions**
+        function fetchMeetings(year) {
+            fetch(`https://api.openf1.org/v1/meetings?year=${year}`)
+                .then(response => response.json())
+                .then(data => {
+                    const meetingSelect = document.getElementById('meeting');
+                    meetingSelect.innerHTML = '<option value="">Select Meeting</option>';
+                    data.forEach(meeting => {
+                        const option = document.createElement('option');
+                        option.value = meeting.meeting_key;
+                        option.textContent = meeting.meeting_name;
+                        meetingSelect.appendChild(option);
+                    });
+                    meetingSelect.value = '';
+                    meetingSelect.dispatchEvent(new Event('change'));
+                })
+                .catch(error => console.error('Error fetching meetings:', error));
+        }
+
+        function fetchSessions(meetingKey) {
+            fetch(`https://api.openf1.org/v1/sessions?meeting_key=${meetingKey}`)
+                .then(response => response.json())
+                .then(data => {
+                    const sessionSelect = document.getElementById('session');
+                    sessionSelect.innerHTML = '<option value="">Select Session</option>';
+                    data.forEach(session => {
+                        const option = document.createElement('option');
+                        option.value = session.session_key;
+                        option.textContent = session.session_name;
+                        sessionSelect.appendChild(option);
+                    });
+                    sessionSelect.value = '';
+                    sessionSelect.dispatchEvent(new Event('change'));
+                })
+                .catch(error => console.error('Error fetching sessions:', error));
+        }
+
+        function fetchSessionData(sessionKey) {
+            Promise.all([
+                fetch(`https://api.openf1.org/v1/drivers?session_key=${sessionKey}`).then(res => res.json()),
+                fetch(`https://api.openf1.org/v1/laps?session_key=${sessionKey}`).then(res => res.json())
+            ]).then(([drivers, laps]) => {
+                sessionDrivers = drivers;
+                sessionLapData = laps;
+                populateDriverDropdown(drivers);
+                populateSpeedDriverDropdown('speed-driver1');
+                populateSpeedDriverDropdown('speed-driver2');
+            }).catch(error => console.error('Error fetching session data:', error));
+        }
+
+        // **Populate Dropdowns**
+        function populateDriverDropdown(drivers) {
+            const driverSelect = document.getElementById('driver');
+            driverSelect.innerHTML = '<option value="">Select Driver</option>';
+            drivers.forEach(driver => {
+                const option = document.createElement('option');
+                option.value = driver.driver_number;
+                option.textContent = driver.full_name;
+                driverSelect.appendChild(option);
+            });
+            driverSelect.value = '';
+            driverSelect.dispatchEvent(new Event('change'));
+        }
+
+        function populateCompareDriverDropdown(mainDriverNumber) {
+            const compareDriverSelect = document.getElementById('compare-driver');
+            compareDriverSelect.innerHTML = '<option value="">Select Driver to Compare</option>';
+            sessionDrivers.forEach(driver => {
+                if (driver.driver_number !== mainDriverNumber) {
+                    const option = document.createElement('option');
+                    option.value = driver.driver_number;
+                    option.textContent = driver.full_name;
+                    compareDriverSelect.appendChild(option);
+                }
+            });
+            compareDriverSelect.disabled = false;
+        }
+
+        function populateSpeedDriverDropdown(selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Select Driver</option>';
+            sessionDrivers.forEach(driver => {
+                const option = document.createElement('option');
+                option.value = driver.driver_number;
+                option.textContent = driver.full_name;
+                select.appendChild(option);
+            });
+        }
+
+        function populateLapDropdown(driverNumber, lapSelectId) {
+            const lapSelect = document.getElementById(lapSelectId);
+            lapSelect.innerHTML = '<option value="">Select Lap</option>';
+            const driverLaps = getDriverLaps(driverNumber);
+            driverLaps.forEach(lap => {
+                const option = document.createElement('option');
+                option.value = lap.lap_number;
+                option.textContent = `Lap ${lap.lap_number}`;
+                lapSelect.appendChild(option);
+            });
+        }
+
+        // **Data Processing**
+        function getDriverLaps(driverNumber) {
+            return sessionLapData.filter(lap => lap.driver_number == driverNumber).sort((a, b) => a.lap_number - b.lap_number);
+        }
+
+        function formatLapTime(seconds) {
+            if (seconds === null || seconds === undefined) return 'N/A';
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const millis = Math.round((seconds % 1) * 1000);
+            return `${minutes}:${secs.toString().padStart(2, '0')}.${millis.toString().padStart(3, '0')}`;
+        }
+
+        // **Render Table**
+        function renderTable(data) {
+            const tableContainer = document.getElementById('table-container');
+            tableContainer.innerHTML = '';
+            if (data.length === 0) {
+                tableContainer.innerHTML = '<p>No lap times found</p>';
+                return;
+            }
+            const table = document.createElement('table');
+            const headerRow = document.createElement('tr');
+            const headers = ['Lap Number', 'Lap Time', 'Sector 1', 'Sector 2', 'Sector 3', 'I1 Speed', 'I2 Speed', 'ST Speed'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+            data.forEach(lap => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${lap.lap_number}</td>
+                    <td>${formatLapTime(lap.lap_duration)}</td>
+                    <td>${formatLapTime(lap.duration_sector_1)}</td>
+                    <td>${formatLapTime(lap.duration_sector_2)}</td>
+                    <td>${formatLapTime(lap.duration_sector_3)}</td>
+                    <td>${lap.i1_speed || 'N/A'} km/h</td>
+                    <td>${lap.i2_speed || 'N/A'} km/h</td>
+                    <td>${lap.st_speed || 'N/A'} km/h</td>
+                `;
+                table.appendChild(row);
+            });
+            tableContainer.appendChild(table);
+        }
+
+        // **Generate Lap Metric Chart**
+        function generateChart() {
+            const mainDriverNumber = document.getElementById('driver').value;
+            const compareDriverNumber = document.getElementById('compare-driver').value;
+            const metric = document.getElementById('metric').value;
+
+            if (!mainDriverNumber || !compareDriverNumber || !metric) {
+                alert('Please select both drivers and a metric to plot.');
+                return;
+            }
+
+            const mainDriverLaps = getDriverLaps(mainDriverNumber);
+            const compareDriverLaps = getDriverLaps(compareDriverNumber);
+
+            const metricLabels = {
+                'lap_duration': 'Lap Time (s)',
+                'duration_sector_1': 'Sector 1 Time (s)',
+                'duration_sector_2': 'Sector 2 Time (s)',
+                'duration_sector_3': 'Sector 3 Time (s)',
+                'i1_speed': 'I1 Speed (km/h)',
+                'i2_speed': 'I2 Speed (km/h)',
+                'st_speed': 'ST Speed (km/h)'
+            };
+
+            const mainDriverData = mainDriverLaps.map(lap => ({
+                x: lap.lap_number,
+                y: lap[metric],
+                lap_duration: lap.lap_duration,
+                duration_sector_1: lap.duration_sector_1,
+                duration_sector_2: lap.duration_sector_2,
+                duration_sector_3: lap.duration_sector_3,
+                i1_speed: lap.i1_speed,
+                i2_speed: lap.i2_speed,
+                st_speed: lap.st_speed
+            }));
+
+            const compareDriverData = compareDriverLaps.map(lap => ({
+                x: lap.lap_number,
+                y: lap[metric],
+                lap_duration: lap.lap_duration,
+                duration_sector_1: lap.duration_sector_1,
+                duration_sector_2: lap.duration_sector_2,
+                duration_sector_3: lap.duration_sector_3,
+                i1_speed: lap.i1_speed,
+                i2_speed: lap.i2_speed,
+                st_speed: lap.st_speed
+            }));
+
+            const ctx = document.getElementById('lapChart').getContext('2d');
+            if (window.myLineChart) window.myLineChart.destroy();
+
+            window.myLineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: sessionDrivers.find(d => d.driver_number == mainDriverNumber).full_name,
+                            data: mainDriverData,
+                            backgroundColor: 'rgba(220, 20, 60, 0.2)',
+                            borderColor: 'rgba(220, 20, 60, 1.0)',
+                            borderWidth: 3,
+                            pointRadius: 6,
+                            pointBackgroundColor: 'rgba(220, 20, 60, 1.0)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1,
+                            fill: false
+                        },
+                        {
+                            label: sessionDrivers.find(d => d.driver_number == compareDriverNumber).full_name,
+                            data: compareDriverData,
+                            backgroundColor: 'rgba(65, 105, 225, 0.2)',
+                            borderColor: 'rgba(65, 105, 225, 1.0)',
+                            borderWidth: 3,
+                            pointRadius: 6,
+                            pointBackgroundColor: 'rgba(65, 105, 225, 1.0)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            min: 1,
+                            title: {
+                                display: true,
+                                text: 'Lap Number',
+                                color: '#ffffff',
+                                font: { size: 18 }
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                font: { size: 16 },
+                                stepSize: 1
+                            },
+                            grid: { color: '#888888' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: metricLabels[metric],
+                                color: '#ffffff',
+                                font: { size: 18 }
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                font: { size: 16 }
+                            },
+                            grid: { color: '#888888' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ffffff',
+                                font: { size: 16 }
+                            }
+                        },
+                        tooltip: {
+                            bodyFont: { size: 14 },
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    const lap = tooltipItem.raw;
+                                    return [
+                                        `Lap: ${lap.x}`,
+                                        `${metricLabels[metric]}: ${lap.y || 'N/A'}`,
+                                        `Lap Time: ${formatLapTime(lap.lap_duration)}`,
+                                        `Sector 1: ${formatLapTime(lap.duration_sector_1)}`,
+                                        `Sector 2: ${formatLapTime(lap.duration_sector_2)}`,
+                                        `Sector 3: ${formatLapTime(lap.duration_sector_3)}`,
+                                        `I1 Speed: ${lap.i1_speed || 'N/A'} km/h`,
+                                        `I2 Speed: ${lap.i2_speed || 'N/A'} km/h`,
+                                        `ST Speed: ${lap.st_speed || 'N/A'} km/h`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'chartAreaBackground',
+                    beforeDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const chartArea = chart.chartArea;
+                        ctx.save();
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                        ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+                        ctx.restore();
+                    }
+                }]
+            });
+        }
+
+        // **Generate Speed Trace Chart**
+        function generateSpeedChart() {
+            const driver1 = document.getElementById('speed-driver1').value;
+            const lap1 = document.getElementById('speed-lap1').value;
+            const driver2 = document.getElementById('speed-driver2').value;
+            const lap2 = document.getElementById('speed-lap2').value;
+
+            if (!driver1 || !lap1 || !driver2 || !lap2) {
+                alert('Please select both drivers and their laps.');
+                return;
+            }
+
+            const sessionKey = document.getElementById('session').value;
+            const lapData1 = sessionLapData.find(lap => lap.driver_number == driver1 && lap.lap_number == lap1);
+            const lapData2 = sessionLapData.find(lap => lap.driver_number == driver2 && lap.lap_number == lap2);
+
+            if (!lapData1 || !lapData2) {
+                alert('Selected lap not found for one or both drivers.');
+                return;
+            }
+
+            const startDate1 = new Date(lapData1.date_start);
+            const endDate1 = new Date(startDate1.getTime() + lapData1.lap_duration * 1000);
+            const startIso1 = startDate1.toISOString();
+            const endIso1 = endDate1.toISOString();
+
+            const startDate2 = new Date(lapData2.date_start);
+            const endDate2 = new Date(startDate2.getTime() + lapData2.lap_duration * 1000);
+            const startIso2 = startDate2.toISOString();
+            const endIso2 = endDate2.toISOString();
+
+            // Fetch car data (speed) and location data for both laps
+            Promise.all([
+                fetch(`https://api.openf1.org/v1/car_data?session_key=${sessionKey}&driver_number=${driver1}&date>=${startIso1}&date<${endIso1}`).then(res => res.json()),
+                fetch(`https://api.openf1.org/v1/location?session_key=${sessionKey}&driver_number=${driver1}&date>=${startIso1}&date<${endIso1}`).then(res => res.json()),
+                fetch(`https://api.openf1.org/v1/car_data?session_key=${sessionKey}&driver_number=${driver2}&date>=${startIso2}&date<${endIso2}`).then(res => res.json()),
+                fetch(`https://api.openf1.org/v1/location?session_key=${sessionKey}&driver_number=${driver2}&date>=${startIso2}&date<${endIso2}`).then(res => res.json())
+            ]).then(([carData1, locationData1, carData2, locationData2]) => {
+                if (carData1.length === 0 || locationData1.length === 0 || carData2.length === 0 || locationData2.length === 0) {
+                    alert('No telemetry or location data found for one or both laps.');
+                    return;
+                }
+
+                // Process data for both drivers
+                const trace1 = processTelemetryWithLocation(carData1, locationData1);
+                const trace2 = processTelemetryWithLocation(carData2, locationData2);
+
+                renderSpeedChart(trace1, trace2, lapData1, lapData2);
+            }).catch(error => {
+                console.error('Error fetching data:', error);
+                alert('Failed to fetch telemetry or location data.');
+            });
+        }
+
+        function processTelemetryData(data, startDate) {
+            return data.map(point => {
+                const time = (new Date(point.date) - startDate) / 1000; // Convert to seconds
+                return { x: time, y: point.speed };
+            }).sort((a, b) => a.x - b.x);
+        }
+
+        function processTelemetryWithLocation(carData, locationData) {
+            // Sort both datasets by timestamp
+            carData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            locationData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            let cumulativeDistance = 0; // in meters
+            let prevX = null, prevY = null, prevZ = null;
+            const trace = [];
+
+            // Iterate through location data to calculate cumulative distance
+            locationData.forEach(locPoint => {
+                const locTime = new Date(locPoint.date).getTime();
+                const currentX = locPoint.x;
+                const currentY = locPoint.y;
+                const currentZ = locPoint.z;
+
+                if (prevX !== null) {
+                    const deltaX = currentX - prevX;
+                    const deltaY = currentY - prevY;
+                    const deltaZ = currentZ - prevZ;
+                    const distanceIncrement = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ); // 3D Euclidean distance
+                    cumulativeDistance += distanceIncrement;
+                }
+
+                // Find the closest car_data point within 100 ms
+                const closestCarPoint = carData.find(carPoint => {
+                    const carTime = new Date(carPoint.date).getTime();
+                    return Math.abs(carTime - locTime) <= 100; // 100 ms tolerance
+                });
+
+                if (closestCarPoint) {
+                    trace.push({
+                        x: cumulativeDistance / 10000, // Convert to km
+                        y: closestCarPoint.speed // km/h
+                    });
+                }
+
+                prevX = currentX;
+                prevY = currentY;
+                prevZ = currentZ;
+            });
+
+            return trace;
+        }
+
+        function renderSpeedChart(trace1, trace2, lapData1, lapData2) {
+            const ctx = document.getElementById('speedChart').getContext('2d');
+            if (window.mySpeedChart) window.mySpeedChart.destroy();
+
+            // Calculate the maximum distance for each trace
+            const maxDistance1 = trace1[trace1.length - 1].x;
+            const maxDistance2 = trace2[trace2.length - 1].x;
+            const overallMaxDistance = Math.max(maxDistance1, maxDistance2);
+
+            window.mySpeedChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: `${sessionDrivers.find(d => d.driver_number == lapData1.driver_number).full_name} - Lap ${lapData1.lap_number}`,
+                            data: trace1,
+                            borderColor: 'rgba(220, 20, 60, 1.0)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: `${sessionDrivers.find(d => d.driver_number == lapData2.driver_number).full_name} - Lap ${lapData2.lap_number}`,
+                            data: trace2,
+                            borderColor: 'rgba(65, 105, 225, 1.0)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            min: 0,                    // Start at 0 km
+                            max: overallMaxDistance,   // Set to maximum distance
+                            title: {
+                                display: true,
+                                text: 'Distance (km)',
+                                color: '#ffffff',
+                                font: { size: 18 }
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                font: { size: 16 }
+                            },
+                            grid: {
+                                color: '#888888'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Speed (km/h)',
+                                color: '#ffffff',
+                                font: { size: 18 }
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                font: { size: 16 }
+                            },
+                            grid: {
+                                color: '#888888'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ffffff',
+                                font: { size: 16 }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'chartAreaBackground',
+                    beforeDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const chartArea = chart.chartArea;
+                        ctx.save();
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                        ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+                        ctx.restore();
+                    }
+                }]
+            });
+        }
+
+        // **Clear Functions**
+        function clearMeetings() {
+            document.getElementById('meeting').innerHTML = '<option value="">Select Meeting</option>';
+            document.getElementById('meeting').dispatchEvent(new Event('change'));
+        }
+
+        function clearSessions() {
+            document.getElementById('session').innerHTML = '<option value="">Select Session</option>';
+            document.getElementById('session').dispatchEvent(new Event('change'));
+            clearSpeedTraceDropdowns();
+        }
+
+        function clearDrivers() {
+            document.getElementById('driver').innerHTML = '<option value="">Select Driver</option>';
+            document.getElementById('driver').dispatchEvent(new Event('change'));
+        }
+
+        function clearCompareDriver() {
+            const compareDriverSelect = document.getElementById('compare-driver');
+            compareDriverSelect.innerHTML = '<option value="">Select Driver to Compare</option>';
+            compareDriverSelect.disabled = true;
+        }
+
+        function clearTable() {
+            document.getElementById('table-container').innerHTML = '';
+        }
+
+        function clearSpeedTraceDropdowns() {
+            document.getElementById('speed-driver1').innerHTML = '<option value="">Select Driver</option>';
+            document.getElementById('speed-driver2').innerHTML = '<option value="">Select Driver</option>';
+            document.getElementById('speed-lap1').innerHTML = '<option value="">Select Lap</option>';
+            document.getElementById('speed-lap2').innerHTML = '<option value="">Select Lap</option>';
+            if (window.mySpeedChart) window.mySpeedChart.destroy();
+        }
+    </script>
+</body>
+</html>
