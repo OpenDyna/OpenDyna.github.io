@@ -1450,7 +1450,6 @@
                         header: true,
                         complete: function(results) {
                             info = results.data;
-                            console.log(info)
                             Papa.parse('../data/rost.dat', {
                                 download: true,
                                 complete: function(results) {
@@ -2329,20 +2328,18 @@
                 const redFighter = row['Red Fighter'];
                 const blueFighter = row['Blue Fighter'];
                 const eventName = row['Event Name'];
-                const date = new Date(row['Date']); 
+                const date = new Date(row['Date']);
                 const fightWeightClass = normalizeWeightClass(row['Weight'] ? row['Weight'].trim() : '');
 
                 // Determine metric suffix based on whether this fight is in the last event and if we are using pre-final logic
                 const metricSuffix = (usePreForLastEvent && eventName === lastEventName) ? 'Pre' : 'Post';
-
-                console.log(metricSuffix)
 
                 const redScore = parseFloat(row[`Red ${metric} ${metricSuffix}`]) || 0;
                 const blueScore = parseFloat(row[`Blue ${metric} ${metricSuffix}`]) || 0;
 
                 const considerRed = redFighter && (!activeOnly || rost.has(redFighter));
                 const considerBlue = blueFighter && (!activeOnly || rost.has(blueFighter));
-
+                
                 if (considerRed) {
                     if (!fighterStats[redFighter]) {
                         fighterStats[redFighter] = { 
@@ -2410,6 +2407,7 @@
             });
 
             return sortedStats;
+
         }
 
 
@@ -2457,6 +2455,9 @@
 
             // Remove leading "UFC " (case-insensitive)
             let normalized = rawClass.replace(/^UFC\s+/i, '');
+
+            // Remove leading "Interim " (case-insensitive)
+            normalized = normalized.replace(/^Interim\s+/i, '');
 
             // Remove trailing " Title" (case-insensitive)
             normalized = normalized.replace(/\s+Title$/i, '');
