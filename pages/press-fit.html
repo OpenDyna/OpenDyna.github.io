@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OpenDyna - Cylinder Interference Fit Calculator</title>
+  <style>
+    :root{
+      --frame-border: 2px;   /* outer frame + big separators */
+      --inner-border: 1px;   /* tables, panels, diagram, graph panels */
+    }
+
+    html, body {
+      font-family: 'MS Sans Serif', 'Arial', sans-serif;
+      margin: 0; padding: 0; height: 100%;
+      background-color: #372559; /* Background color */
+      overflow: auto; /* Ensure scrolling is enabled */
+      font-size: 10px; /* Shrunk font size */
+    }
+
+    body { position: relative; min-height: 100vh; box-sizing: border-box; }
+
+    body::before {
+      content: '';
+      position: fixed; top: 0; left: 50%; width: 200%; height: 200%;
+      background: repeating-linear-gradient(to right,#ff00ff,#ff00ff 3px,transparent 3px,transparent 100px),
+                  repeating-linear-gradient(to bottom,#ff00ff,#ff00ff 3px,transparent 3px,transparent 100px);
+      background-size: 100px 100px;
+      transform: translateX(-50%) translateY(-10%) perspective(600px) rotateX(45deg);
+      z-index: 0;
+    }
+
+    .window {
+      width: 90%; max-width: 1400px; margin: 50px auto;
+      border: var(--frame-border) solid #000; box-shadow: 5px 5px 0px #555;
+      background-color: rgba(255,255,255,0.8); position: relative; z-index: 1;
+    }
+
+    .title-bar { background: #000080; color:#fff; padding:3px; display:flex; justify-content:space-between; align-items:center; border-bottom: var(--inner-border) solid #000; }
+    .title-bar-text { font-weight: bold; padding-left: 5px; }
+    .title-bar-controls button { background:#c0c0c0; border:1px solid #fff; width:16px; height:16px; margin:0 1px; font-weight:bold; padding:0; cursor:pointer; }
+    .title-bar-controls button:active { border-style: inset; }
+
+    .menu-bar { background:#c0c0c0; display:flex; padding:2px; border-bottom: var(--inner-border) solid #000; }
+    .menu-bar .menu { list-style:none; padding:0; margin:0; display:flex; }
+    .menu-bar .menu > li { position:relative; }
+    .menu-bar .menu > li > a { text-decoration:none; color:#000; padding:3px 10px; display:block; }
+    .menu-bar .menu > li > a:hover { background:#000080; color:#fff; }
+    .submenu { display:none; position:absolute; top:100%; left:0; background:#c0c0c0; border: var(--inner-border) solid #000; list-style:none; padding:0; margin:0; min-width:120px; }
+    .menu-bar .menu > li:hover .submenu { display:block; }
+    .submenu li a { text-decoration:none; color:#000; padding:5px 10px; display:block; }
+    .submenu li a:hover { background:#000080; color:#fff; }
+
+    main { padding:10px; background:#fff; border-top: var(--inner-border) solid #000; border-bottom: var(--inner-border) solid #000; box-sizing:border-box; }
+    main h1 { font-size: 1.5em; margin: 10px 0; }
+    main p  { font-size: 1em;   margin: 10px 0; }
+
+    footer { background:#c0c0c0; padding:5px; border-top: var(--inner-border) solid #000; text-align:center; }
+
+    .calculator-container { display:flex; gap:10px; align-items:stretch; }
+
+    /* Left column should not draw one continuous border around both table and diagram */
+    .calculator-left { flex: 1; border: none; display: flex; flex-direction: column; }
+
+    .graphs-right { flex:1; display:flex; flex-direction:column; gap:10px; }
+    .graph-panel { border: var(--inner-border) solid #000; display:flex; flex-direction:column; flex:1; }
+    .graphs-right h3 { margin:0; font-size:1em; text-align:center; padding:5px; background:#f0f0f0; border-bottom: var(--inner-border) solid #000; }
+    .graph-container { flex:1; padding: 0 2px 2px; }
+
+    canvas { border:none; background:#fff; width:100%; height:100%; }
+
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:5px; text-align:left; border: var(--inner-border) solid #000; }
+
+    input[type="text"] { width:80px; }
+    input[readonly] { background:#eee; }
+    input[type="button"] { width:100%; padding:5px; }
+
+    .explanation { margin-top:20px; padding:10px; background:#f0f0f0; border: var(--inner-border) solid #ccc; }
+    .explanation h2 { font-size:1.2em; }
+    .explanation ul { list-style-type:disc; padding-left:20px; }
+
+    .diagram-container { margin-top: 10px; text-align: left; border: var(--inner-border) solid #000; flex: 1; display: flex; flex-direction: column; }
+    .diagram-container h3 { font-size:1.2em; margin:0; padding:5px; background:#f0f0f0; border-bottom: var(--inner-border) solid #000; }
+
+    #diagram { background: #fff; width: 100%; height: 100%; min-height: 150px; }
+
+    /* IO panel banners */
+    table.io { border: var(--inner-border) solid #000; border-spacing:0; }
+    table.io th.section { background:#f0f0f0; text-align:left; font-weight:bold; padding:6px 8px; border-top:0; border-left:0; border-right:0; border-bottom: var(--inner-border) solid #000; }
+
+    /* Diagnostics styling */
+    .diag { margin-top:10px; padding:8px; border: var(--inner-border) dashed #666; background:#fafafa; font-family: monospace; white-space: pre-wrap; }
+    .ok { color: #006400; }
+    .fail { color: #8b0000; }
+  </style>
+  <script>
+    // --- MetaMask error guard (sandbox / extension noise suppression) ---
+    (function preventMetaMaskError(){
+      window.addEventListener('error', function (e){
+        if (typeof e.message === 'string' && e.message.includes('MetaMask')) { e.preventDefault(); }
+      });
+      window.addEventListener('unhandledrejection', function (e){
+        try {
+          const msg = e.reason && (e.reason.message || String(e.reason));
+          if (msg && msg.includes('MetaMask')) { e.preventDefault(); }
+        } catch(_){}
+      });
+    })();
+
+    let P = 0; // Global for graphs
+
+    function solve1(form){
+      const hub_id   = parseFloat(form.hub_id.value)   * 1e-3;
+      const shaft_od = parseFloat(form.shaft_od.value) * 1e-3;
+      const hub_od   = parseFloat(form.hub_od.value)   * 1e-3;
+      const shaft_id = parseFloat(form.shaft_id.value) * 1e-3;
+      const hub_l    = parseFloat(form.hub_l.value)    * 1e-3;
+      const shaft_l  = parseFloat(form.shaft_l.value)  * 1e-3;
+      const hub_e    = parseFloat(form.hub_e.value)    * 1e9;
+      const shaft_e  = parseFloat(form.shaft_e.value)  * 1e9;
+      const hub_v    = parseFloat(form.hub_v.value);
+      const shaft_v  = parseFloat(form.shaft_v.value);
+      const hub_sy   = parseFloat(form.hub_sy.value);
+      const shaft_sy = parseFloat(form.shaft_sy.value);
+      const mu       = parseFloat(form.mu.value);
+
+      const D   = (shaft_od + hub_id) / 2;
+      const delta = shaft_od - hub_id;
+      const Di  = shaft_id;
+      const Do  = hub_od;
+      const L   = Math.min(hub_l, shaft_l);
+      const Ei  = shaft_e;
+      const Eo  = hub_e;
+      const vi  = shaft_v;
+      const vo  = hub_v;
+
+      if (D < Di || Do < D || Di < 0) {
+        alert("WARNING: wrong input!   RESET: Di, D, Do");
+        form.hub_od.value = 80; form.shaft_od.value = 23; form.shaft_id.value = 20;
+      }
+
+      const dD = delta / D;
+      const n1 = ((Do*Do + D*D) / (Do*Do - D*D) + vo) / Eo;
+      const n2 = ((Di*Di + D*D) / (Di*Di - D*D) + vi) / Ei;
+      P = dD / (n1 - n2);
+      const F = Math.PI * D * L * mu * P;
+
+      const Sti1 = 2 * P / ((Di / D)**2 - 1);
+      const Sti2 = P * ((Di / D)**2 + 1) / ((Di / D)**2 - 1);
+      const Sto1 = P * ((Do / D)**2 + 1) / ((Do / D)**2 - 1);
+      const Sto2 = 2 * P / ((Do / D)**2 - 1);
+
+      const Sri1 = 0;
+      const Sri2 = -P;
+      const Sro1 = -P;
+      const Sro2 = 0;
+
+      const Sei1 = Math.sqrt(Sti1**2 + Sri1**2 - Sti1 * Sri1);
+      const Sei2 = Math.sqrt(Sti2**2 + Sri2**2 - Sti2 * Sri2);
+      const Seo1 = Math.sqrt(Sto1**2 + Sro1**2 - Sto1 * Sro1);
+      const Seo2 = Math.sqrt(Sto2**2 + Sro2**2 - Sto2 * Sro2);
+
+      const hub_sigma_max   = Math.max(Math.abs(Seo1), Math.abs(Seo2)) * 1e-6;
+      const shaft_sigma_max = Math.max(Math.abs(Sei1), Math.abs(Sei2)) * 1e-6;
+
+      form.F.value = (F * 1e-3).toFixed(2);
+      form.T.value = (F * D / 2).toFixed(2);
+      form.hub_sigma_max.value = hub_sigma_max.toFixed(2);
+      form.shaft_sigma_max.value = shaft_sigma_max.toFixed(2);
+      const hub_ysf = hub_sy / hub_sigma_max;
+      const shaft_ysf = shaft_sy / shaft_sigma_max;
+      form.hub_ysf.value = isFinite(hub_ysf) ? hub_ysf.toFixed(2) : 'N/A';
+      form.shaft_ysf.value = isFinite(shaft_ysf) ? shaft_ysf.toFixed(2) : 'N/A';
+
+      drawGraphs(Di, D, Do);
+      drawDiagram(Di, D, Do);
+    }
+
+    function computeInnerStress(r, a, b) {
+      let sr = -P * (b**2 / (b**2 - a**2)) * (1 - a**2 / r**2);
+      let st = -P * (b**2 / (b**2 - a**2)) * (1 + a**2 / r**2);
+      let se = Math.sqrt(st**2 + sr**2 - st * sr);
+      return { sr, st, se };
+    }
+
+    function computeOuterStress(r, b, c) {
+      let sr = P * (b**2 / (c**2 - b**2)) * (1 - c**2 / r**2);
+      let st = P * (b**2 / (c**2 - b**2)) * (1 + c**2 / r**2);
+      let se = Math.sqrt(st**2 + sr**2 - st * sr);
+      return { sr, st, se };
+    }
+
+    function drawPlot(canvasId, stressType, Di, D, Do) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      // --- Higher internal resolution (supersampling) ---
+      const baseDpi = window.devicePixelRatio || 1;
+      const dpi = Math.max(2, baseDpi * 2); // supersample for extra crisp lines
+      const cssW = Math.max(200, canvas.offsetWidth);
+      const cssH = Math.max(120, canvas.offsetHeight);
+      canvas.width  = Math.floor(cssW * dpi);
+      canvas.height = Math.floor(cssH * dpi);
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(1,0,0,1,0,0); // reset
+      ctx.scale(dpi, dpi); // back to CSS pixels
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const logicalWidth  = cssW;
+      const logicalHeight = cssH;
+      ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+
+      const a = Di / 2, b = D / 2, c = Do / 2;
+      const x_min = (a * 1000), x_max = (c * 1000), x_interface = (b * 1000);
+
+      const y_values = [];
+      const inner_points = [];
+      const outer_points = [];
+
+      // --- More sample points for smoother curves ---
+      const SAMPLES = 600;
+      for (let i = 0; i < SAMPLES; i++) {
+        const r = a + (i / (SAMPLES - 1)) * (b - a);
+        const x = r * 1000;
+        const stress = computeInnerStress(r, a, b)[stressType] / 1e6;
+        inner_points.push({ x, y: stress });
+        y_values.push(stress);
+      }
+      for (let i = 0; i < SAMPLES; i++) {
+        const r = b + (i / (SAMPLES - 1)) * (c - b);
+        const x = r * 1000;
+        const stress = computeOuterStress(r, b, c)[stressType] / 1e6;
+        outer_points.push({ x, y: stress });
+        y_values.push(stress);
+      }
+
+      let y_min = Math.min(...y_values);
+      let y_max = Math.max(...y_values);
+      const y_range = y_max - y_min;
+      y_min -= 0.08 * y_range; // tighter margins to use more panel space
+      y_max += 0.08 * y_range;
+      if (!isFinite(y_range) || y_range === 0) { y_min = -1; y_max = 1; }
+
+      // --- Tighter plot margins to use more of the panel ---
+      const margins = { top: 12, right: 10, bottom: 34, left: 62, tickPad: 6, yLabelGap: 14 };
+      const plotWidth  = logicalWidth  - margins.left - margins.right;
+      const plotHeight = logicalHeight - margins.top  - margins.bottom;
+
+      const toCanvasX = x => margins.left + (x - x_min) / (x_max - x_min) * plotWidth;
+      const toCanvasY = y => logicalHeight - margins.bottom - (y - y_min) / (y_max - y_min) * plotHeight;
+
+      ctx.font = '10px Arial';
+
+      // Precompute y tick label widths for spacing
+      const yTickVals = Array.from({length:5}, (_,i)=> y_min + (y_max - y_min) * i / 4);
+      const yTickTexts = yTickVals.map(v => v.toFixed(1));
+      const yTextWidths = yTickTexts.map(t => ctx.measureText(t).width);
+      const maxYTextW = Math.max(...yTextWidths);
+      const yTickTextX = (valWidth) => margins.left - margins.tickPad - valWidth; // right-aligned
+
+      // Grid
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const x_val = x_min + (x_max - x_min) * i / 4;
+        const cx = toCanvasX(x_val);
+        ctx.beginPath(); ctx.moveTo(cx, margins.top); ctx.lineTo(cx, logicalHeight - margins.bottom); ctx.stroke();
+      }
+      for (let i = 0; i <= 4; i++) {
+        const y_val = y_min + (y_max - y_min) * i / 4;
+        const cy = toCanvasY(y_val);
+        ctx.beginPath(); ctx.moveTo(margins.left, cy); ctx.lineTo(logicalWidth - margins.right, cy); ctx.stroke();
+      }
+
+      // Axes
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.5; // slightly heavier for clarity
+      ctx.beginPath();
+      ctx.moveTo(margins.left, logicalHeight - margins.bottom);
+      ctx.lineTo(logicalWidth - margins.right, logicalHeight - margins.bottom);
+      ctx.moveTo(margins.left, margins.top);
+      ctx.lineTo(margins.left, logicalHeight - margins.bottom);
+      ctx.stroke();
+
+      // X ticks & labels
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const x_val = x_min + (x_max - x_min) * i / 4;
+        const cx = toCanvasX(x_val);
+        ctx.beginPath();
+        ctx.moveTo(cx, logicalHeight - margins.bottom);
+        ctx.lineTo(cx, logicalHeight - margins.bottom - 5);
+        ctx.stroke();
+        ctx.fillText(x_val.toFixed(1), cx - 10, logicalHeight - margins.bottom + 12);
+      }
+
+      // Y ticks & labels (right-aligned near axis)
+      for (let i = 0; i <= 4; i++) {
+        const y_val = y_min + (y_max - y_min) * i / 4;
+        const cy = toCanvasY(y_val);
+        const txt = y_val.toFixed(1);
+        const w = ctx.measureText(txt).width;
+        ctx.beginPath();
+        ctx.moveTo(margins.left, cy);
+        ctx.lineTo(margins.left + 5, cy);
+        ctx.stroke();
+        ctx.fillText(txt, yTickTextX(w), cy + 4);
+      }
+
+      // Axis labels
+      const xLabel = 'Radius (mm)';
+      const xLabelW = ctx.measureText(xLabel).width;
+      ctx.fillText(xLabel, margins.left + plotWidth / 2 - xLabelW / 2, logicalHeight - 6);
+      // place Y label with a clear gap from tick labels
+      const leftmostTickTextX = yTickTextX(maxYTextW); // x where the widest tick text starts
+      const yLabelX = Math.max(10, leftmostTickTextX - margins.yLabelGap); // ensure padding from canvas edge
+      ctx.save();
+      ctx.translate(yLabelX, margins.top + plotHeight / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('Stress (MPa)', 0, 0);
+      ctx.restore();
+
+      // Interface dashed line
+      ctx.beginPath();
+      ctx.setLineDash([5, 5]);
+      const ix = toCanvasX(x_interface);
+      ctx.moveTo(ix, toCanvasY(y_min));
+      ctx.lineTo(ix, toCanvasY(y_max));
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Plot inner
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(inner_points[0].x), toCanvasY(inner_points[0].y));
+      for (let p of inner_points) ctx.lineTo(toCanvasX(p.x), toCanvasY(p.y));
+      ctx.strokeStyle = '#0000FF';
+      ctx.lineWidth = 2; // thicker series line
+      ctx.stroke();
+
+      // Plot outer
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(outer_points[0].x), toCanvasY(outer_points[0].y));
+      for (let p of outer_points) ctx.lineTo(toCanvasX(p.x), toCanvasY(p.y));
+      ctx.strokeStyle = '#FF0000';
+      ctx.lineWidth = 2; // thicker series line
+      ctx.stroke();
+
+      // Legend (tight to top-right inside the plot area)
+      const lx = logicalWidth - margins.right - 80;
+      const ly = margins.top + 6;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#0000FF'; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 20, ly); ctx.stroke();
+      ctx.fillStyle = '#000'; ctx.fillText('Inner', lx + 24, ly + 4);
+      ctx.strokeStyle = '#FF0000'; ctx.beginPath(); ctx.moveTo(lx, ly + 18); ctx.lineTo(lx + 20, ly + 18); ctx.stroke();
+      ctx.fillStyle = '#000'; ctx.fillText('Outer', lx + 24, ly + 22);
+    }
+
+    function drawGraphs(Di, D, Do) {
+      drawPlot('graph_radial', 'sr', Di, D, Do);
+      drawPlot('graph_hoop',  'st', Di, D, Do);
+      drawPlot('graph_eq',    'se', Di, D, Do);
+    }
+
+    function drawDiagram(Di, D, Do) {
+      const canvas = document.getElementById('diagram');
+      const baseDpi = window.devicePixelRatio || 1;
+      const dpi = Math.max(2, baseDpi * 2); // sharper diagram too
+      const cssW = Math.max(200, canvas.offsetWidth);
+      const cssH = Math.max(200, canvas.offsetHeight);
+      canvas.width  = Math.floor(cssW * dpi);
+      canvas.height = Math.floor(cssH * dpi);
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.scale(dpi, dpi);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const logicalWidth = cssW;
+      const logicalHeight = cssH;
+      ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+
+      const centerX = logicalWidth / 2;
+      const centerY = logicalHeight / 2;
+      const scale = Math.min(logicalWidth, logicalHeight) / (Do * 1000 * 1.2); // px per mm
+
+      const ri = (Di / 2) * 1000 * scale;        // px
+      const rInterface = (D / 2) * 1000 * scale; // px
+      const ro = (Do / 2) * 1000 * scale;        // px
+
+      // --- Axes (behind shapes) + tick marks + labels ---
+      ctx.save();
+      ctx.strokeStyle = '#bbbbbb';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 4]);
+      // horizontal axis
+      ctx.beginPath();
+      ctx.moveTo(0, centerY); ctx.lineTo(logicalWidth, centerY); ctx.stroke();
+      // vertical axis
+      ctx.beginPath();
+      ctx.moveTo(centerX, 0); ctx.lineTo(centerX, logicalHeight); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Tick sizing (choose a nice step in mm)
+      const diameterMm = Do * 1000;            // mm
+      const targetTicks = 10;                   // goal count across diameter
+      const rawStep = diameterMm / targetTicks; // mm
+      function niceStep(x){
+        const k = Math.floor(Math.log10(x));
+        const base = Math.pow(10, k);
+        const m = x / base;
+        let s = 1; if (m > 1 && m <= 2) s = 2; else if (m > 2 && m <= 5) s = 5; else if (m > 5) s = 10;
+        return s * base;
+      }
+      const stepMm = niceStep(rawStep);
+      const stepPx = stepMm * scale;
+      const minorLen = 6, majorLen = 10;
+      const maxR = ro; // px
+
+      // Label style
+      ctx.font = '10px Arial';
+      ctx.fillStyle = '#666666';
+
+      // Draw symmetric ticks from center outwards + labels on +X and +Y for readability
+      for (let i = 1; i * stepPx <= maxR; i++) {
+        const rpx = i * stepPx;
+        const isMajor = (i % 5 === 0);
+        const len = isMajor ? majorLen : minorLen;
+        // ticks on horizontal axis (vertical ticks)
+        ctx.beginPath();
+        ctx.moveTo(centerX - rpx, centerY - len/2); ctx.lineTo(centerX - rpx, centerY + len/2); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(centerX + rpx, centerY - len/2); ctx.lineTo(centerX + rpx, centerY + len/2); ctx.stroke();
+        // ticks on vertical axis (horizontal ticks)
+        ctx.beginPath();
+        ctx.moveTo(centerX - len/2, centerY - rpx); ctx.lineTo(centerX + len/2, centerY - rpx); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(centerX - len/2, centerY + rpx); ctx.lineTo(centerX + len/2, centerY + rpx); ctx.stroke();
+
+        if (isMajor) {
+          const label = (i * stepMm).toFixed(0) + ' mm';
+          // +X label (below axis a bit)
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(label, centerX + rpx + 4, centerY + 6);
+          // +Y label (to the right of axis a bit)
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, centerX + 6, centerY - rpx);
+        }
+      }
+      ctx.restore();
+
+      // Outer (red) outline
+      ctx.beginPath(); ctx.arc(centerX, centerY, ro, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#FF0000'; ctx.lineWidth = 2; ctx.stroke();
+
+      // Inner bore (blue) outline, if any
+      if (Di > 0) {
+        ctx.beginPath(); ctx.arc(centerX, centerY, ri, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#0000FF'; ctx.lineWidth = 2; ctx.stroke();
+      }
+
+      // Fills (no dimension callouts)
+      // Inner material
+      ctx.beginPath(); ctx.arc(centerX, centerY, rInterface, 0, 2 * Math.PI);
+      if (Di > 0) { ctx.arc(centerX, centerY, ri, 2 * Math.PI, 0, true); } else { ctx.lineTo(centerX, centerY); }
+      ctx.closePath(); ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'; ctx.fill();
+
+      // Outer material
+      ctx.beginPath(); ctx.arc(centerX, centerY, ro, 0, 2 * Math.PI);
+      ctx.arc(centerX, centerY, rInterface, 2 * Math.PI, 0, true);
+      ctx.closePath(); ctx.fillStyle = 'rgba(255, 0, 0, 0.2)'; ctx.fill();
+
+      // Legend
+      const pad = 10, box = 16; let lx = pad, ly = pad;
+      ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'; ctx.fillRect(lx, ly, box, box);
+      ctx.strokeStyle = '#0000FF'; ctx.strokeRect(lx, ly, box, box);
+      ctx.fillStyle = '#111'; ctx.fillText('Inner Cylinder', lx + box + 6, ly + box - 4);
+      ly += box + 8;
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.2)'; ctx.fillRect(lx, ly, box, box);
+      ctx.strokeStyle = '#FF0000'; ctx.strokeRect(lx, ly, box, box);
+      ctx.fillStyle = '#111'; ctx.fillText('Outer Cylinder', lx + box + 6, ly + box - 4);
+    }
+      const stepMm = niceStep(rawStep);
+      const stepPx = stepMm * scale;
+      const minorLen = 6, majorLen = 10;
+      const maxR = ro; // px
+      // Draw symmetric ticks from center outwards
+      for (let i = 1; i * stepPx <= maxR; i++) {
+        const rpx = i * stepPx;
+        const isMajor = (i % 5 === 0);
+        const len = isMajor ? majorLen : minorLen;
+        // ticks on horizontal axis (vertical ticks)
+        ctx.beginPath();
+        ctx.moveTo(centerX - rpx, centerY - len/2); ctx.lineTo(centerX - rpx, centerY + len/2); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(centerX + rpx, centerY - len/2); ctx.lineTo(centerX + rpx, centerY + len/2); ctx.stroke();
+        // ticks on vertical axis (horizontal ticks)
+        ctx.beginPath();
+        ctx.moveTo(centerX - len/2, centerY - rpx); ctx.lineTo(centerX + len/2, centerY - rpx); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(centerX - len/2, centerY + rpx); ctx.lineTo(centerX + len/2, centerY + rpx); ctx.stroke();
+      }
+      ctx.restore();
+
+      // Outer (red) outline
+      ctx.beginPath(); ctx.arc(centerX, centerY, ro, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#FF0000'; ctx.lineWidth = 2; ctx.stroke();
+
+      // Inner bore (blue) outline, if any
+      if (Di > 0) {
+        ctx.beginPath(); ctx.arc(centerX, centerY, ri, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#0000FF'; ctx.lineWidth = 2; ctx.stroke();
+      }
+
+      // Fills (no dimension callouts)
+      // Inner material
+      ctx.beginPath(); ctx.arc(centerX, centerY, rInterface, 0, 2 * Math.PI);
+      if (Di > 0) { ctx.arc(centerX, centerY, ri, 2 * Math.PI, 0, true); } else { ctx.lineTo(centerX, centerY); }
+      ctx.closePath(); ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'; ctx.fill();
+
+      // Outer material
+      ctx.beginPath(); ctx.arc(centerX, centerY, ro, 0, 2 * Math.PI);
+      ctx.arc(centerX, centerY, rInterface, 2 * Math.PI, 0, true);
+      ctx.closePath(); ctx.fillStyle = 'rgba(255, 0, 0, 0.2)'; ctx.fill();
+
+      // Legend
+      const pad = 10, box = 16; let lx = pad, ly = pad;
+      ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'; ctx.fillRect(lx, ly, box, box);
+      ctx.strokeStyle = '#0000FF'; ctx.strokeRect(lx, ly, box, box);
+      ctx.fillStyle = '#111'; ctx.fillText('Inner Cylinder', lx + box + 6, ly + box - 4);
+      ly += box + 8;
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.2)'; ctx.fillRect(lx, ly, box, box);
+      ctx.strokeStyle = '#FF0000'; ctx.strokeRect(lx, ly, box, box);
+      ctx.fillStyle = '#111'; ctx.fillText('Outer Cylinder', lx + box + 6, ly + box - 4);
+    
+
+    // --- Minimal unit tests / diagnostics ---
+    function approx(a,b,tol=1e-9){ return Math.abs(a-b) <= tol * Math.max(1,Math.abs(a),Math.abs(b)); }
+    function runDiagnostics(){
+      const form = document.forms['calcForm'];
+      // re-use parsed values from the page
+      const hub_id   = parseFloat(form.hub_id.value)   * 1e-3;
+      const shaft_od = parseFloat(form.shaft_od.value) * 1e-3;
+      const hub_od   = parseFloat(form.hub_od.value)   * 1e-3;
+      const shaft_id = parseFloat(form.shaft_id.value) * 1e-3;
+      const D = (shaft_od + hub_id) / 2, Di = shaft_id, Do = hub_od;
+      const a = Di/2, b = D/2, c = Do/2;
+
+      // ensure solve1 computed P
+      const sr_in  = computeInnerStress(b, a, b).sr;   // at interface from inner side should be -P
+      const sr_out = computeOuterStress(b, b, c).sr;   // at interface from outer side should be -P
+      const sr_a   = computeInnerStress(a, a, b).sr;   // at inner free surface should be ~0
+      const sr_o   = computeOuterStress(c, b, c).sr;   // at outer free surface should be ~0
+
+      const tests = [];
+      tests.push({name:'Radial stress continuity at interface (inner == outer == -P)', pass: approx(sr_in, sr_out) && approx(sr_in, -P)});
+
+      const ei = computeInnerStress(b*0.9, a, b).se; const eo = computeOuterStress(b*1.1, b, c).se;
+      tests.push({name:'Von Mises is non-negative', pass: (ei>=0 && eo>=0)});
+      tests.push({name:'Radial stress at inner free surface is ~0', pass: approx(sr_a, 0)});
+      tests.push({name:'Radial stress at outer free surface is ~0', pass: approx(sr_o, 0)});
+
+      const formF = parseFloat(form.F.value), formT = parseFloat(form.T.value);
+      tests.push({name:'Torque equals F*D/2 (units consistent)', pass: approx(formT, formF * (D*1e3) / 2, 1e-6)});
+
+      // Positive interference -> positive interface pressure
+      const delta = (parseFloat(form.shaft_od.value) - parseFloat(form.hub_id.value));
+      tests.push({name:'Positive interference yields positive P', pass: (delta>0 ? P>0 : true)});
+
+      // Diagram tick sanity: step produces at least 3 intervals across radius
+      const diameterMm_d = Do * 1000; const targetTicks_d = 10; const rawStep_d = diameterMm_d / targetTicks_d;
+      function niceStep_d(x){ const k=Math.floor(Math.log10(x)); const base=Math.pow(10,k); const m=x/base; let s=1; if(m>1&&m<=2)s=2; else if(m>2&&m<=5)s=5; else if(m>5)s=10; return s*base; }
+      const stepMm_d = niceStep_d(rawStep_d); const radiusMm_d = diameterMm_d/2; const numTicks_d = Math.floor(radiusMm_d/stepMm_d);
+      tests.push({name:'Cross-section has ≥3 major tick intervals', pass: numTicks_d >= 3});
+
+      const out = document.getElementById('diag');
+      const ok = tests.every(t=>t.pass);
+      out.innerHTML = (ok? '<span class="ok">All tests passed.</span>':'<span class="fail">Some tests failed:</span>') + '\n' + tests.map(t=>` - ${t.pass?'[OK]':'[FAIL]'} ${t.name}`).join('\n');
+    }
+
+    function safeRedraw(){
+      const form = document.forms['calcForm'];
+      // Delay to allow layout to settle (prevents 0x0 canvas in some sandboxes)
+      requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ solve1(form); runDiagnostics(); }); });
+    }
+
+    window.onload = function() {
+      safeRedraw();
+      window.addEventListener('resize', safeRedraw);
+    };
+  </script>
+</head>
+<body>
+  <div class="window">
+    <div class="title-bar">
+      <div class="title-bar-text">Cylindrical Press-Fit Interference</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize">-</button>
+        <button aria-label="Maximize">[]</button>
+        <button aria-label="Close">X</button>
+      </div>
+    </div>
+    <div class="menu-bar">
+      <ul class="menu">
+        <li><a href="#">File</a></li>
+        <li><a href="#">Edit</a></li>
+        <li><a href="#">Help</a></li>
+      </ul>
+    </div>
+    <main>
+      <h1>Cylindrical Press-Fit Interference</h1>
+      <p>This tool calculates the stresses, interface pressure, axial force, and torque capacity for an interference fit between two cylinders (e.g., a shaft pressed into a hub). Enter the material properties and dimensions, then click Calculate.</p>
+      <div class="calculator-container">
+        <div class="calculator-left">
+          <form name="calcForm">
+            <table class="io">
+              <tr><th colspan="4" class="section">Input Parameters</th></tr>
+              <tr>
+                <td title="Outer diameter of inner cylinder">Shaft OD (mm):</td><td><input type="text" name="shaft_od" value="80.0"></td>
+                <td title="Inner diameter of outer cylinder">Hub ID (mm):  </td><td><input type="text" name="hub_id" value="79.8"></td>
+              </tr>
+              <tr>
+                <td title="Inner diameter of inner cylinder">Shaft ID (mm):</td><td><input type="text" name="shaft_id" value="76"></td>
+                <td title="Outer diameter of outer cylinder">Hub OD (mm):  </td><td><input type="text" name="hub_od" value="90"></td>
+              </tr>
+              <tr>
+                <td title="Length of inner cylinder">Shaft L (mm):</td><td><input type="text" name="shaft_l" value="80"></td>
+                <td title="Length of outer cylinder">Hub L (mm):  </td><td><input type="text" name="hub_l" value="80"></td>
+              </tr>
+              <tr>
+                <td title="Young's modulus for the inner cylinder material">Shaft E (GPa):</td><td><input type="text" name="shaft_e" value="210"></td>
+                <td title="Young's modulus for the outer cylinder material">Hub E (GPa):  </td><td><input type="text" name="hub_e" value="210"></td>
+              </tr>
+              <tr>
+                <td title="Poisson's ratio for the inner cylinder material">Shaft v (-):</td><td><input type="text" name="shaft_v" value="0.3"></td>
+                <td title="Poisson's ratio for the outer cylinder material">Hub v (-):  </td><td><input type="text" name="hub_v" value="0.3"></td>
+              </tr>
+              <tr>
+                <td title="Yield strength for the inner cylinder material">Shaft σy (MPa):</td><td><input type="text" name="shaft_sy" value="305"></td>
+                <td title="Yield strength for the outer cylinder material">Hub σy (MPa):  </td><td><input type="text" name="hub_sy" value="305"></td>
+              </tr>
+              <tr>
+                <td title="Coefficient of friction at the interface">μ (-):</td><td><input type="text" name="mu" value="0.15"></td>
+                <td></td><td></td>
+              </tr>
+              <tr>
+                <td colspan="4"><input type="button" value="Calculate" onclick="safeRedraw()"></td>
+              </tr>
+              <tr><th colspan="4" class="section">Output Results</th></tr>
+              <tr>
+                <td title="Maximum axial force that can be transmitted via friction">F (kN):</td><td><input type="text" name="F" readonly></td>
+                <td title="Maximum torque that can be transmitted via friction">T (Nm):</td><td><input type="text" name="T" readonly></td>
+              </tr>
+              <tr>
+                <td title="Maximum stress in shaft">Shaft σmax (MPa):</td><td><input type="text" name="shaft_sigma_max" readonly></td>
+                <td title="Maximum stress in hub">Hub σmax (MPa):</td><td><input type="text" name="hub_sigma_max" readonly></td>
+              </tr>
+              <tr>
+                <td title="Yield safety factor for shaft">Shaft YSF (-):</td><td><input type="text" name="shaft_ysf" readonly></td>
+                <td title="Yield safety factor for hub">Hub YSF (-):</td><td><input type="text" name="hub_ysf" readonly></td>
+              </tr>
+            </table>
+          </form>
+          <div class="diagram-container">
+            <h3>Cross-Sectional View of Cylinders</h3>
+            <canvas id="diagram"></canvas>
+          </div>
+        </div>
+        <div class="graphs-right">
+          <div class="graph-panel">
+            <h3>Radial Stress Distribution</h3>
+            <div class="graph-container">
+              <canvas id="graph_radial"></canvas>
+            </div>
+          </div>
+          <div class="graph-panel">
+            <h3>Hoop Stress Distribution</h3>
+            <div class="graph-container">
+              <canvas id="graph_hoop"></canvas>
+            </div>
+          </div>
+          <div class="graph-panel">
+            <h3>Equivalent (Von Mises) Stress Distribution</h3>
+            <div class="graph-container">
+              <canvas id="graph_eq"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="diag" class="diag">Diagnostics will appear here…</div>
+      <div class="explanation">
+        <h2>Explanation of Terms</h2>
+        <ul>
+          <li><strong>Inner Cylinder:</strong> Typically the shaft or inner part being pressed in.</li>
+          <li><strong>Outer Cylinder:</strong> Typically the hub or outer part receiving the press fit.</li>
+          <li><strong>Hoop Stress (σθ):</strong> Tangential stress around the circumference, like tension in a ring.</li>
+          <li><strong>Radial Stress (σr):</strong> Stress directed toward or away from the center.</li>
+          <li><strong>Equivalent Stress (σeq):</strong> Von Mises stress, used to predict yielding for safe design; combines hoop and radial stresses.</li>
+          <li><strong>Interface Pressure (P):</strong> The compressive pressure at the contact surface due to the interference.</li>
+          <li><strong>Axial Force (F):</strong> Maximum pull-out force resisted by friction.</li>
+          <li><strong>Torque (T):</strong> Maximum rotational torque resisted by friction.</li>
+          <li><strong>Graphs:</strong> Show stress variation from inner radius to outer radius. Blue line: inner cylinder; Red line: outer cylinder; Dashed line: interface. Note: Radial stress is continuous at the interface, but hoop and equivalent stresses typically show a discontinuity due to the different components.</li>
+        </ul>
+        <p>Hover over input/output labels for more details. Ensure stresses are below material yield strength for safe design for elastic behavior.</p>
+      </div>
+    </main>
+    <footer>© 2024 OpenDyna. All rights reserved.</footer>
+  </div>
+</body>
+</html>
