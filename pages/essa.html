@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ESSA</title>
+<style>
+  :root{
+    --bg:#0e1113; --panel:#161a1d; --ink:#e7e9ec; --muted:#9aa4ad; --accent:#4cc9f0; --accent2:#80ed99; --bad:#ff6b6b;
+    --border:#262b30; --overlay:rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.25 system-ui,Segoe UI,Roboto,Ubuntu,Arial}
+  header{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:5}
+  header h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.2px}
+  header .spacer{flex:1}
+  header input[type=number]{width:80px;background:#0f1113;color:var(--ink);border:1px solid var(--border);padding:6px 8px;border-radius:8px}
+  header button, .btn{
+    background:#0f1113;border:1px solid var(--border);color:var(--ink);padding:6px 10px;border-radius:8px;cursor:pointer
+  }
+  header button:hover, .btn:hover{border-color:#353c43}
+  .wrap{display:grid;grid-template-columns:minmax(360px, 560px) 1fr;gap:12px;padding:12px}
+  @media(max-width:980px){ .wrap{grid-template-columns:1fr} }
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .panel h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  .panel .body{padding:10px}
+  textarea#spec{
+    width:100%;height:360px;resize:vertical;background:#0f1113;color:var(--ink);
+    border:1px solid var(--border);border-radius:8px;padding:10px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px
+  }
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  select, input[type=text]{background:#0f1113;color:var(--ink);border:1px solid var(--border);padding:6px 8px;border-radius:8px}
+  .errors{margin-top:8px;color:var(--bad);white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace}
+  .good{color:var(--accent2)}
+  .canvasWrap{position:relative;min-height:340px;height:58vh}
+  canvas{position:absolute;inset:0;width:100%;height:100%;background:#0b0d0f;border-radius:10px;cursor:grab}
+  canvas.dragging{cursor:grabbing}
+  #tooltip{position:absolute;background:#111;border:1px solid #333;padding:6px;border-radius:6px;display:none;pointer-events:none;white-space:pre;color:#eaeef2;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media(max-width:1100px){ .results{grid-template-columns:1fr} }
+  .results .card{border:1px solid var(--border);border-radius:10px;padding:10px;background:#0f1113}
+  .results .card h3{margin:0 0 6px 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .results ul{margin:0;padding:0;list-style:none;max-height:240px;overflow:auto}
+  .results li{border-bottom:1px dashed #26303a;padding:4px 0;font-family:ui-monospace,Consolas,monospace}
+  .footer{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;color:var(--muted)}
+  .tag{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border:1px solid var(--border);border-radius:999px;background:#0f1113;color:#cbd5dc;font-size:12px}
+  .muted{color:var(--muted)}
+  .preset-tip{font-size:12px;color:var(--muted);margin-top:6px}
+  .pill{display:inline-block;padding:2px 6px;border:1px solid var(--border);border-radius:999px;font-size:12px;margin-left:6px}
+
+  /* Modal */
+  .modalOverlay{position:fixed;inset:0;background:var(--overlay);display:none;align-items:center;justify-content:center;z-index:100}
+  .modal{background:#0f1113;border:1px solid var(--border);border-radius:14px;max-width:920px;width:min(92vw,920px);max-height:88vh;overflow:auto;color:var(--ink);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .modal header{position:sticky;top:0;background:#121518;border-bottom:1px solid var(--border);padding:10px 12px;display:flex;gap:8px;align-items:center}
+  .modal header h3{margin:0;font-size:14px;letter-spacing:.3px}
+  .modal .content{padding:12px}
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:12px}
+  @media(max-width:860px){ .grid{grid-template-columns:1fr} }
+  fieldset{border:1px solid var(--border);border-radius:10px;padding:10px}
+  fieldset legend{padding:0 6px;color:var(--muted);font-size:12px}
+  .formRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+  .help{color:var(--muted);font-size:12px}
+  .kbd{border:1px solid var(--border);border-radius:6px;padding:0 6px;background:#14181b;font-family:ui-monospace,Consolas,monospace}
+  .out{font-family:ui-monospace,Consolas,monospace;background:#0b0f12;border:1px solid var(--border);padding:8px;border-radius:8px}
+  .right{display:flex;flex-direction:column;gap:10px}
+  .btnRow{display:flex;gap:8px;flex-wrap:wrap}
+  .danger{border-color:#8b2b2b !important;color:#ffc3c3 !important}
+</style>
+</head>
+<body>
+<header>
+  <h1>Elasto-Static Simuation & Analysis<span class="pill">(ESSA)</span></h1>
+  <div class="spacer"></div>
+  <label class="muted">Exag</label>
+  <input id="exag" type="number" value="1" step="1" />
+  <label class="muted">Zoom</label>
+  <input id="zoom" type="number" value="1" step="0.1" />
+  <button id="btnSolve">Solve</button>
+  <button id="btnExport">Export JSON</button>
+  <button id="btnReset">Reset</button>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <h2>Model Spec (3D)</h2>
+    <div class="body">
+<textarea id="spec" spellcheck="false" placeholder="# 3D compact spec
+# Global options (optional)
+exag = 20           # displacement exaggeration for view
+nu   = 0.30         # Poisson (only used if G not provided)
+
+nodes:
+  1: (0, 0, 0)
+  2: (1, 0, 0)
+
+beams:
+  # id: i-j  E=...  A=...  Iy=...  Iz=...  J=...  [G=...]  [up=(0,0,1)] [rigid]
+  # End releases: releaseA=Rx,Ry,Rz | releaseB=all | hingeA | pin@2 etc.
+  1: 1-2  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+
+conditions:
+  1: fixed
+  2: force Fx=0 Fy=0 Fz=-1000 Mx=0 My=0 Mz=0
+"></textarea>
+
+      <div class="row">
+        <select id="preset">
+          <option value="mixed">Preset: Mixed joint at a node (rigid + pinned)</option>
+          <option value="cantilever">Preset: Cantilever (Z load)</option>
+          <option value="portal">Preset: Portal frame</option>
+          <option value="space">Preset: Space frame corner load</option>
+          <option value="compliant">Preset: Compliant Mount (sprung support)</option>
+        </select>
+        <button class="btn" id="btnPreset">Load Preset</button>
+        <button class="btn" id="btnXSec">Cross-Section…</button>
+        <span class="preset-tip">Left-drag: orbit • Shift/🖱️middle/right-drag: pan • Wheel: zoom • <b>Double-click: reset</b></span>
+      </div>
+      <div class="errors" id="errors"></div>
+    </div>
+    <div class="footer" id="statusBar">Ready.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Visualization & Results</h2>
+    <div class="body">
+      <div class="canvasWrap">
+        <canvas id="canvas"></canvas>
+        <div id="tooltip"></div>
+      </div>
+
+      <div class="results" style="margin-top:10px">
+        <div class="card">
+          <h3>Displacements (ux, uy, uz, rx, ry, rz)</h3>
+          <ul id="dispList"></ul>
+        </div>
+        <div class="card">
+          <h3>Reactions (Fx, Fy, Fz, Mx, My, Mz)</h3>
+          <ul id="reactionList"></ul>
+        </div>
+        <div class="card">
+          <h3>Beam End Forces</h3>
+          <ul id="beamForceList"></ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <span class="tag">Nodes: <span id="nNodes">0</span></span>
+      <span class="tag">Beams: <span id="nBeams">0</span></span>
+      <span class="tag">Conditions: <span id="nConds">0</span></span>
+      <span class="tag">State: <span id="solveState">unsolved</span></span>
+      <span class="tag">Legend: — — undeformed • — deformed • ○ hinge symbol</span>
+    </div>
+  </div>
+</div>
+
+<!-- Cross-Section Generator Modal -->
+<div class="modalOverlay" id="xsecOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="xsecTitle">
+    <header>
+      <h3 id="xsecTitle">Generate E, A, Iy, Iz, J from Cross-Section</h3>
+      <div class="spacer"></div>
+      <button id="xsecClose" class="btn">Close</button>
+    </header>
+    <div class="content">
+      <div class="grid">
+        <div>
+          <fieldset>
+            <legend>Material</legend>
+            <div class="formRow">
+              <label>Library</label>
+              <select id="matLib">
+                <option value="steel">Steel (E=210e9, ν=0.30)</option>
+                <option value="al">Aluminum 6061-T6 (E=69e9, ν=0.33)</option>
+                <option value="ti">Titanium Gr5 (E=114e9, ν=0.34)</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <label>E (Pa)</label>
+              <input id="matE" type="text" value="210e9" />
+              <label>ν</label>
+              <input id="matNu" type="number" step="0.01" value="0.30" />
+              <div class="help" style="grid-column:1/-1">G is computed as <span class="kbd">E/(2(1+ν))</span>. Units: SI.</div>
+            </div>
+          </fieldset>
+
+          <fieldset style="margin-top:10px">
+            <legend>Shape & Size (local y = depth, local z = width)</legend>
+            <div class="formRow">
+              <label>Shape</label>
+              <select id="shape">
+                <option value="rect">Solid Rectangle (b×h)</option>
+                <option value="rectTube">Rectangular Tube (B×H, t)</option>
+                <option value="circ">Solid Circle (d)</option>
+                <option value="tube">Hollow Circle / Tube (D, t)</option>
+                <option value="ibeam">Wide-Flange (I-Beam)</option>
+              </select>
+              <div></div>
+
+              <!-- Rect -->
+              <label class="dim dim-rect">b (width z) [m]</label>
+              <input class="dim dim-rect" id="rect_b" type="number" step="0.001" value="0.05" />
+              <label class="dim dim-rect">h (height y) [m]</label>
+              <input class="dim dim-rect" id="rect_h" type="number" step="0.001" value="0.10" />
+
+              <!-- Rect Tube -->
+              <label class="dim dim-rectTube">B (outer width z) [m]</label>
+              <input class="dim dim-rectTube" id="rt_B" type="number" step="0.001" value="0.05" />
+              <label class="dim dim-rectTube">H (outer height y) [m]</label>
+              <input class="dim dim-rectTube" id="rt_H" type="number" step="0.001" value="0.10" />
+              <label class="dim dim-rectTube">t (thickness) [m]</label>
+              <input class="dim dim-rectTube" id="rt_t" type="number" step="0.0005" value="0.004" />
+
+              <!-- Solid Circle -->
+              <label class="dim dim-circ">d (diameter) [m]</label>
+              <input class="dim dim-circ" id="c_d" type="number" step="0.001" value="0.05" />
+
+              <!-- Tube -->
+              <label class="dim dim-tube">D (outer dia) [m]</label>
+              <input class="dim dim-tube" id="t_D" type="number" step="0.001" value="0.05" />
+              <label class="dim dim-tube">t (thickness) [m]</label>
+              <input class="dim dim-tube" id="t_t" type="number" step="0.0005" value="0.004" />
+
+              <!-- I-beam -->
+              <label class="dim dim-ibeam">Bf (flange width z) [m]</label>
+              <input class="dim dim-ibeam" id="ib_Bf" type="number" step="0.001" value="0.10" />
+              <label class="dim dim-ibeam">H (depth y) [m]</label>
+              <input class="dim dim-ibeam" id="ib_H" type="number" step="0.001" value="0.15" />
+              <label class="dim dim-ibeam">tf (flange thick) [m]</label>
+              <input class="dim dim-ibeam" id="ib_tf" type="number" step="0.0005" value="0.008" />
+              <label class="dim dim-ibeam">tw (web thick) [m]</label>
+              <input class="dim dim-ibeam" id="ib_tw" type="number" step="0.0005" value="0.006" />
+            </div>
+            <div class="help" style="margin-top:6px">For torsion on rectangles/I, J uses standard engineering approximations (suitable for most design/visualization purposes). Hollow rectangle J uses thin-wall closed-section formula.</div>
+          </fieldset>
+
+          <fieldset style="margin-top:10px">
+            <legend>Orientation</legend>
+            <div class="formRow">
+              <label>up = (y-axis)</label>
+              <input id="upVec" type="text" value="0,0,1" />
+              <div class="help" style="grid-column:1/-1">This is the local <b>y</b> direction of the cross-section in global XYZ (right-handed).</div>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="right">
+          <fieldset>
+            <legend>Computed Properties</legend>
+            <div class="formRow">
+              <label>A [m²]</label>   <input id="outA" type="text" readonly />
+              <label>Iy [m⁴]</label> <input id="outIy" type="text" readonly />
+              <label>Iz [m⁴]</label> <input id="outIz" type="text" readonly />
+              <label>J [m⁴]</label>  <input id="outJ" type="text" readonly />
+              <label>G [Pa]</label>  <input id="outG" type="text" readonly />
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Spec Snippet</legend>
+            <div class="out" id="snippet">E=210e9 A=... Iy=... Iz=... J=... G=... up=(0,0,1)</div>
+            <div class="btnRow" style="margin-top:8px">
+              <button class="btn" id="btnCopy">Copy</button>
+              <button class="btn" id="btnInsert">Insert at cursor</button>
+            </div>
+            <div class="formRow" style="margin-top:8px">
+              <label>Apply to beam id</label>
+              <select id="beamIdSelect"></select>
+              <button class="btn" id="btnApply">Apply</button>
+            </div>
+            <div class="formRow" style="margin-top:8px">
+              <label><input type="checkbox" id="snRigid"/> Add “rigid”</label>
+              <div class="help">Check to append the <code>rigid</code> token on insert/apply.</div>
+            </div>
+            <div class="help">Applying replaces E/A/Iy/Iz/J/G tokens on that beam line (keeps node connection &amp; <code>up=(...)</code> if present).</div>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Core Data / UI refs
+   ========================= */
+let nodes=[], beams=[], conditions={}, results=null, nuGlobal=null, exagOverride=null;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+const errorsEl = document.getElementById('errors');
+const statusBar = document.getElementById('statusBar');
+const nNodesEl = document.getElementById('nNodes');
+const nBeamsEl = document.getElementById('nBeams');
+const nCondsEl = document.getElementById('nConds');
+const solveStateEl = document.getElementById('solveState');
+const exagEl = document.getElementById('exag');
+const zoomEl = document.getElementById('zoom');
+
+function setStatus(msg, ok=true){
+  statusBar.innerHTML = ok ? `<span class="good">✔</span> ${msg}` : `<span style="color:#ff6b6b">✖</span> ${msg}`;
+}
+
+/* =========================
+   Spec Parser (3D) + Rigid + End Releases
+   ========================= */
+function parseReleaseList(s){
+  if(!s) return {};
+  const out={rx:false,ry:false,rz:false};
+  const parts=s.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+  if(parts.includes('all')) return {rx:true,ry:true,rz:true};
+  parts.forEach(p=>{ if(p==='rx') out.rx=true; if(p==='ry') out.ry=true; if(p==='rz') out.rz=true; });
+  return out;
+}
+function mergeRel(a,b){ return {rx:!!(a?.rx||b?.rx), ry:!!(a?.ry||b?.ry), rz:!!(a?.rz||b?.rz)}; }
+
+function parseSpec(text){
+  const lines = text.split(/\r?\n/);
+  let section=null;
+  let errs=[];
+  let tmpNodes=[];
+  let tmpBeams=[];
+  let tmpConds={};
+  exagOverride=null;
+  nuGlobal=null;
+
+  const lineErr=(i,msg)=>errs.push(`Line ${i+1}: ${msg}`);
+
+  const secRe = /^\s*(nodes|beams|conditions)\s*:\s*$/i;
+  const exagRe = /^\s*exag\s*=\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*$/i;
+  const nuRe   = /^\s*nu\s*=\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*$/i;
+
+  for(let i=0;i<lines.length;i++){
+    const raw=lines[i];
+    const s = raw.replace(/#.*/,'').trim();
+    if(!s) continue;
+
+    let m;
+    if((m=s.match(secRe))){ section=m[1].toLowerCase(); continue; }
+    if((m=s.match(exagRe))){ const v=parseFloat(m[1]); if(isFinite(v)) exagOverride=v; else lineErr(i,'Invalid exag'); continue; }
+    if((m=s.match(nuRe))){ const v=parseFloat(m[1]); if(isFinite(v)) nuGlobal=v; else lineErr(i,'Invalid nu'); continue; }
+
+    if(!section){ lineErr(i,'Expected a section (nodes:, beams:, or conditions:)'); continue; }
+
+    if(section==='nodes'){
+      const re=/^\s*(\d+)\s*:\s*\(\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*,\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*,\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*\)\s*$/i;
+      const mm=s.match(re);
+      if(!mm){ lineErr(i,'Node:  3: (1.0, 2.0, 0.0)'); continue; }
+      const id=parseInt(mm[1],10);
+      const x=parseFloat(mm[2]), y=parseFloat(mm[3]), z=parseFloat(mm[4]);
+      if(tmpNodes.some(n=>n.id===id)) lineErr(i,`Duplicate node id ${id}`); else tmpNodes.push({id,x,y,z});
+    } else if(section==='beams'){
+      const head=/^\s*(\d+)\s*:\s*(\d+)\s*-\s*(\d+)\s+(.*)$/i;
+      const mm=s.match(head);
+      if(!mm){ lineErr(i,'Beam:  1: 1-2 E=.. A=.. Iy=.. Iz=.. J=.. [G=..] [up=(..)] [rigid] [releaseA=..]'); continue; }
+      const id=parseInt(mm[1],10), ni=parseInt(mm[2],10), nj=parseInt(mm[3],10);
+      const tail=mm[4];
+      const parms={}; parms.releaseA={}; parms.releaseB={}; let targeted=[]; let rigid=false;
+
+      tail.split(/\s+/).filter(Boolean).forEach(tok=>{
+        if(/^up=\(/i.test(tok)){
+          const m2=tok.match(/^up=\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)$/i);
+          if(m2) parms.up=[parseFloat(m2[1]),parseFloat(m2[2]),parseFloat(m2[3])];
+        } else if(/^rigid(?:=(true|1))?$/i.test(tok)){
+          rigid=true;
+        } else if(/^releasea=/i.test(tok)){
+          parms.releaseA = mergeRel(parms.releaseA, parseReleaseList(tok.split('=')[1]));
+        } else if(/^releaseb=/i.test(tok)){
+          parms.releaseB = mergeRel(parms.releaseB, parseReleaseList(tok.split('=')[1]));
+        } else if(/^hingea$/i.test(tok) || /^pina$/i.test(tok)){
+          parms.releaseA = mergeRel(parms.releaseA, {ry:true, rz:true});
+        } else if(/^hingeb$/i.test(tok) || /^pinb$/i.test(tok)){
+          parms.releaseB = mergeRel(parms.releaseB, {ry:true, rz:true});
+        } else if(/^release@\d+=/i.test(tok) || /^hinge@\d+$/i.test(tok) || /^pin@\d+$/i.test(tok)){
+          targeted.push(tok); // handle after we know ends
+        } else {
+          const kv=tok.split('=');
+          if(kv.length===2){
+            const k=kv[0].toLowerCase(); const v=parseFloat(kv[1]);
+            if(isFinite(v)) parms[k]=v;
+          }
+        }
+      });
+
+      // Node-targeted releases
+      targeted.forEach(tok=>{
+        const mR = tok.match(/^release@(\d+)=(.+)$/i);
+        const mH = tok.match(/^(hinge|pin)@(\d+)$/i);
+        if(mR){
+          const node=+mR[1]; const rel=parseReleaseList(mR[2]);
+          if(node===ni) parms.releaseA = mergeRel(parms.releaseA, rel);
+          else if(node===nj) parms.releaseB = mergeRel(parms.releaseB, rel);
+          else errs.push(`Beam ${id}: release@${node} does not match its nodes`);
+        }else if(mH){
+          const node=+mH[2]; const rel={ry:true,rz:true};
+          if(node===ni) parms.releaseA = mergeRel(parms.releaseA, rel);
+          else if(node===nj) parms.releaseB = mergeRel(parms.releaseB, rel);
+          else errs.push(`Beam ${id}: ${mH[1]}@${node} does not match its nodes`);
+        }
+      });
+
+      const E=+parms['e'], A=+parms['a'], Iy=+parms['iy'], Iz=+parms['iz'], J=+parms['j'];
+      let G = (parms['g']!=null)? +parms['g'] : (isFinite(E) && isFinite(nuGlobal)? E/(2*(1+(+nuGlobal))) : NaN);
+      if(!isFinite(E)||!isFinite(A)||!isFinite(Iy)||!isFinite(Iz)||!isFinite(J)){ lineErr(i,'Provide E, A, Iy, Iz, J'); continue; }
+      if(ni===nj){ lineErr(i,'Beam nodes must differ'); continue; }
+      if(tmpBeams.some(b=>b.id===id)) lineErr(i,`Duplicate beam id ${id}`);
+      else tmpBeams.push({id,nodeA:ni,nodeB:nj,E,G:isFinite(G)?G:undefined,A,Iy,Iz,J, up:parms.up||null, rigid, releaseA:parms.releaseA, releaseB:parms.releaseB});
+    } else if(section==='conditions'){
+      const re=/^\s*((\d+))\s*:\s*([a-zA-Z_]+)(.*)$/i;
+      const mm=s.match(re);
+      if(!mm){ lineErr(i,'Condition:  2: force Fx= Fy= Fz= Mx= My= Mz='); continue; }
+      const nid=parseInt(mm[2],10);
+      const type=mm[3].toLowerCase();
+      const tail=(mm[4]||'').trim();
+      const cond={type};
+      tail.split(/\s+/).filter(Boolean).forEach(tok=>{
+        const kv=tok.split('=');
+        if(kv.length===2){
+          const k=kv[0].toLowerCase(), v=kv[1];
+          if(k==='axis'){ cond.axis=v.toLowerCase(); }
+          else cond[k]=parseFloat(v);
+        }
+      });
+      const ok=['fixed','pinned','slider','free','force','bushing_ground'];
+      if(!ok.includes(type)){ lineErr(i,`Unsupported condition '${type}'`); }
+      if(type==='slider' && !['x','y','z'].includes(cond.axis||'')) lineErr(i,'Slider needs axis=x|y|z');
+      if(type==='force'){ ['fx','fy','fz','mx','my','mz'].forEach(k=>cond[k]=isFinite(cond[k])?cond[k]:0); }
+      if(type==='bushing_ground'){ ['kx','ky','kz','krx','kry','krz'].forEach(k=>{ cond[k]=isFinite(cond[k])?Math.max(0,cond[k]):0; }); }
+      if(!tmpConds[nid]) tmpConds[nid]=[]; tmpConds[nid].push(cond);
+    }
+  }
+
+  const idset=new Set(tmpNodes.map(n=>n.id));
+  tmpBeams.forEach(b=>{
+    if(!idset.has(b.nodeA)||!idset.has(b.nodeB)){
+      errs.push(`Beam ${b.id} references missing node(s)`);
+    }else{
+      const na=tmpNodes.find(n=>n.id===b.nodeA), nb=tmpNodes.find(n=>n.id===b.nodeB);
+      const L=Math.hypot(nb.x-na.x, nb.y-na.y, nb.z-na.z);
+      if(L<1e-9) errs.push(`Beam ${b.id} has zero length`);
+    }
+  });
+  Object.entries(tmpConds).forEach(([nid,arr])=>{
+    const support=['fixed','pinned','slider','bushing_ground'];
+    const supCount=arr.filter(c=>support.includes(c.type)).length;
+    if(supCount>1) errs.push(`Node ${nid}: multiple support-like conditions not allowed`);
+    const hasFree = arr.some(c=>c.type==='free');
+    if(hasFree && arr.length>1) errs.push(`Node ${nid}: 'free' cannot combine with other conditions`);
+  });
+
+  return {errors:errs, model:{nodes:tmpNodes,beams:tmpBeams,conditions:tmpConds}, exagOverride, nuGlobal};
+}
+
+/* =========================
+   LA Helpers
+   ========================= */
+function mul(A,B){
+  const r=A.length,c=A[0].length, rb=B.length, cb=B[0].length;
+  if(c!==rb) throw new Error('bad dims');
+  const R=Array.from({length:r},()=>Array(cb).fill(0));
+  for(let i=0;i<r;i++) for(let k=0;k<c;k++){
+    const aik=A[i][k]; if(aik===0) continue;
+    for(let j=0;j<cb;j++) R[i][j]+=aik*B[k][j];
+  }
+  return R;
+}
+function tr(A){
+  const r=A.length,c=A[0].length;
+  const T=Array.from({length:c},()=>Array(r).fill(0));
+  for(let i=0;i<r;i++) for(let j=0;j<c;j++) T[j][i]=A[i][j];
+  return T;
+}
+function gauss(A,b){
+  const n=A.length;
+  const aug=A.map((row,i)=>[...row,b[i]]);
+  for(let p=0;p<n;p++){
+    let max=p; for(let i=p+1;i<n;i++) if(Math.abs(aug[i][p])>Math.abs(aug[max][p])) max=i;
+    if(Math.abs(aug[max][p])<1e-12) return null;
+    [aug[p],aug[max]]=[aug[max],aug[p]];
+    const piv=aug[p][p];
+    for(let j=p;j<=n;j++) aug[p][j]/=piv;
+    for(let i=p+1;i<n;i++){
+      const a=aug[i][p]; if(a===0) continue;
+      for(let j=p;j<=n;j++) aug[i][j]-=a*aug[p][j];
+    }
+  }
+  const x=new Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){
+    let s=0; for(let j=i+1;j<n;j++) s+=aug[i][j]*x[j];
+    x[i]=aug[i][n]-s;
+  }
+  return x;
+}
+
+/* =========================
+   3D Beam (12x12) Utilities with Releases
+   ========================= */
+function normalize(v){ const L=Math.hypot(v[0],v[1],v[2]); return (L>0)?[v[0]/L,v[1]/L,v[2]/L]:[0,0,0]; }
+function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function dot(a,b){ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+
+function beamRotation(pA,pB, upHint){
+  const ex = normalize([pB.x-pA.x, pB.y-pA.y, pB.z-pA.z]);
+  let g = upHint ? normalize(upHint) : [0,0,1];
+  if(Math.abs(dot(ex,g))>0.999){ g=[0,1,0]; if(Math.abs(dot(ex,g))>0.999) g=[1,0,0]; }
+  const ez = normalize(cross(ex, g));
+  const ey = normalize(cross(ez, ex));
+  return [
+    [ex[0], ex[1], ex[2]],
+    [ey[0], ey[1], ey[2]],
+    [ez[0], ez[1], ez[2]],
+  ];
+}
+
+function kLocal3D(E,G,A,Iy,Iz,J,L){
+  const k=Array.from({length:12},()=>Array(12).fill(0));
+  const EA_L = E*A/L;
+  const GJ_L = G*J/L;
+  const EIy = E*Iy, EIz = E*Iz;
+  const EIyL  = EIy/L,  EIyL2 = EIy/(L*L),  EIyL3 = EIy/(L*L*L);
+  const EIzL  = EIz/L,  EIzL2 = EIz/(L*L),  EIzL3 = EIz/(L*L*L);
+
+  const U=0,V=1,W=2,RX=3,RY=4,RZ=5, U2=6,V2=7,W2=8,RX2=9,RY2=10,RZ2=11;
+
+  function add(i,j,val){
+    k[i][j]+=val;
+    if(i!==j) k[j][i]+=val; // symmetric
+  }
+
+  // Axial
+  add(U,U, EA_L); add(U,U2, -EA_L); add(U2,U2, EA_L);
+
+  // Torsion
+  add(RX,RX, GJ_L); add(RX,RX2, -GJ_L); add(RX2,RX2, GJ_L);
+
+  // Bending about local z (V, RZ) -> EIz
+  add(V,V, 12*EIzL3); add(V,V2, -12*EIzL3);
+  add(V,RZ, 6*EIzL2); add(V,RZ2, 6*EIzL2);
+  add(RZ,RZ, 4*EIzL); add(RZ,RZ2, 2*EIzL);
+  add(V2,RZ, -6*EIzL2); add(V2,RZ2, -6*EIzL2);
+  add(V2,V2, 12*EIzL3);
+  add(RZ2,RZ2, 4*EIzL);
+
+  // Bending about local y (W, RY) -> EIy
+  add(W,W, 12*EIyL3); add(W,W2, -12*EIyL3);
+  add(W,RY, -6*EIyL2); add(W,RY2, -6*EIyL2);
+  add(RY,RY, 4*EIyL); add(RY,RY2, 2*EIyL);
+  add(W2,RY, 6*EIyL2); add(W2,RY2, 6*EIyL2);
+  add(W2,W2, 12*EIyL3);
+  add(RY2,RY2, 4*EIyL);
+
+  return k;
+}
+
+function T12(R){
+  const T=Array.from({length:12},()=>Array(12).fill(0));
+  for(let blk=0; blk<4; blk++){
+    for(let r=0;r<3;r++) for(let c=0;c<3;c++){
+      T[3*blk+r][3*blk+c] = R[r][c];
+    }
+  }
+  return T;
+}
+
+function zeroRowCol(M,i){
+  for(let c=0;c<M.length;c++) M[i][c]=0;
+  for(let r=0;r<M.length;r++) M[r][i]=0;
+}
+function applyReleasesToLocalK(k, relA, relB){
+  const mapA={rx:3, ry:4, rz:5};
+  const mapB={rx:9, ry:10, rz:11};
+  if(relA?.rx) zeroRowCol(k,mapA.rx);
+  if(relA?.ry) zeroRowCol(k,mapA.ry);
+  if(relA?.rz) zeroRowCol(k,mapA.rz);
+  if(relB?.rx) zeroRowCol(k,mapB.rx);
+  if(relB?.ry) zeroRowCol(k,mapB.ry);
+  if(relB?.rz) zeroRowCol(k,mapB.rz);
+}
+
+/* =========================
+   Solver (3D) with Rigid + Releases
+   ========================= */
+function solve3D(model){
+  const N=model.nodes, E=model.beams, C=model.conditions||{};
+  if(E.length===0) throw new Error('No beams defined');
+
+  const hasSupport = Object.values(C).some(conds =>
+    conds.some(c=>['fixed','pinned','slider'].includes(c.type) || c.type==='bushing_ground')
+  );
+  if(!hasSupport) throw new Error('Add at least one support/bushing');
+
+  const idxOf={}; N.forEach((n,i)=>idxOf[n.id]=i);
+  const n=N.length, dof=6*n;
+  let K=Array.from({length:dof},()=>Array(dof).fill(0));
+  let F=new Array(dof).fill(0);
+  const fixed=new Set();
+  const dofIndex=i=>[6*i+0,6*i+1,6*i+2,6*i+3,6*i+4,6*i+5];
+
+  for(const e of E){
+    const ia=idxOf[e.nodeA], ib=idxOf[e.nodeB];
+    const na=N[ia], nb=N[ib];
+    const L=Math.hypot(nb.x-na.x, nb.y-na.y, nb.z-na.z); if(L<1e-12) continue;
+
+    const R = beamRotation(na, nb, e.up);
+    // G handling and rigid scaling
+    const Gbase = (e.G!=null && isFinite(e.G)) ? e.G :
+                  (isFinite(e.E) && isFinite(nuGlobal)) ? e.E/(2*(1+nuGlobal)) : (e.E/2.6);
+    const RIGID=1e6;
+    const Eeff = e.rigid ? e.E*RIGID : e.E;
+    const Geff = e.rigid ? Gbase*RIGID : Gbase;
+
+    const kL = kLocal3D(Eeff, Geff, e.A, e.Iy, e.Iz, e.J, L);
+    applyReleasesToLocalK(kL, e.releaseA, e.releaseB);
+    const T  = T12(R);
+    const kG = mul(tr(T), mul(kL, T));
+
+    const map=[...dofIndex(ia), ...dofIndex(ib)];
+    for(let p=0;p<12;p++) for(let q=0;q<12;q++){
+      K[map[p]][map[q]] += kG[p][q];
+    }
+  }
+
+  for(const nidStr of Object.keys(C)){
+    const nid=parseInt(nidStr,10);
+    const i=idxOf[nid]; if(i===undefined) continue;
+    const [ux,uy,uz,rx,ry,rz]=dofIndex(i);
+    for(const c of C[nid]){
+      if(c.type==='fixed'){
+        [ux,uy,uz,rx,ry,rz].forEach(d=>fixed.add(d));
+      }else if(c.type==='pinned'){
+        [ux,uy,uz].forEach(d=>fixed.add(d));
+      }else if(c.type==='slider'){
+        if(c.axis==='x'){ fixed.add(uy); fixed.add(uz); }
+        else if(c.axis==='y'){ fixed.add(ux); fixed.add(uz); }
+        else { fixed.add(ux); fixed.add(uy); }
+      }else if(c.type==='force'){
+        F[ux]+= (isFinite(c.fx)?c.fx:0);
+        F[uy]+= (isFinite(c.fy)?c.fy:0);
+        F[uz]+= (isFinite(c.fz)?c.fz:0);
+        F[rx]+= (isFinite(c.mx)?c.mx:0);
+        F[ry]+= (isFinite(c.my)?c.my:0);
+        F[rz]+= (isFinite(c.mz)?c.mz:0);
+      }else if(c.type==='bushing_ground'){
+        if(isFinite(c.kx))  K[ux][ux]+=c.kx;
+        if(isFinite(c.ky))  K[uy][uy]+=c.ky;
+        if(isFinite(c.kz))  K[uz][uz]+=c.kz;
+        if(isFinite(c.krx)) K[rx][rx]+=c.krx;
+        if(isFinite(c.kry)) K[ry][ry]+=c.kry;
+        if(isFinite(c.krz)) K[rz][rz]+=c.krz;
+      }
+    }
+  }
+
+  const free=[]; for(let d=0; d<dof; d++) if(!fixed.has(d)) free.push(d);
+  if(free.length===0) throw new Error('All DOFs are fixed');
+
+  const m=free.length;
+  const Kred=Array.from({length:m},()=>Array(m).fill(0));
+  const Fred=new Array(m).fill(0);
+  for(let p=0;p<m;p++){
+    Fred[p]=F[free[p]];
+    for(let q=0;q<m;q++) Kred[p][q]=K[free[p]][free[q]];
+  }
+  const ured=gauss(Kred,Fred);
+  if(!ured) throw new Error('Unstable structure (singular matrix)');
+
+  const u=new Array(dof).fill(0);
+  for(let p=0;p<m;p++) u[free[p]]=ured[p];
+
+  const reactions={};
+  for(const nidStr of Object.keys(C)){
+    const nid=parseInt(nidStr,10);
+    const i=idxOf[nid]; if(i===undefined) continue;
+    const [ux,uy,uz,rx,ry,rz]=dofIndex(i);
+    const conds=C[nid];
+    let R6=[0,0,0,0,0,0];
+    const restr=[false,false,false,false,false,false];
+
+    if(conds.some(c=>c.type==='fixed')){ restr.fill(true); }
+    else{
+      if(conds.some(c=>c.type==='pinned')) { restr[0]=restr[1]=restr[2]=true; }
+      const slid=conds.find(c=>c.type==='slider');
+      if(slid){
+        if(slid.axis==='x'){ restr[1]=true; restr[2]=true; }
+        else if(slid.axis==='y'){ restr[0]=true; restr[2]=true; }
+        else { restr[0]=true; restr[1]=true; }
+      }
+    }
+
+    const di=[ux,uy,uz,rx,ry,rz];
+    for(let a=0;a<6;a++){
+      if(!restr[a]) continue;
+      let Ra=0; for(let d=0; d<dof; d++) Ra += K[di[a]][d]*u[d];
+      R6[a]= Ra - F[di[a]];
+    }
+    const spr=conds.find(c=>c.type==='bushing_ground');
+    if(spr){
+      R6[0]+=-((spr.kx)||0)*u[ux];
+      R6[1]+=-((spr.ky)||0)*u[uy];
+      R6[2]+=-((spr.kz)||0)*u[uz];
+      R6[3]+=-((spr.krx)||0)*u[rx];
+      R6[4]+=-((spr.kry)||0)*u[ry];
+      R6[5]+=-((spr.krz)||0)*u[rz];
+    }
+    reactions[nid]={Fx:R6[0],Fy:R6[1],Fz:R6[2],Mx:R6[3],My:R6[4],Mz:R6[5]};
+  }
+
+  const displacements = Object.fromEntries(
+    N.map((n, i) => [n.id, {
+      ux: u[6*i+0], uy: u[6*i+1], uz: u[6*i+2],
+      rx: u[6*i+3], ry: u[6*i+4], rz: u[6*i+5],
+    }])
+  );
+
+  const beamForces={};
+  for(const e of E){
+    const ia=idxOf[e.nodeA], ib=idxOf[e.nodeB];
+    const na=N[ia], nb=N[ib];
+    const L=Math.hypot(nb.x-na.x, nb.y-na.y, nb.z-na.z); if(L<1e-12) continue;
+    const R=beamRotation(na,nb,e.up);
+    const T=T12(R);
+    const Gbase = (e.G!=null && isFinite(e.G)) ? e.G :
+                  (isFinite(e.E) && isFinite(nuGlobal)) ? e.E/(2*(1+nuGlobal)) : (e.E/2.6);
+    const RIGID=1e6, Eeff=e.rigid?e.E*RIGID:e.E, Geff=e.rigid?Gbase*RIGID:Gbase;
+    const kL=kLocal3D(Eeff,Geff,e.A,e.Iy,e.Iz,e.J,L);
+    applyReleasesToLocalK(kL, e.releaseA, e.releaseB);
+    const u_g = [
+      u[6*ia+0],u[6*ia+1],u[6*ia+2],u[6*ia+3],u[6*ia+4],u[6*ia+5],
+      u[6*ib+0],u[6*ib+1],u[6*ib+2],u[6*ib+3],u[6*ib+4],u[6*ib+5],
+    ].map(x=>[x]);
+    const u_l = mul(T, u_g);
+    const f_l = mul(kL, u_l);
+    const f_g = mul(tr(T), f_l);
+    beamForces[e.id]={
+      endA:{Fx:f_g[0][0], Fy:f_g[1][0], Fz:f_g[2][0], Mx:f_g[3][0], My:f_g[4][0], Mz:f_g[5][0]},
+      endB:{Fx:f_g[6][0], Fy:f_g[7][0], Fz:f_g[8][0], Mx:f_g[9][0], My:f_g[10][0], Mz:f_g[11][0]},
+    };
+  }
+
+  return {displacements,reactions,beamForces};
+}
+
+/* =========================
+   Results UI
+   ========================= */
+function updateResultsUI(res, model){
+  const dispList=document.getElementById('dispList');
+  const reactionList=document.getElementById('reactionList');
+  const beamForceList=document.getElementById('beamForceList');
+  dispList.innerHTML=reactionList.innerHTML=beamForceList.innerHTML='';
+
+  nNodesEl.textContent=model.nodes.length;
+  nBeamsEl.textContent=model.beams.length;
+  nCondsEl.textContent=Object.values(model.conditions||{}).flat().length;
+  solveStateEl.textContent = res ? 'solved' : 'unsolved';
+
+  if(!res) return;
+
+  Object.entries(res.displacements).forEach(([nid,d])=>{
+    const li=document.createElement('li');
+    li.textContent=`Node ${nid}: ux=${d.ux.toExponential(3)}, uy=${d.uy.toExponential(3)}, uz=${d.uz.toExponential(3)}, rx=${d.rx.toExponential(3)}, ry=${d.ry.toExponential(3)}, rz=${d.rz.toExponential(3)}`;
+    dispList.appendChild(li);
+  });
+  Object.entries(res.reactions).forEach(([nid,r])=>{
+    const li=document.createElement('li');
+    li.textContent=`Node ${nid}: Fx=${(r.Fx||0).toFixed(4)}, Fy=${(r.Fy||0).toFixed(4)}, Fz=${(r.Fz||0).toFixed(4)}, Mx=${(r.Mx||0).toFixed(4)}, My=${(r.My||0).toFixed(4)}, Mz=${(r.Mz||0).toFixed(4)}`;
+    reactionList.appendChild(li);
+  });
+  Object.entries(res.beamForces).forEach(([bid,b])=>{
+    const e=(model.beams||[]).find(x=>x.id===+bid);
+    const li=document.createElement('li');
+    li.innerHTML=`Beam ${bid}: A(N${e?.nodeA ?? '?'}) Fx=${b.endA.Fx.toFixed(3)} Fy=${b.endA.Fy.toFixed(3)} Fz=${b.endA.Fz.toFixed(3)} Mx=${b.endA.Mx.toFixed(3)} My=${b.endA.My.toFixed(3)} Mz=${b.endA.Mz.toFixed(3)}<br/>
+                           B(N${e?.nodeB ?? '?'}) Fx=${b.endB.Fx.toFixed(3)} Fy=${b.endB.Fy.toFixed(3)} Fz=${b.endB.Fz.toFixed(3)} Mx=${b.endB.Mx.toFixed(3)} My=${b.endB.My.toFixed(3)} Mz=${b.endB.Mz.toFixed(3)}`;
+    beamForceList.appendChild(li);
+  });
+}
+
+/* =========================
+   Viewer: free orbit, fixed scale, axis triad, dual shape, hinge glyphs
+   ========================= */
+let cam={
+  yaw:45*Math.PI/180,
+  pitch:20*Math.PI/180,
+  zoom:1,
+  baseScale:1,
+  panX:0, panY:0,
+  target:{x:0,y:0,z:0},
+};
+
+function setZoom(z){
+  cam.zoom = Math.max(0.1, z);
+  zoomEl.value = cam.zoom.toFixed(2);
+}
+function computeTarget(model){
+  if(!model.nodes.length){ cam.target={x:0,y:0,z:0}; return; }
+  let sx=0,sy=0,sz=0;
+  model.nodes.forEach(n=>{ sx+=n.x; sy+=n.y; sz+=n.z; });
+  cam.target = {x:sx/model.nodes.length, y:sy/model.nodes.length, z:sz/model.nodes.length};
+}
+function cameraMatrix(){
+  const cy=Math.cos(cam.yaw), sy=Math.sin(cam.yaw);
+  const cp=Math.cos(cam.pitch), sp=Math.sin(cam.pitch);
+  const f = normalize([cp*cy, cp*sy, sp]);
+  let r = cross(f, [0,0,1]);
+  const rL=Math.hypot(r[0],r[1],r[2]);
+  if(rL<1e-6) r=[1,0,0]; else r=[r[0]/rL, r[1]/rL, r[2]/rL];
+  const u = cross(r, f);
+  return [
+    [ r[0],  r[1],  r[2] ],
+    [ -u[0], -u[1], -u[2] ],
+    [ f[0],  f[1],  f[2] ],
+  ];
+}
+
+// Fit once against union of undeformed and deformed geometry
+function computeFitScale(model, res){
+  const ex = parseFloat(exagEl.value)||1;
+  const disp = res?.displacements || {};
+  const getDisp = (id,exMul) => {
+    const d=disp[id]||{ux:0,uy:0,uz:0};
+    return [d.ux*ex*exMul,d.uy*ex*exMul,d.uz*ex*exMul];
+  };
+  if(!model.nodes.length){ cam.baseScale=1; return; }
+
+  let Rmax=0;
+  [0,1].forEach(exMul=>{
+    model.nodes.forEach(n=>{
+      const d=getDisp(n.id,exMul);
+      const x=n.x - cam.target.x + d[0];
+      const y=n.y - cam.target.y + d[1];
+      const z=n.z - cam.target.z + d[2];
+      const r=Math.hypot(x,y,z);
+      if(r>Rmax) Rmax=r;
+    });
+  });
+  if(Rmax<1e-9) Rmax=1;
+
+  const rect=canvas.getBoundingClientRect();
+  const margin=40;
+  const view = Math.max(10, Math.min(rect.width, rect.height) - 2*margin);
+  cam.baseScale = view / (2*Rmax);
+}
+
+// exMul = 0 -> undeformed; 1 -> use exagEl
+function projectPoints(model, res, exMul=1){
+  const ex = (parseFloat(exagEl.value)||1) * exMul;
+  const disp = res?.displacements || {};
+  const getDisp = id => {
+    const d=disp[id]||{ux:0,uy:0,uz:0};
+    return [d.ux*ex,d.uy*ex,d.uz*ex];
+  };
+
+  const R = cameraMatrix();
+
+  const pts = model.nodes.map(n=>{
+    const d=getDisp(n.id);
+    const pw=[n.x - cam.target.x + d[0], n.y - cam.target.y + d[1], n.z - cam.target.z + d[2]];
+    const x = R[0][0]*pw[0] + R[0][1]*pw[1] + R[0][2]*pw[2];
+    const y = R[1][0]*pw[0] + R[1][1]*pw[1] + R[1][2]*pw[2];
+    const z = R[2][0]*pw[0] + R[2][1]*pw[1] + R[2][2]*pw[2];
+    return {id:n.id, x, y, z, wpos:[n.x+d[0],n.y+d[1],n.z+d[2]], wpos0:[n.x,n.y,n.z]};
+  });
+
+  return pts;
+}
+
+let currentScreenMap=null;
+
+function render(model, res){
+  const rect=canvas.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=Math.max(1, Math.floor(rect.width*dpr));
+  canvas.height=Math.max(1, Math.floor(rect.height*dpr));
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,rect.width,rect.height);
+
+  // Axis triad
+  const drawTriad = ()=>{
+    const pad = 18;
+    const baseX = pad + 40;
+    const baseY = rect.height - pad - 40;
+    const L = 28;
+
+    const R = cameraMatrix();
+    const proj = (vx,vy,vz)=>[ R[0][0]*vx + R[0][1]*vy + R[0][2]*vz,
+                               R[1][0]*vx + R[1][1]*vy + R[1][2]*vz ];
+    const arrow = (x1,y1,x2,y2,color,label)=>{
+      ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      const ang=Math.atan2(y2-y1,x2-x1), h=8;
+      ctx.beginPath();
+      ctx.moveTo(x2,y2);
+      ctx.lineTo(x2 - h*Math.cos(ang - Math.PI/6), y2 - h*Math.sin(ang - Math.PI/6));
+      ctx.lineTo(x2 - h*Math.cos(ang + Math.PI/6), y2 - h*Math.sin(ang + Math.PI/6));
+      ctx.closePath(); ctx.fill();
+      ctx.font='11px ui-monospace,Consolas,monospace';
+      ctx.fillText(label, x2 + 6*Math.cos(ang), y2 + 6*Math.sin(ang));
+    };
+
+    ctx.save();
+    ctx.globalAlpha=0.12;
+    ctx.fillStyle='#ffffff';
+    ctx.beginPath(); ctx.arc(baseX, baseY, 34, 0, 2*Math.PI); ctx.fill();
+    ctx.restore();
+
+    const [dxX,dyX]=proj(1,0,0);
+    const [dxY,dyY]=proj(0,1,0);
+    const [dxZ,dyZ]=proj(0,0,1);
+    arrow(baseX,baseY, baseX + L*dxX, baseY + L*dyX, '#ff5a5a', 'x');
+    arrow(baseX,baseY, baseX + L*dxY, baseY + L*dyY, '#5ad15a', 'y');
+    arrow(baseX,baseY, baseX + L*dxZ, baseY + L*dyZ, '#4e8cff', 'z');
+  };
+
+  if(model.nodes.length===0){
+    currentScreenMap=null;
+    drawTriad();
+    return;
+  }
+
+  const scale = (cam.baseScale || 1) * cam.zoom;
+  const ox = rect.width/2 + cam.panX;
+  const oy = rect.height/2 + cam.panY;
+
+  let Pdef, Pbase;
+  if(res){
+    Pbase = projectPoints(model,res,0);
+    Pdef  = projectPoints(model,res,1);
+  }else{
+    Pbase = projectPoints(model,null,0);
+    Pdef  = null;
+  }
+
+  const mapById = arr => { const o={}; arr.forEach(p=>o[p.id]=p); return o; };
+  const Pb = mapById(Pbase);
+  const Pd = Pdef ? mapById(Pdef) : null;
+
+  // undeformed
+  ctx.save();
+  ctx.strokeStyle='#3a4550';
+  ctx.setLineDash([6,5]);
+  ctx.lineWidth=1.5;
+  model.beams.forEach(b=>{
+    const a=Pb[b.nodeA], c=Pb[b.nodeB];
+    if(!a||!c) return;
+    ctx.beginPath();
+    ctx.moveTo(a.x*scale+ox, a.y*scale+oy);
+    ctx.lineTo(c.x*scale+ox, c.y*scale+oy);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  ctx.fillStyle='transparent'; ctx.strokeStyle='#637180'; ctx.lineWidth=1.2;
+  model.nodes.forEach(n=>{
+    const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
+    ctx.beginPath(); ctx.arc(px,py,4,0,2*Math.PI); ctx.stroke();
+  });
+  ctx.restore();
+
+  // deformed
+  if(Pd){
+    ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2;
+    model.beams.forEach(b=>{
+      const a=Pd[b.nodeA], c=Pd[b.nodeB];
+      if(!a||!c) return;
+      ctx.beginPath();
+      ctx.moveTo(a.x*scale+ox, a.y*scale+oy);
+      ctx.lineTo(c.x*scale+ox, c.y*scale+oy);
+      ctx.stroke();
+    });
+
+    ctx.fillStyle='#80ed99';
+    model.nodes.forEach(n=>{
+      const p=Pd[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
+      ctx.beginPath(); ctx.arc(px,py,4,0,2*Math.PI); ctx.fill();
+      ctx.fillStyle='#cbd5dc'; ctx.font='12px ui-monospace,Consolas,monospace';
+      ctx.fillText(n.id, px+6, py-6);
+      ctx.fillStyle='#80ed99';
+    });
+  }else{
+    ctx.fillStyle='#cbd5dc'; ctx.font='12px ui-monospace,Consolas,monospace';
+    model.nodes.forEach(n=>{
+      const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
+      ctx.fillText(n.id, px+6, py-6);
+    });
+  }
+
+  // hinge glyphs at released ends
+  const glyph=(x,y)=>{ ctx.save(); ctx.strokeStyle='#c6b48a'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(x,y,5,0,2*Math.PI); ctx.stroke(); ctx.restore(); };
+  model.beams.forEach(b=>{
+    const a=Pb[b.nodeA], c=Pb[b.nodeB]; if(!a||!c) return;
+    const ax=a.x*scale+ox, ay=a.y*scale+oy, bx=c.x*scale+ox, by=c.y*scale+oy;
+    if(b.releaseA && (b.releaseA.rx||b.releaseA.ry||b.releaseA.rz)) glyph(ax,ay);
+    if(b.releaseB && (b.releaseB.rx||b.releaseB.ry||b.releaseB.rz)) glyph(bx,by);
+  });
+
+  // supports / forces (iconic)
+  const Rvec = cameraMatrix();
+  const Picons = Pd || Pb;
+  model.nodes.forEach(n=>{
+    const p=Picons[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
+    const conds=(model.conditions[n.id]||[]);
+    conds.forEach(c=>{
+      ctx.strokeStyle='#aaa'; ctx.lineWidth=1;
+      if(c.type==='fixed'){
+        ctx.beginPath(); ctx.moveTo(px-6,py+6); ctx.lineTo(px+6,py+18);
+        ctx.moveTo(px-6,py+18); ctx.lineTo(px+6,py+6); ctx.stroke();
+      }else if(c.type==='pinned'){
+        ctx.beginPath(); ctx.moveTo(px-6,py+6); ctx.lineTo(px+6,py+6); ctx.lineTo(px,py+16); ctx.closePath(); ctx.stroke();
+      }else if(c.type==='slider'){
+        ctx.beginPath(); ctx.moveTo(px-8,py+10); ctx.lineTo(px+8,py+10); ctx.stroke();
+      }else if(c.type==='force'){
+        const fx=c.fx||0, fy=c.fy||0, fz=c.fz||0;
+        const fx2 =  Rvec[0][0]*fx + Rvec[0][1]*fy + Rvec[0][2]*fz;
+        const fy2 =  Rvec[1][0]*fx + Rvec[1][1]*fy + Rvec[1][2]*fz;
+        const len = Math.hypot(fx2,fy2) || 1;
+        const L = 24*(Math.log10(1+Math.abs(fx)+Math.abs(fy)+Math.abs(fz))+1)/3;
+        const dx=L*(fx2/len), dy=L*(fy2/len);
+        ctx.strokeStyle='#ff6b6b';
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+dx,py+dy); ctx.stroke();
+      }
+    });
+  });
+
+  currentScreenMap={scale,ox,oy,pts:Pd||Pb, ptsBase:Pb};
+  drawTriad();
+
+  // legend
+  ctx.save();
+  ctx.font='12px ui-monospace,Consolas,monospace';
+  const x0 = rect.width-160, y0=18;
+  ctx.strokeStyle='#3a4550'; ctx.lineWidth=1.5; ctx.setLineDash([6,5]);
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+28,y0); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#cbd5dc'; ctx.fillText('undeformed', x0+34, y0+4);
+  ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x0,y0+16); ctx.lineTo(x0+28,y0+16); ctx.stroke();
+  ctx.fillStyle='#cbd5dc'; ctx.fillText('deformed', x0+34, y0+20);
+  ctx.strokeStyle='#c6b48a'; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.arc(x0+8,y0+34,5,0,2*Math.PI); ctx.stroke();
+  ctx.fillStyle='#cbd5dc'; ctx.fillText('hinge', x0+34, y0+38);
+  ctx.restore();
+}
+
+/* =========================
+   Tooltip  (FIXED)
+   ========================= */
+canvas.addEventListener('mousemove', (e)=>{
+  if(!currentScreenMap){ tooltip.style.display='none'; return; }
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const {scale,ox,oy,pts,ptsBase}=currentScreenMap;
+
+  // pts/ptsBase are maps; iterate their values
+  const list = Object.values(pts || ptsBase || {});
+  let hit=null, best=1e9;
+
+  list.forEach(p=>{
+    const x=p.x*scale+ox, y=p.y*scale+oy;
+    const d=Math.hypot(mx-x,my-y);
+    if(d<10 && d<best){ best=d; hit=p; }
+  });
+
+  if(hit){
+    const d=results?.displacements?.[hit.id];
+    const r=results?.reactions?.[hit.id];
+    const pb = ptsBase ? (ptsBase[hit.id] || null) : null;   // map lookup
+    const pos0 = pb?.wpos0 || [0,0,0];
+
+    let text=`Node ${hit.id}\norig=(${pos0[0].toFixed(3)}, ${pos0[1].toFixed(3)}, ${pos0[2].toFixed(3)})`;
+    if(d){
+      text+=`\ndef =(${hit.wpos[0].toFixed(3)}, ${hit.wpos[1].toFixed(3)}, ${hit.wpos[2].toFixed(3)})`;
+      text+=`\nux=${d.ux.toExponential(3)}  uy=${d.uy.toExponential(3)}  uz=${d.uz.toExponential(3)}\nrx=${d.rx.toExponential(3)}  ry=${d.ry.toExponential(3)}  rz=${d.rz.toExponential(3)}`;
+    }
+    if(r){
+      text+=`\nFx=${(r.Fx||0).toExponential(3)} Fy=${(r.Fy||0).toExponential(3)} Fz=${(r.Fz||0).toExponential(3)}\nMx=${(r.Mx||0).toExponential(3)} My=${(r.My||0).toExponential(3)} Mz=${(r.Mz||0).toExponential(3)}`;
+    }
+    tooltip.textContent=text;
+    tooltip.style.display='block';
+    tooltip.style.left=(e.clientX+10)+'px';
+    tooltip.style.top =(e.clientY+10)+'px';
+  }else{
+    tooltip.style.display='none';
+  }
+});
+canvas.addEventListener('mouseleave', ()=>tooltip.style.display='none');
+
+/* =========================
+   Camera controls
+   ========================= */
+let drag=false, lastX=0,lastY=0, dragMode='orbit';
+canvas.addEventListener('contextmenu', e=>e.preventDefault());
+canvas.addEventListener('mousedown', (e)=>{
+  drag=true; lastX=e.clientX; lastY=e.clientY;
+  dragMode = (e.shiftKey || e.button===1 || e.button===2) ? 'pan' : 'orbit';
+  canvas.classList.add('dragging');
+});
+window.addEventListener('mouseup', ()=>{ drag=false; canvas.classList.remove('dragging'); });
+window.addEventListener('mousemove', (e)=>{
+  if(!drag) return;
+  const dx=(e.clientX-lastX), dy=(e.clientY-lastY);
+  lastX=e.clientX; lastY=e.clientY;
+  if(dragMode==='orbit'){
+    cam.yaw   -= dx*0.010;
+    cam.pitch -= dy*0.008;
+    const lim = Math.PI/2 - 0.03;
+    cam.pitch = Math.max(-lim, Math.min(lim, cam.pitch));
+  }else{
+    cam.panX += dx; cam.panY += dy;
+  }
+  render({nodes,beams,conditions}, results);
+});
+canvas.addEventListener('wheel', (e)=>{
+  e.preventDefault();
+  setZoom(cam.zoom * (e.deltaY>0 ? 0.9 : 1.1));
+  render({nodes,beams,conditions}, results);
+}, {passive:false});
+zoomEl.addEventListener('change', ()=>{
+  setZoom(parseFloat(zoomEl.value)||1);
+  render({nodes,beams,conditions}, results);
+});
+canvas.addEventListener('dblclick', ()=>{
+  cam.yaw=45*Math.PI/180; cam.pitch=20*Math.PI/180; setZoom(1); cam.panX=0; cam.panY=0;
+  computeTarget({nodes,beams,conditions});
+  computeFitScale({nodes,beams,conditions}, results);
+  render({nodes,beams,conditions}, results);
+});
+window.addEventListener('resize', ()=>{
+  computeFitScale({nodes,beams,conditions}, results);
+  render({nodes,beams,conditions}, results);
+});
+
+/* =========================
+   Wiring
+   ========================= */
+const specEl=document.getElementById('spec');
+
+function refreshFromSpec(){
+  const {errors, model, exagOverride: exo, nuGlobal: nug} = parseSpec(specEl.value);
+  if(exo!=null) exagEl.value=exo;
+  if(nug!=null) nuGlobal=nug;
+
+  errorsEl.textContent = errors.length ? errors.join('\n') : '';
+  if(errors.length){
+    setStatus('Parse errors. Fix spec to proceed.', false);
+    nodes=[]; beams=[]; conditions={}; results=null;
+  }else{
+    nodes=model.nodes; beams=model.beams; conditions=model.conditions; setStatus('Parsed OK.');
+  }
+
+  // refresh modal beam id list if open
+  populateBeamIdSelect(model.beams);
+
+  computeTarget({nodes,beams,conditions});
+  computeFitScale({nodes,beams,conditions}, results);
+  updateResultsUI(results, {nodes,beams,conditions});
+  render({nodes,beams,conditions}, results);
+}
+specEl.addEventListener('input', refreshFromSpec);
+
+document.getElementById('btnSolve').addEventListener('click', ()=>{
+  try{
+    const {errors, model} = parseSpec(specEl.value);
+    if(errors.length){
+      errorsEl.textContent=errors.join('\n');
+      setStatus('Fix parsing errors to solve.', false);
+      results=null;
+      computeTarget(model);
+      computeFitScale(model, results);
+      updateResultsUI(null, model);
+      render(model, null);
+      return;
+    }
+    const out=solve3D(model);
+    results=out; setStatus('Solved. Showing undeformed + deformed shapes.');
+    computeTarget(model);
+    computeFitScale(model, results);
+    updateResultsUI(results, model);
+    render(model, results);
+  }catch(err){
+    results=null;
+    errorsEl.textContent=String(err.message||err);
+    setStatus('Solve failed.', false);
+    computeTarget({nodes,beams,conditions});
+    computeFitScale({nodes,beams,conditions}, results);
+    updateResultsUI(null, {nodes,beams,conditions});
+    render({nodes,beams,conditions}, null);
+  }
+});
+
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const data={nodes,beams,conditions,results};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='structure3d.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  specEl.value = presetText('mixed');
+  results=null; refreshFromSpec(); setStatus('Reset to preset.');
+});
+
+exagEl.addEventListener('change', ()=>{
+  computeTarget({nodes,beams,conditions});
+  computeFitScale({nodes,beams,conditions}, results);
+  render({nodes,beams,conditions}, results);
+});
+
+/* =========================
+   Presets (includes Mixed & Compliant)
+   ========================= */
+function presetText(name){
+  if(name==='mixed'){
+    return `# Mixed joint at node 2: beams 1 & 2 rigidly connected, beam 3 pinned at node 2
+exag = 20
+nu   = 0.30
+
+nodes:
+  1: (0, 0, 0)
+  2: (1.2, 0, 0)
+  3: (1.2, 0.8, 0)
+  4: (0.4, 0.4, 0)
+
+beams:
+  # 'pin@2' releases Ry,Rz at the end connected to node 2
+  1: 1-2 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  2: 2-3 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  3: 2-4 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1) pin@2
+
+conditions:
+  1: fixed
+  3: free
+  2: force Fx=0 Fy=0 Fz=-1000 Mx=0 My=0 Mz=0
+`;
+  } else if(name==='cantilever'){
+    return `# 3D Cantilever along X with tip load in Z
+exag = 20
+nu   = 0.30
+
+nodes:
+  1: (0, 0, 0)
+  2: (1.0, 0, 0)
+
+beams:
+  1: 1-2  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)  rigid
+
+conditions:
+  1: fixed
+  2: force Fx=0 Fy=0 Fz=-1000 Mx=0 My=0 Mz=0
+`;
+  } else if(name==='portal'){
+    return `# Portal frame in XZ plane, Z up, load at top
+exag = 15
+nu   = 0.30
+
+nodes:
+  1: (0, 0, 0)
+  2: (0, 0, 2)
+  3: (3, 0, 2)
+  4: (3, 0, 0)
+
+beams:
+  1: 1-2  E=200e9 A=0.01 Iy=8e-5 Iz=8e-5 J=1.6e-4 up=(0,0,1)
+  2: 2-3  E=200e9 A=0.01 Iy=8e-5 Iz=8e-5 J=1.6e-4 up=(0,0,1)
+  3: 3-4  E=200e9 A=0.01 Iy=8e-5 Iz=8e-5 J=1.6e-4 up=(0,0,1)
+
+conditions:
+  1: fixed
+  4: fixed
+  3: force Fx=0 Fy=0 Fz=-2000 Mx=0 My=0 Mz=0
+`;
+  } else if(name==='space'){
+    return `# Space frame corner load
+exag = 12
+nu   = 0.30
+
+nodes:
+  1: (0, 0, 0)
+  2: (2, 0, 0)
+  3: (2, 2, 0)
+  4: (0, 2, 0)
+  5: (0, 0, 2)
+  6: (2, 0, 2)
+  7: (2, 2, 2)
+  8: (0, 2, 2)
+
+beams:
+  1: 1-2 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  2: 2-3 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  3: 3-4 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  4: 4-1 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  5: 5-6 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  6: 6-7 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  7: 7-8 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  8: 8-5 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
+  9: 1-5 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,1,0)
+  10:2-6 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,1,0)
+  11:3-7 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,1,0)
+  12:4-8 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,1,0)
+
+conditions:
+  1: fixed
+  2: fixed
+  4: fixed
+  8: free
+  7: force Fx=500 Fy=300 Fz=-1000 Mx=0 My=0 Mz=0
+`;
+  } else if(name==='compliant'){
+    return `# Compliant Mount: mid-node supported by springs (bushing to ground)
+exag = 25
+nu   = 0.30
+
+nodes:
+  1: (0, 0, 0)
+  2: (2.0, 0, 0)
+  3: (4.0, 0, 0)
+
+beams:
+  1: 1-2  E=210e9 A=0.01 Iy=8e-5 Iz=8e-5 J=1.6e-4 up=(0,0,1)
+  2: 2-3  E=210e9 A=0.01 Iy=8e-5 Iz=8e-5 J=1.6e-4 up=(0,0,1)
+
+conditions:
+  1: fixed
+  2: bushing_ground kx=2e6 ky=2e6 kz=4e6 krx=5e5 kry=5e5 krz=2e5
+  3: force Fx=0 Fy=0 Fz=-1500 Mx=0 My=0 Mz=0
+`;
+  }
+  return '';
+}
+document.getElementById('btnPreset').addEventListener('click', ()=>{
+  const val=document.getElementById('preset').value;
+  specEl.value = presetText(val);
+  results=null; refreshFromSpec();
+});
+
+/* =========================
+   Cross-Section Modal Logic
+   ========================= */
+const overlay = document.getElementById('xsecOverlay');
+const btnXSec = document.getElementById('btnXSec');
+const btnClose = document.getElementById('xsecClose');
+const matLib = document.getElementById('matLib');
+const matE = document.getElementById('matE');
+const matNu = document.getElementById('matNu');
+const shapeSel = document.getElementById('shape');
+const upVec = document.getElementById('upVec');
+
+const outA = document.getElementById('outA');
+const outIy = document.getElementById('outIy');
+const outIz = document.getElementById('outIz');
+const outJ = document.getElementById('outJ');
+const outG = document.getElementById('outG');
+const snippetEl = document.getElementById('snippet');
+const beamIdSelect = document.getElementById('beamIdSelect');
+const snRigid = document.getElementById('snRigid');
+
+const dimGroups = {
+  rect: document.querySelectorAll('.dim-rect'),
+  rectTube: document.querySelectorAll('.dim-rectTube'),
+  circ: document.querySelectorAll('.dim-circ'),
+  tube: document.querySelectorAll('.dim-tube'),
+  ibeam: document.querySelectorAll('.dim-ibeam'),
+};
+function showDims(which){
+  for(const k in dimGroups){
+    dimGroups[k].forEach(el=> el.style.display = (k===which)?'block':'none');
+  }
+}
+showDims('rect');
+
+function eng(v){
+  if(!isFinite(v)) return '';
+  if(v===0) return '0';
+  const sign = v<0?'-':'';
+  v=Math.abs(v);
+  const exp = Math.floor(Math.log10(v));
+  const exp3 = Math.floor(exp/3)*3;
+  const mant = v/Math.pow(10,exp3);
+  const mantStr = (mant>=100? mant.toFixed(0) : mant>=10? mant.toFixed(1) : mant.toFixed(2)).replace(/\.?0+$/,'');
+  return `${sign}${mantStr}e${exp3}`;
+}
+function parseVec3(str){
+  const m=str.split(',').map(s=>parseFloat(s.trim()));
+  if(m.length!==3 || m.some(x=>!isFinite(x))) return [0,0,1];
+  return m;
+}
+function updateMatFields(){
+  if(matLib.value==='steel'){ matE.value='210e9'; matNu.value='0.30'; }
+  else if(matLib.value==='al'){ matE.value='69e9'; matNu.value='0.33'; }
+  else if(matLib.value==='ti'){ matE.value='114e9'; matNu.value='0.34'; }
+  computeProps();
+}
+matLib.addEventListener('change', updateMatFields);
+
+function evalNum(str){
+  try{
+    if(!/^[\s+-]?\d*\.?\d+(e[+-]?\d+)?\s*$/i.test(String(str))) return NaN;
+    return Number(str);
+  }catch{ return NaN; }
+}
+
+function computeProps(){
+  const E = Number(evalNum(matE.value));
+  const nu = parseFloat(matNu.value);
+  const G = E/(2*(1+nu));
+  let A=NaN, Iy=NaN, Iz=NaN, J=NaN;
+
+  const sh = shapeSel.value;
+
+  if(sh==='rect'){
+    const b = parseFloat(document.getElementById('rect_b').value);
+    const h = parseFloat(document.getElementById('rect_h').value);
+    A = b*h;
+    Iy = b*h*h*h/12;
+    Iz = h*b*b*b/12;
+    let B=b, H=h;
+    if(H>B){ const t=B; B=H; H=t; }
+    const r = H/B;
+    J = B*H*H*H*(1/3 - 0.21*r*(1 - 0.2*r*r*r*r));
+  }else if(sh==='rectTube'){
+    const B = parseFloat(document.getElementById('rt_B').value);
+    const H = parseFloat(document.getElementById('rt_H').value);
+    const t = parseFloat(document.getElementById('rt_t').value);
+    if(B<=2*t || H<=2*t){ A=Iy=Iz=J=NaN; }
+    else{
+      const Bi=B-2*t, Hi=H-2*t;
+      A = B*H - Bi*Hi;
+      Iy = (B*H**3 - Bi*Hi**3)/12;
+      Iz = (H*B**3 - Hi*Bi**3)/12;
+      const Am = (B - t)*(H - t);
+      const denom = 2*(B+H-2*t)/t;
+      J = 4*Am*Am/denom;
+    }
+  }else if(sh==='circ'){
+    const d = parseFloat(document.getElementById('c_d').value);
+    A = Math.PI*d*d/4;
+    Iy = Iz = Math.PI*Math.pow(d,4)/64;
+    J = Math.PI*Math.pow(d,4)/32;
+  }else if(sh==='tube'){
+    const D = parseFloat(document.getElementById('t_D').value);
+    const t = parseFloat(document.getElementById('t_t').value);
+    const d = D - 2*t;
+    if(d<=0){ A=Iy=Iz=J=NaN; }
+    else{
+      A = Math.PI*(D*D - d*d)/4;
+      Iy = Iz = Math.PI*(Math.pow(D,4)-Math.pow(d,4))/64;
+      J = Math.PI*(Math.pow(D,4)-Math.pow(d,4))/32;
+    }
+  }else if(sh==='ibeam'){
+    const Bf = parseFloat(document.getElementById('ib_Bf').value);
+    const H  = parseFloat(document.getElementById('ib_H').value);
+    const tf = parseFloat(document.getElementById('ib_tf').value);
+    const tw = parseFloat(document.getElementById('ib_tw').value);
+    const hw = H - 2*tf;
+    if(hw<=0){ A=Iy=Iz=J=NaN; }
+    else{
+      A = 2*(Bf*tf) + (tw*hw);
+      const Iy_fl = Bf*tf**3/12;
+      const Iy_web = tw*hw**3/12;
+      Iy = 2*Iy_fl + Iy_web;
+      const Iz_fl_c = tf*Bf**3/12;
+      const dy = (H/2 - tf/2);
+      const Iz_fl = Iz_fl_c + (Bf*tf)*dy*dy;
+      const Iz_web = hw*tw**3/12;
+      Iz = 2*Iz_fl + Iz_web;
+      J = 2*(Bf*tf**3)/3 + (hw*tw**3)/3;
+    }
+  }
+
+  outA.value  = eng(A);
+  outIy.value = eng(Iy);
+  outIz.value = eng(Iz);
+  outJ.value  = eng(J);
+  outG.value  = eng(G);
+
+  const up = parseVec3(upVec.value);
+  let snip = `E=${eng(E)} A=${eng(A)} Iy=${eng(Iy)} Iz=${eng(Iz)} J=${eng(J)} G=${eng(G)} up=(${up[0]},${up[1]},${up[2]})`;
+  if(document.getElementById('snRigid').checked) snip += ' rigid';
+  snippetEl.textContent = snip;
+}
+
+shapeSel.addEventListener('change', ()=>{ showDims(shapeSel.value); computeProps(); });
+['rect_b','rect_h','rt_B','rt_H','rt_t','c_d','t_D','t_t','ib_Bf','ib_H','ib_tf','ib_tw','upVec','matE','matNu','snRigid']
+  .forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input', computeProps); });
+
+function openModal(){
+  overlay.style.display='flex';
+  overlay.setAttribute('aria-hidden','false');
+  populateBeamIdSelect(beams);
+  computeProps();
+}
+function closeModal(){
+  overlay.style.display='none';
+  overlay.setAttribute('aria-hidden','true');
+}
+btnXSec.addEventListener('click', openModal);
+btnClose.addEventListener('click', closeModal);
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && overlay.style.display==='flex') closeModal(); });
+
+function populateBeamIdSelect(beamArr){
+  beamIdSelect.innerHTML = '';
+  (beamArr||[]).forEach(b=>{
+    const opt=document.createElement('option');
+    opt.value=String(b.id); opt.textContent = `Beam ${b.id}: ${b.nodeA}-${b.nodeB}`;
+    beamIdSelect.appendChild(opt);
+  });
+}
+
+document.getElementById('btnCopy').addEventListener('click', async ()=>{
+  await navigator.clipboard.writeText(snippetEl.textContent);
+});
+
+document.getElementById('btnInsert').addEventListener('click', ()=>{
+  const snip = snippetEl.textContent;
+  const ta = specEl;
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const v = ta.value;
+  ta.value = v.slice(0,start) + snip + v.slice(end);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = start + snip.length;
+  refreshFromSpec();
+});
+
+document.getElementById('btnApply').addEventListener('click', ()=>{
+  const id = beamIdSelect.value;
+  if(!id) return;
+  const snip = snippetEl.textContent;
+
+  const lines = specEl.value.split(/\r?\n/);
+  let inBeams=false;
+  for(let i=0;i<lines.length;i++){
+    const L=lines[i];
+    if(/^\s*beams\s*:\s*$/i.test(L)){ inBeams=true; continue; }
+    if(inBeams){
+      if(/^\s*(nodes|conditions)\s*:\s*$/i.test(L)) break;
+      const m=L.match(/^\s*(\d+)\s*:\s*(\d+)\s*-\s*(\d+)\s*(.*)$/);
+      if(m && m[1]===id){
+        const prefix = `${m[1]}: ${m[2]}-${m[3]}  `;
+        let rest = m[4]||'';
+        const upOld = (rest.match(/up=\([^)]+\)/i)||[])[0] || '';
+        const upNew = (snip.match(/up=\([^)]+\)/i)||[])[0] || '';
+        const keepUp = upNew || upOld;
+
+        rest = rest.replace(/\b(E|A|Iy|Iz|J|G)\s*=\s*([^\s)]+)\s*/gi,'')
+                   .replace(/up=\([^)]+\)/i,'')
+                   .trim();
+
+        lines[i] = '  ' + prefix + snip.replace(/\s*up=\([^)]+\)/i,'') + (keepUp?(' '+keepUp):'') + (rest?(' '+rest):'');
+        break;
+      }
+    }
+  }
+  specEl.value = lines.join('\n');
+  refreshFromSpec();
+});
+
+/* =========================
+   Init
+   ========================= */
+document.getElementById('btnXSec').title = 'Compute E, A, Iy, Iz, J (and G) from a cross-section';
+document.getElementById('btnXSec').ariaHasPopup = 'dialog';
+
+specEl.value = presetText('mixed');
+refreshFromSpec();
+setZoom(1);
+updateMatFields(); // initialize material -> E, ν set + compute
+</script>
+</body>
+</html>
