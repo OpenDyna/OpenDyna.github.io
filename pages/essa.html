@@ -75,8 +75,11 @@
   <input id="exag" type="number" value="1" step="1" />
   <label class="muted">Zoom</label>
   <input id="zoom" type="number" value="1" step="0.1" />
+  <button id="viewFront" class="btn" title="Front (X → camera)">Front View</button>
+  <button id="viewSide"  class="btn" title="Side (Y → camera)">Side View</button>
+  <button id="viewTop"   class="btn" title="Top (Z → camera)">Top View</button>
   <button id="btnSolve">Solve</button>
-  <button id="btnExport">Export JSON</button>
+  <button id="btnSave">Save Model Spec</button>
   <button id="btnReset">Reset</button>
 </header>
 
@@ -149,6 +152,31 @@ conditions:
       <span class="tag">Conditions: <span id="nConds">0</span></span>
       <span class="tag">State: <span id="solveState">unsolved</span></span>
       <span class="tag">Legend: — — undeformed • — deformed • ○ hinge symbol</span>
+    </div>
+  </div>
+</div>
+
+<!-- Save-as Modal -->
+<div class="modalOverlay" id="saveOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="saveTitle">
+    <header>
+      <h3 id="saveTitle">Save Model Spec</h3>
+      <div class="spacer"></div>
+      <button id="saveClose" class="btn">Close</button>
+    </header>
+    <div class="content">
+      <div class="formRow" style="grid-template-columns: 1fr auto; align-items:center;">
+        <label for="saveFileName">File name</label>
+        <input id="saveFileName" type="text" placeholder="my-model.essa" />
+      </div>
+      <div class="help" style="margin-top:8px">
+        Saved to <span class="kbd">~/Documents/ESSA/</span>. Invalid characters will be removed.
+      </div>
+      <div class="btnRow" style="margin-top:12px">
+        <button id="saveConfirm" class="btn">Save</button>
+        <button id="saveCancel" class="btn">Cancel</button>
+      </div>
+      <div id="saveErrors" class="errors" style="margin-top:8px"></div>
     </div>
   </div>
 </div>
@@ -1044,44 +1072,64 @@ function render(model, res){
 /* =========================
    Tooltip  (FIXED)
    ========================= */
-canvas.addEventListener('mousemove', (e)=>{
-  if(!currentScreenMap){ tooltip.style.display='none'; return; }
-  const rect=canvas.getBoundingClientRect();
-  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
-  const {scale,ox,oy,pts,ptsBase}=currentScreenMap;
+canvas.addEventListener('mousemove', (e) => {
+  if (!currentScreenMap) {
+    tooltip.style.display = 'none';
+    return;
+  }
 
-  // pts/ptsBase are maps; iterate their values
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const { scale, ox, oy, pts, ptsBase } = currentScreenMap;
+
   const list = Object.values(pts || ptsBase || {});
-  let hit=null, best=1e9;
+  let hit = null, best = 1e9;
 
-  list.forEach(p=>{
-    const x=p.x*scale+ox, y=p.y*scale+oy;
-    const d=Math.hypot(mx-x,my-y);
-    if(d<10 && d<best){ best=d; hit=p; }
+  list.forEach(p => {
+    const x = p.x * scale + ox;
+    const y = p.y * scale + oy;
+    const d = Math.hypot(mx - x, my - y);
+    if (d < 10 && d < best) {
+      best = d;
+      hit = p;
+    }
   });
 
-  if(hit){
-    const d=results?.displacements?.[hit.id];
-    const r=results?.reactions?.[hit.id];
-    const pb = ptsBase ? (ptsBase[hit.id] || null) : null;   // map lookup
-    const pos0 = pb?.wpos0 || [0,0,0];
+  if (hit) {
+    const d = results?.displacements?.[hit.id];
+    const r = results?.reactions?.[hit.id];
+    const pb = ptsBase ? ptsBase[hit.id] : null;
+    const pos0 = pb?.wpos0 || [0, 0, 0];
 
-    let text=`Node ${hit.id}\norig=(${pos0[0].toFixed(3)}, ${pos0[1].toFixed(3)}, ${pos0[2].toFixed(3)})`;
-    if(d){
-      text+=`\ndef =(${hit.wpos[0].toFixed(3)}, ${hit.wpos[1].toFixed(3)}, ${hit.wpos[2].toFixed(3)})`;
-      text+=`\nux=${d.ux.toExponential(3)}  uy=${d.uy.toExponential(3)}  uz=${d.uz.toExponential(3)}\nrx=${d.rx.toExponential(3)}  ry=${d.ry.toExponential(3)}  rz=${d.rz.toExponential(3)}`;
+    let text = `Node ${hit.id}\norig=(${pos0[0].toFixed(3)}, ${pos0[1].toFixed(3)}, ${pos0[2].toFixed(3)})`;
+    if (d) {
+      text += `\ndef=(${hit.wpos[0].toFixed(3)}, ${hit.wpos[1].toFixed(3)}, ${hit.wpos[2].toFixed(3)})`;
+      text += `\nux=${d.ux.toExponential(3)}  uy=${d.uy.toExponential(3)}  uz=${d.uz.toExponential(3)}`;
+      text += `\nrx=${d.rx.toExponential(3)}  ry=${d.ry.toExponential(3)}  rz=${d.rz.toExponential(3)}`;
     }
-    if(r){
-      text+=`\nFx=${(r.Fx||0).toExponential(3)} Fy=${(r.Fy||0).toExponential(3)} Fz=${(r.Fz||0).toExponential(3)}\nMx=${(r.Mx||0).toExponential(3)} My=${(r.My||0).toExponential(3)} Mz=${(r.Mz||0).toExponential(3)}`;
+    if (r) {
+      text += `\nFx=${(r.Fx || 0).toExponential(3)} Fy=${(r.Fy || 0).toExponential(3)} Fz=${(r.Fz || 0).toExponential(3)}`;
+      text += `\nMx=${(r.Mx || 0).toExponential(3)} My=${(r.My || 0).toExponential(3)} Mz=${(r.Mz || 0).toExponential(3)}`;
     }
-    tooltip.textContent=text;
-    tooltip.style.display='block';
-    tooltip.style.left=(e.clientX+10)+'px';
-    tooltip.style.top =(e.clientY+10)+'px';
-  }else{
-    tooltip.style.display='none';
+
+    tooltip.textContent = text;
+    tooltip.style.display = 'block';
+
+    // Clamp position inside canvas
+    const tw = tooltip.offsetWidth || 0;
+    const th = tooltip.offsetHeight || 0;
+    const pad = 8;
+    const tx = Math.min(mx + 12, rect.width - tw - pad);
+    const ty = Math.min(my + 12, rect.height - th - pad);
+
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+  } else {
+    tooltip.style.display = 'none';
   }
 });
+
 canvas.addEventListener('mouseleave', ()=>tooltip.style.display='none');
 
 /* =========================
@@ -1187,13 +1235,7 @@ document.getElementById('btnSolve').addEventListener('click', ()=>{
   }
 });
 
-document.getElementById('btnExport').addEventListener('click', ()=>{
-  const data={nodes,beams,conditions,results};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='structure3d.json'; a.click();
-  URL.revokeObjectURL(url);
-});
+document.getElementById('btnSave').addEventListener('click', saveModelSpecToESSA);
 
 document.getElementById('btnReset').addEventListener('click', ()=>{
   specEl.value = presetText('mixed');
@@ -1327,11 +1369,7 @@ conditions:
   }
   return '';
 }
-document.getElementById('btnPreset').addEventListener('click', ()=>{
-  const val=document.getElementById('preset').value;
-  specEl.value = presetText(val);
-  results=null; refreshFromSpec();
-});
+document.getElementById('btnPreset').addEventListener('click', loadSelectedPresetOrFile);
 
 /* =========================
    Cross-Section Modal Logic
@@ -1565,6 +1603,372 @@ specEl.value = presetText('mixed');
 refreshFromSpec();
 setZoom(1);
 updateMatFields(); // initialize material -> E, ν set + compute
+
+/* =========================
+   File access: Save to ~/Documents/ESSA + load files into Presets
+   ========================= */
+const TEST_FILENAME = 'test.essa';   // <- change if you want a different test file name
+
+// --- tiny IndexedDB wrapper so we can remember the folder handle across reloads ---
+const DB_NAME='essa-store', STORE='fs';
+function idbOpen(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(STORE);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbSet(key, val){
+  const db = await idbOpen();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(val, key);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbGet(key){
+  const db = await idbOpen();
+  return new Promise((res, rej)=>{
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get(key);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+// --- ask (once) for the ESSA directory; remember it in IndexedDB ---
+async function getESSADirHandle() {
+  try{
+    // 1) Try a previously approved handle
+    let dir = await idbGet('essaDir');
+    if (dir && dir.requestPermission) {
+      const p = await dir.queryPermission?.({mode:'readwrite'});
+      if (p === 'granted') return dir;
+      const p2 = await dir.requestPermission({mode:'readwrite'});
+      if (p2 === 'granted') return dir;
+    }
+
+    // 2) If browser doesn’t support the API, bail to fallback
+    if (!window.showDirectoryPicker) return null;
+
+    // 3) Ask user to pick ~/Documents (or wherever) then ensure an "ESSA" subfolder exists
+    const picked = await window.showDirectoryPicker({ id: 'ESSA', startIn: 'documents' });
+    let target = picked;
+    if (picked.name !== 'ESSA') {
+      try { target = await picked.getDirectoryHandle('ESSA', { create: true }); }
+      catch { /* ignore; user may not let us create here */ }
+    }
+
+    // Confirm permission
+    const perm = await target.requestPermission?.({mode:'readwrite'});
+    if (perm !== 'granted') return null;
+
+    await idbSet('essaDir', target);
+    return target;
+  }catch(err){
+    console.warn('getESSADirHandle:', err);
+    return null;
+  }
+}
+
+// --- Save the spec text as test.essa into that folder (or download fallback) ---
+async function saveModelSpecToESSA() {
+  const text = document.getElementById('spec').value;
+  const dir = await getESSADirHandle();
+
+  // Fallback if FS Access API unavailable or permission denied
+  if (!dir) {
+    const blob = new Blob([text], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = TEST_FILENAME; a.click();
+    URL.revokeObjectURL(url);
+    setStatus('Saved via download (no filesystem permission).');
+    return;
+  }
+
+  try{
+    const fh = await dir.getFileHandle(TEST_FILENAME, { create: true });
+    const ws = await fh.createWritable();
+    await ws.write(text);
+    await ws.close();
+    setStatus(`Saved to ${dir.name}/${TEST_FILENAME}`);
+    await refreshUserFilesPreset(dir);   // refresh the dropdown so test.essa appears
+  }catch(err){
+    console.error(err);
+    setStatus('Save failed.', false);
+  }
+}
+
+// --- Build "My Files (ESSA)" into the Presets dropdown from valid files ---
+let __essaFileMap = {}; // name -> { handle }
+async function refreshUserFilesPreset(dir) {
+  try{
+    dir = dir || await idbGet('essaDir');
+    if (!dir) return;
+
+    // Ensure permission is still valid
+    const q = await dir.queryPermission?.({mode:'readwrite'});
+    if (q !== 'granted') {
+      const r = await dir.requestPermission?.({mode:'readwrite'});
+      if (r !== 'granted') return;
+    }
+
+    const sel = document.getElementById('preset');
+    // Remove old optgroup if present
+    const old = document.getElementById('userFilesGroup');
+    if (old) old.remove();
+
+    const og = document.createElement('optgroup');
+    og.id = 'userFilesGroup';
+    og.label = 'My Files (ESSA)';
+    __essaFileMap = {};
+
+    for await (const [name, handle] of dir.entries()) {
+      if (handle.kind !== 'file') continue;
+      // Accept typical text-like specs
+      if (!/\.(essa|txt|spec|yaml|yml|json|md)$/i.test(name)) continue;
+
+      // Validate by parsing; only add if parseSpec() has no errors
+      const file = await handle.getFile();
+      const text = await file.text();
+      const { errors } = parseSpec(text);
+      if (errors.length) continue;
+
+      __essaFileMap[name] = { handle };
+      const opt = document.createElement('option');
+      opt.value = `file:${name}`;
+      opt.textContent = `File: ${name}`;
+      og.appendChild(opt);
+    }
+
+    // Only append if we found any files
+    if (og.children.length) sel.appendChild(og);
+  }catch(err){
+    console.warn('refreshUserFilesPreset:', err);
+  }
+}
+
+// Load selected preset OR file from ESSA group
+async function loadSelectedPresetOrFile() {
+  const sel = document.getElementById('preset');
+  const val = sel.value;
+
+  if (val.startsWith('file:')) {
+    const name = val.slice(5);
+    const entry = __essaFileMap[name];
+    if (!entry) { await refreshUserFilesPreset(); }
+
+    try{
+      const file = await entry.handle.getFile();
+      const text = await file.text();
+      specEl.value = text;
+      results = null;
+      refreshFromSpec();
+      setStatus(`Loaded: ${name}`);
+    }catch(err){
+      console.error(err);
+      setStatus('Could not open the selected file.', false);
+    }
+  } else {
+    specEl.value = presetText(val);
+    results = null;
+    refreshFromSpec();
+  }
+}
+
+// Kick off a background attempt to populate the ESSA files into the dropdown on load
+refreshUserFilesPreset().catch(()=>{});
+
+/* ========= File access helpers (ensure ~/Documents/ESSA) ========= */
+async function getOrCreateESSADir() {
+  try {
+    // Reuse cached handle if possible
+    let dir = await idbGet('essaDir');
+    if (dir && dir.queryPermission) {
+      const p = await dir.queryPermission?.({mode:'readwrite'});
+      if (p === 'granted') return dir;
+      const p2 = await dir.requestPermission?.({mode:'readwrite'});
+      if (p2 === 'granted') return dir;
+    }
+
+    if (!window.showDirectoryPicker) return null;
+
+    // Ask for Documents, then ensure/create ESSA inside it
+    const documents = await window.showDirectoryPicker({ id: 'documents', startIn: 'documents' });
+    let essa = documents;
+    if (documents.name !== 'ESSA') {
+      essa = await documents.getDirectoryHandle('ESSA', { create: true });
+    }
+
+    const perm = await essa.requestPermission?.({mode:'readwrite'});
+    if (perm !== 'granted') return null;
+
+    await idbSet('essaDir', essa);
+    return essa;
+  } catch (err) {
+    console.warn('getOrCreateESSADir:', err);
+    return null;
+  }
+}
+
+/* ========= Filename sanitation ========= */
+const WINDOWS_RESERVED = new Set([
+  'CON','PRN','AUX','NUL','COM1','COM2','COM3','COM4','COM5','COM6','COM7','COM8','COM9',
+  'LPT1','LPT2','LPT3','LPT4','LPT5','LPT6','LPT7','LPT8','LPT9'
+]);
+
+function sanitizeFileName(name) {
+  if (!name) return '';
+  // Trim and strip invalid characters (Windows + common bad)
+  let s = name.trim()
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')  // control & forbidden
+    .replace(/\s+/g, ' ')                    // collapse spaces
+    .replace(/\.+$/g, '');                   // no trailing dots
+  if (!s) return '';
+
+  // Enforce .essa extension
+  if (!/\.(essa)$/i.test(s)) s = s + '.essa';
+
+  // Block reserved names (without extension)
+  const base = s.replace(/\.[^.]+$/,'');
+  if (WINDOWS_RESERVED.has(base.toUpperCase())) return '';
+
+  // Reasonable max length
+  if (s.length > 120) s = s.slice(0, 120);
+
+  return s;
+}
+
+/* ========= Save modal open/close ========= */
+const saveOverlay  = document.getElementById('saveOverlay');
+const saveCloseBtn = document.getElementById('saveClose');
+const saveCancel   = document.getElementById('saveCancel');
+const saveConfirm  = document.getElementById('saveConfirm');
+const saveNameIn   = document.getElementById('saveFileName');
+const saveErrors   = document.getElementById('saveErrors');
+
+function openSaveModal(defaultName='model.essa') {
+  saveErrors.textContent = '';
+  saveNameIn.value = defaultName;
+  saveOverlay.style.display = 'flex';
+  saveOverlay.setAttribute('aria-hidden','false');
+  setTimeout(()=> saveNameIn.focus(), 0);
+}
+function closeSaveModal() {
+  saveOverlay.style.display = 'none';
+  saveOverlay.setAttribute('aria-hidden','true');
+}
+saveCloseBtn.addEventListener('click', closeSaveModal);
+saveCancel.addEventListener('click', closeSaveModal);
+saveOverlay.addEventListener('click', (e)=>{ if(e.target===saveOverlay) closeSaveModal(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && saveOverlay.style.display==='flex') closeSaveModal(); });
+
+/* ========= Main button handler ========= */
+document.getElementById('btnSave').addEventListener('click', async () => {
+  // Make sure we can reach/create ~/Documents/ESSA
+  const dir = await getOrCreateESSADir();
+  if (!dir) {
+    setStatus('Cannot access ~/Documents. Using download fallback.', false);
+    // Simple fallback: download current spec with a prompt() file name
+    const proposed = 'model.essa';
+    const raw = prompt('File name to download as:', proposed);
+    if (raw == null) return;
+    const cleaned = sanitizeFileName(raw);
+    if (!cleaned) { alert('Invalid file name.'); return; }
+    const blob = new Blob([specEl.value], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = cleaned; a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  // Show the in-app Save As modal
+  openSaveModal('model.essa');
+
+  // When user confirms, perform the save
+  async function doSave() {
+    saveErrors.textContent = '';
+    let cleaned = sanitizeFileName(saveNameIn.value);
+    if (!cleaned) {
+      saveErrors.textContent = 'Please enter a valid file name (no reserved names or illegal characters).';
+      return;
+    }
+
+    try {
+      // Check if file exists to confirm overwrite
+      let exists = false;
+      try {
+        await dir.getFileHandle(cleaned, { create: false });
+        exists = true;
+      } catch {}
+
+      if (exists && !confirm(`"${cleaned}" already exists. Overwrite?`)) return;
+
+      const fh = await dir.getFileHandle(cleaned, { create: true });
+      const ws = await fh.createWritable();
+      await ws.write(specEl.value);
+      await ws.close();
+
+      setStatus(`Saved to ${dir.name}/${cleaned}`);
+      closeSaveModal();
+      await refreshUserFilesPreset(dir); // so it appears under "My Files (ESSA)"
+    } catch (err) {
+      console.error(err);
+      saveErrors.textContent = 'Save failed. Check permissions or try a different name.';
+      setStatus('Save failed.', false);
+    }
+  }
+
+  // Bind confirm click & Enter key (one-shot)
+  const onClick = () => { saveConfirm.removeEventListener('click', onClick); saveNameIn.removeEventListener('keydown', onKey); doSave(); };
+  const onKey = (e) => { if (e.key === 'Enter') { saveConfirm.removeEventListener('click', onClick); saveNameIn.removeEventListener('keydown', onKey); doSave(); } };
+
+  saveConfirm.addEventListener('click', onClick);
+  saveNameIn.addEventListener('keydown', onKey);
+});
+
+// --- View shortcuts: aim the camera so a given axis points at the camera ---
+function setViewByNormal(nx, ny, nz){
+  // normalize
+  const L = Math.hypot(nx, ny, nz) || 1;
+  nx /= L; ny /= L; nz /= L;
+
+  // Convert desired forward vector f = (nx,ny,nz) to yaw/pitch used by cameraMatrix()
+  // cameraMatrix uses: f = [cos(pitch)*cos(yaw), cos(pitch)*sin(yaw), sin(pitch)]
+  cam.yaw   = Math.atan2(ny, nx);
+  let pitch = Math.asin(nz);
+
+  // Respect the same pitch limit the drag code uses (avoid the singularity)
+  const lim = Math.PI/2 - 0.03;
+  cam.pitch = Math.max(-lim, Math.min(lim, pitch));
+
+  // Reset pan/zoom and re-fit
+  cam.panX = 0; cam.panY = 0;
+  setZoom(1);
+  computeTarget({nodes,beams,conditions});
+  computeFitScale({nodes,beams,conditions}, results);
+  render({nodes,beams,conditions}, results);
+}
+
+// Wire the three buttons
+document.getElementById('viewFront').addEventListener('click', ()=> {
+  // Front: look along +Y (normal of the XZ “front” plane points at camera)
+  setViewByNormal(-1, 0, 0);
+});
+document.getElementById('viewSide').addEventListener('click', ()=> {
+  // Side: look along +X (normal of the YZ plane points at camera)
+  setViewByNormal(0, -1, 0);
+});
+document.getElementById('viewTop').addEventListener('click', ()=> {
+  // Top: look along +Z (normal of the XY plane points at camera)
+  setViewByNormal(0, 0, -1);
+});
+
+
 </script>
 </body>
 </html>
