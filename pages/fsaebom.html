@@ -1,0 +1,772 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FSAE EBOM Visualizer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0c1015;
+      --bg-alt: #111722;
+      --panel: #151d29;
+      --accent: #4db6ac;
+      --accent-soft: rgba(77, 182, 172, 0.32);
+      --text: #e8edf6;
+      --muted: #9ba9c1;
+      --border: rgba(255, 255, 255, 0.08);
+      --error: #ff6b6b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Inter", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+    }
+
+    .app-shell {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      width: 320px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      min-width: 260px;
+      max-width: 420px;
+    }
+
+    .sidebar-header {
+      padding: 1.1rem 1.4rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .sidebar-header p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.83rem;
+    }
+
+    .tree-scroll {
+      flex: 1;
+      overflow: auto;
+      padding: 0.6rem 1.2rem 1.4rem;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    }
+
+    .tree-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .tree-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.14);
+      border-radius: 4px;
+    }
+
+    .tree {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .tree-node {
+      margin: 0.25rem 0;
+    }
+
+    .tree-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.45rem;
+      border-radius: 0.55rem;
+      transition: background 0.15s ease;
+    }
+
+    .tree-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tree-row label {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .tree-toggle {
+      background: none;
+      border: none;
+      color: var(--muted);
+      width: 1.2rem;
+      height: 1.2rem;
+      border-radius: 0.3rem;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .tree-toggle:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+    }
+
+    .tree-toggle span {
+      display: block;
+      transform-origin: center;
+      transition: transform 0.18s ease;
+    }
+
+    .tree-node.collapsed > .tree-row .tree-toggle span {
+      transform: rotate(-90deg);
+    }
+
+    .tree-row input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 1.05rem;
+      height: 1.05rem;
+      cursor: pointer;
+    }
+
+    .tree-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tree-label .title {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.92rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 0.45rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+    }
+
+    .tree-children {
+      margin-left: 1.55rem;
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
+      padding-left: 1.1rem;
+      display: grid;
+      gap: 0.1rem;
+    }
+
+    .tree-node.collapsed > .tree-children {
+      display: none;
+    }
+
+    .viewer {
+      position: relative;
+      flex: 1;
+      background: var(--bg-alt);
+    }
+
+    canvas#viewerCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .status-bar {
+      position: absolute;
+      left: 1.4rem;
+      bottom: 1.4rem;
+      padding: 0.55rem 0.85rem 0.55rem 0.9rem;
+      border-radius: 0.75rem;
+      background: rgba(12, 16, 21, 0.82);
+      backdrop-filter: blur(12px);
+      color: var(--muted);
+      font-size: 0.82rem;
+      letter-spacing: 0.01em;
+      min-width: 180px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      pointer-events: none;
+    }
+
+    .status-bar[data-state="loading"]::before {
+      content: "";
+      width: 0.7rem;
+      height: 0.7rem;
+      border-radius: 50%;
+      border: 2px solid var(--accent-soft);
+      border-top-color: var(--accent);
+      animation: spin 0.9s linear infinite;
+    }
+
+    .status-bar[data-state="info"]::before {
+      content: "•";
+      color: var(--accent);
+      font-size: 0.9rem;
+      line-height: 0;
+    }
+
+    .status-bar[data-state="idle"]::before {
+      content: "";
+    }
+
+    .status-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--text);
+    }
+
+    .status-text span {
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-banner {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.2rem;
+      background: rgba(255, 77, 90, 0.92);
+      color: #fff;
+      padding: 0.65rem 0.85rem;
+      border-radius: 0.65rem;
+      font-size: 0.82rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+      max-width: 320px;
+      display: none;
+      pointer-events: none;
+    }
+
+    .placeholder {
+      margin: 0.3rem 0 0.5rem 2.95rem;
+      color: rgba(255, 255, 255, 0.22);
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 980px) {
+      .sidebar {
+        width: 260px;
+      }
+
+      .sidebar-header h1 {
+        font-size: 1.05rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>EBOM</h1>
+      </div>
+      <div class="tree-scroll">
+        <ul class="tree" id="bomTree"></ul>
+      </div>
+    </aside>
+    <main class="viewer">
+      <canvas id="viewerCanvas"></canvas>
+      <div class="status-bar" id="statusBar" data-state="idle">
+        <div class="status-text" id="statusText">Select parts to load</div>
+      </div>
+      <div class="error-banner" id="errorBanner"></div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+    THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
+
+    const basisAlignment = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2);
+
+    const BOM_TREE = [
+      {
+        id: 'body',
+        label: 'Body',
+        children: [
+          {
+            id: 'body-frame',
+            label: 'Frame',
+            type: 'part',
+            stepFiles: ['../data/STEP/Frame.STEP'],
+            metadata: { revision: 'A' }
+          }
+        ]
+      },
+      { id: 'suspension', label: 'Suspension', children: [] },
+      { id: 'brakes', label: 'Brakes', children: [] },
+      { id: 'powertrain', label: 'Powertrain', children: [] },
+      { id: 'drivetrain', label: 'Drivetrain', children: [] },
+      { id: 'aero', label: 'Aero', children: [] },
+      { id: 'electronics', label: 'Electronics', children: [] },
+      { id: 'controls', label: 'Controls', children: [] }
+    ];
+
+    const canvas = document.getElementById('viewerCanvas');
+    const treeRoot = document.getElementById('bomTree');
+    const statusBar = document.getElementById('statusBar');
+    const statusText = document.getElementById('statusText');
+    const errorBanner = document.getElementById('errorBanner');
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: false
+    });
+    renderer.setClearColor(0x0b0d11, 1);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b0d11);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+    camera.up.set(0, 0, 1);
+    const defaultCameraDirection = new THREE.Vector3(1.2, 0.6, 1.3).normalize();
+    camera.position.copy(defaultCameraDirection.clone().multiplyScalar(22));
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    const hemi = new THREE.HemisphereLight(0xb5c5ff, 0x101015, 0.9);
+    const dirKey = new THREE.DirectionalLight(0xffffff, 0.85);
+    dirKey.position.set(18, 24, 16);
+    const dirFill = new THREE.DirectionalLight(0xb8d9ff, 0.35);
+    dirFill.position.set(-14, -6, -12);
+    scene.add(hemi, dirKey, dirFill);
+
+    const axisScene = new THREE.Scene();
+    const axisCamera = new THREE.OrthographicCamera(-1.2, 1.2, 1.2, -1.2, 0, 4);
+    axisCamera.up.set(0, 0, 1);
+    axisCamera.position.set(0, 0, 2);
+    axisCamera.lookAt(0, 0, 0);
+    const axisGroup = new THREE.Group();
+    const arrowLength = 0.9;
+    const headLength = 0.25;
+    const headWidth = 0.12;
+    const axisX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), arrowLength, 0xff5555, headLength, headWidth);
+    const axisY = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), arrowLength, 0x6bcf6b, headLength, headWidth);
+    const axisZ = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(), arrowLength, 0x4ca7ff, headLength, headWidth);
+    axisGroup.add(axisX, axisY, axisZ);
+    axisScene.add(axisGroup);
+
+    const nodeIndex = new Map();
+    const partRegistry = new Map();
+    let fitQueued = false;
+    let statusResetHandle = null;
+    let errorHideHandle = null;
+    const tempBox = new THREE.Box3();
+    const tempCenter = new THREE.Vector3();
+    const tempSize = new THREE.Vector3();
+
+    let occtModulePromise = null;
+    const occtCdnBase = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/';
+
+    function applyStatus(message, state = 'idle') {
+      statusText.textContent = message;
+      statusBar.dataset.state = state;
+    }
+
+    function setStatus(message, state = 'idle', { autoReset = false } = {}) {
+      applyStatus(message, state);
+      if (autoReset) {
+        clearTimeout(statusResetHandle);
+        statusResetHandle = setTimeout(updateStatus, 1800);
+      }
+    }
+
+    function updateStatus() {
+      clearTimeout(statusResetHandle);
+      const visibleParts = Array.from(partRegistry.values()).filter(entry => entry.visible);
+      if (!visibleParts.length) {
+        applyStatus('Select parts to load', 'idle');
+        return;
+      }
+      const names = visibleParts.map(entry => entry.node.label);
+      const summary = names.slice(0, 2).join(', ');
+      const remainder = names.length > 2 ? ` (+${names.length - 2})` : '';
+      applyStatus(`Visible: ${summary}${remainder}`, 'info');
+    }
+
+    function showError(message) {
+      console.error(message);
+      errorBanner.textContent = message;
+      errorBanner.style.display = 'block';
+      clearTimeout(errorHideHandle);
+      errorHideHandle = setTimeout(() => {
+        errorBanner.style.display = 'none';
+      }, 6000);
+    }
+
+    function handleResize() {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      if (!width || !height) return;
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    function scheduleFit() {
+      if (fitQueued) return;
+      fitQueued = true;
+      requestAnimationFrame(() => {
+        fitQueued = false;
+        fitCameraToVisible();
+      });
+    }
+
+    function fitCameraToVisible() {
+      tempBox.makeEmpty();
+      let hasObjects = false;
+      for (const entry of partRegistry.values()) {
+        if (entry.visible && entry.group) {
+          tempBox.expandByObject(entry.group);
+          hasObjects = true;
+        }
+      }
+
+      if (!hasObjects) {
+        controls.target.set(0, 0, 0);
+        camera.position.copy(defaultCameraDirection.clone().multiplyScalar(22));
+        camera.near = 0.1;
+        camera.far = 2000;
+        camera.updateProjectionMatrix();
+        controls.update();
+        return;
+      }
+
+      tempBox.getCenter(tempCenter);
+      tempBox.getSize(tempSize);
+      const maxDim = Math.max(tempSize.x, tempSize.y, tempSize.z);
+      const radius = maxDim * 0.5;
+      const fitOffset = radius / Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
+      const direction = camera.position.clone().sub(controls.target);
+      if (!direction.lengthSq()) direction.copy(defaultCameraDirection);
+      direction.normalize().multiplyScalar(radius + fitOffset * 1.35);
+
+      camera.position.copy(tempCenter.clone().add(direction));
+      controls.target.copy(tempCenter);
+      camera.near = Math.max(0.1, (radius + fitOffset * 0.2) / 25);
+      camera.far = (radius + fitOffset * 2.5) * 20;
+      camera.updateProjectionMatrix();
+      controls.update();
+    }
+
+    async function getOcctModule() {
+      if (!occtModulePromise) {
+        occtModulePromise = window.occtimportjs({
+          locateFile: (name) => `${occtCdnBase}${name}`
+        });
+      }
+      return occtModulePromise;
+    }
+
+    async function loadStepGroup(node) {
+      const occt = await getOcctModule();
+      const group = new THREE.Group();
+      group.applyQuaternion(basisAlignment);
+      group.name = node.label;
+      const gl = renderer.getContext();
+      const supportsUint32 = renderer.capabilities.isWebGL2 || !!gl.getExtension('OES_element_index_uint');
+
+      if (!node.stepFiles || !node.stepFiles.length) {
+        throw new Error('No STEP files referenced for this part.');
+      }
+
+      for (const stepPath of node.stepFiles) {
+        const response = await fetch(stepPath);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${stepPath} (${response.status})`);
+        }
+
+        const buffer = await response.arrayBuffer();
+        const result = occt.ReadStepFile(new Uint8Array(buffer), {});
+        if (!result || result.success === false || !result.meshes?.length) {
+          throw new Error(`Could not triangulate ${stepPath}.`);
+        }
+
+        result.meshes.forEach((meshData, index) => {
+          const geometry = new THREE.BufferGeometry();
+          const positionArray = new Float32Array(meshData.attributes?.position?.array || []);
+          if (!positionArray.length) {
+            return;
+          }
+          geometry.setAttribute('position', new THREE.BufferAttribute(positionArray, 3));
+
+          const normalSource = meshData.attributes?.normal?.array || [];
+          if (normalSource.length) {
+            const normalArray = new Float32Array(normalSource);
+            geometry.setAttribute('normal', new THREE.BufferAttribute(normalArray, 3));
+          } else {
+            geometry.computeVertexNormals();
+          }
+
+          const indexSource = meshData.index?.array || [];
+          if (indexSource.length) {
+            const usesLargeIndices = indexSource.some((value) => value > 65535);
+            if (usesLargeIndices && !supportsUint32) {
+              throw new Error('Viewer needs WebGL uint32 indices support for this model.');
+            }
+            const indexArray = usesLargeIndices ? new Uint32Array(indexSource) : new Uint16Array(indexSource);
+            geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
+          }
+
+          geometry.computeBoundingSphere();
+
+          let color = new THREE.Color('#8ea6ff');
+          if (Array.isArray(meshData.color) && meshData.color.length === 3) {
+            color = new THREE.Color(meshData.color[0], meshData.color[1], meshData.color[2]);
+          }
+
+          const material = new THREE.MeshStandardMaterial({
+            color,
+            metalness: 0.08,
+            roughness: 0.78,
+            side: THREE.DoubleSide
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          group.add(mesh);
+        });
+      }
+
+      if (!group.children.length) {
+        throw new Error('No faces were generated for this part.');
+      }
+
+      return group;
+    }
+
+    async function togglePart(partInfo, shouldLoad) {
+      const { node, checkbox } = partInfo;
+      let registry = partRegistry.get(node.id);
+      if (!registry) {
+        registry = { node, group: null, visible: false, loading: false, checkbox };
+        partRegistry.set(node.id, registry);
+      }
+
+      if (shouldLoad) {
+        if (registry.visible || registry.loading) return;
+        registry.loading = true;
+        checkbox.disabled = true;
+        setStatus(`Loading ${node.label}…`, 'loading');
+
+        try {
+          if (!registry.group) {
+            registry.group = await loadStepGroup(node);
+          }
+          scene.add(registry.group);
+          registry.visible = true;
+          setStatus(`${node.label} ready`, 'info', { autoReset: true });
+          scheduleFit();
+        } catch (error) {
+          checkbox.checked = false;
+          showError(error.message || `Failed to load ${node.label}.`);
+        } finally {
+          registry.loading = false;
+          checkbox.disabled = false;
+          updateStatus();
+        }
+      } else {
+        if (!registry.visible || !registry.group) return;
+        scene.remove(registry.group);
+        registry.visible = false;
+        scheduleFit();
+        updateStatus();
+      }
+    }
+
+    async function handleGroupToggle(info, checked) {
+      info.checkbox.indeterminate = false;
+      for (const child of info.children) {
+        child.checkbox.checked = checked;
+        child.checkbox.indeterminate = false;
+        if (child.node.children?.length) {
+          await handleGroupToggle(child, checked);
+        } else {
+          await togglePart(child, checked);
+        }
+      }
+      updateAncestors(info.parent);
+      updateStatus();
+    }
+
+    function updateAncestors(info) {
+      while (info) {
+        const childStates = info.children.map((child) => ({
+          checked: child.checkbox.checked,
+          indeterminate: child.checkbox.indeterminate
+        }));
+        const total = childStates.length;
+        const checkedCount = childStates.filter(state => state.checked).length;
+        const indeterminateChild = childStates.some(state => state.indeterminate);
+        info.checkbox.checked = checkedCount === total && total > 0;
+        info.checkbox.indeterminate = indeterminateChild || (checkedCount > 0 && checkedCount < total);
+        info = info.parent;
+      }
+    }
+
+    function buildTree(nodes, parentElement, parentInfo = null) {
+      nodes.forEach((node) => {
+        const li = document.createElement('li');
+        li.className = 'tree-node';
+
+        const row = document.createElement('div');
+        row.className = 'tree-row';
+
+        if (node.children?.length) {
+          const toggle = document.createElement('button');
+          toggle.type = 'button';
+          toggle.className = 'tree-toggle';
+          toggle.setAttribute('aria-expanded', 'true');
+          toggle.innerHTML = '<span>v</span>';
+          toggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            li.classList.toggle('collapsed');
+            const collapsed = li.classList.contains('collapsed');
+            toggle.setAttribute('aria-expanded', String(!collapsed));
+          });
+          row.appendChild(toggle);
+        } else {
+          const spacer = document.createElement('div');
+          spacer.style.width = '1.2rem';
+          row.appendChild(spacer);
+        }
+
+        const label = document.createElement('label');
+        label.className = 'tree-label';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.dataset.nodeId = node.id;
+        label.appendChild(checkbox);
+
+        const title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = node.label;
+        label.appendChild(title);
+
+        if (node.type === 'part') {
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          const fileCount = node.stepFiles?.length || 0;
+          badge.textContent = `${fileCount} STEP`;
+          label.appendChild(badge);
+        }
+
+        row.appendChild(label);
+        li.appendChild(row);
+        parentElement.appendChild(li);
+
+        const info = { node, checkbox, parent: parentInfo, children: [], element: li };
+        nodeIndex.set(node.id, info);
+        if (parentInfo) parentInfo.children.push(info);
+
+        if (node.children?.length) {
+          const childList = document.createElement('ul');
+          childList.className = 'tree-children';
+          li.appendChild(childList);
+          buildTree(node.children, childList, info);
+          checkbox.addEventListener('change', () => {
+            handleGroupToggle(info, checkbox.checked).catch((error) => {
+              showError(error.message || 'Failed to update group.');
+            });
+          });
+        } else if (node.type === 'part') {
+          checkbox.addEventListener('change', () => {
+            togglePart(info, checkbox.checked).catch((error) => {
+              showError(error.message || 'Failed to update part.');
+            });
+            updateAncestors(info.parent);
+          });
+        } else {
+          checkbox.disabled = true;
+        }
+      });
+    }
+
+    buildTree(BOM_TREE, treeRoot);
+
+    function render() {
+      controls.update();
+      renderer.autoClear = false;
+      renderer.clear();
+      const { width, height } = renderer.domElement;
+      renderer.setViewport(0, 0, width, height);
+      renderer.setScissor(0, 0, width, height);
+      renderer.setScissorTest(false);
+      renderer.render(scene, camera);
+
+      renderer.clearDepth();
+      axisGroup.quaternion.copy(camera.quaternion);
+      const axisSize = Math.round(Math.min(width, height) * 0.22);
+      const margin = Math.round(20 * renderer.getPixelRatio());
+      renderer.setViewport(margin, margin, axisSize, axisSize);
+      renderer.setScissor(margin, margin, axisSize, axisSize);
+      renderer.setScissorTest(true);
+      renderer.render(axisScene, axisCamera);
+      renderer.setScissorTest(false);
+    }
+
+    renderer.setAnimationLoop(render);
+  </script>
+</body>
+</html>
+
+
+
+
+
