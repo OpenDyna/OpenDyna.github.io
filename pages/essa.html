@@ -10,7 +10,8 @@
     --border:#262b30; --overlay:rgba(0,0,0,.55);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.25 system-ui,Segoe UI,Roboto,Ubuntu,Arial}
+  html, body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.25 system-ui,Segoe UI,Roboto,Ubuntu,Arial;display:flex;flex-direction:column;min-height:100vh}
   header{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:5}
   header h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.2px}
   header .spacer{flex:1}
@@ -19,20 +20,20 @@
     background:#0f1113;border:1px solid var(--border);color:var(--ink);padding:6px 10px;border-radius:8px;cursor:pointer
   }
   header button:hover, .btn:hover{border-color:#353c43}
-  .wrap{display:grid;grid-template-columns:minmax(360px, 560px) 1fr;gap:12px;padding:12px}
+  .wrap{display:grid;grid-template-columns:minmax(360px, 560px) 1fr;gap:12px;padding:12px;flex:1 1 auto;overflow:hidden}
   @media(max-width:980px){ .wrap{grid-template-columns:1fr} }
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;height:100%}
   .panel h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
-  .panel .body{padding:10px}
+  .panel .body{padding:10px;flex:1 1 auto;overflow:auto;display:flex;flex-direction:column;min-height:0}
   textarea#spec{
-    width:100%;height:360px;resize:vertical;background:#0f1113;color:var(--ink);
-    border:1px solid var(--border);border-radius:8px;padding:10px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px
+    width:100%;height:auto;min-height:220px;resize:vertical;background:#0f1113;color:var(--ink);
+    border:1px solid var(--border);border-radius:8px;padding:10px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;flex:1 1 auto;min-height:0
   }
   .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   select, input[type=text]{background:#0f1113;color:var(--ink);border:1px solid var(--border);padding:6px 8px;border-radius:8px}
   .errors{margin-top:8px;color:var(--bad);white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace}
   .good{color:var(--accent2)}
-  .canvasWrap{position:relative;min-height:340px;height:58vh}
+  .canvasWrap{position:relative;min-height:260px;height:auto;flex:1 1 auto}
   canvas{position:absolute;inset:0;width:100%;height:100%;background:#0b0d0f;border-radius:10px;cursor:grab}
   canvas.dragging{cursor:grabbing}
   #tooltip{position:absolute;background:#111;border:1px solid #333;padding:6px;border-radius:6px;display:none;pointer-events:none;white-space:pre;color:#eaeef2;font-family:ui-monospace,Consolas,monospace;font-size:12px}
@@ -65,6 +66,11 @@
   .right{display:flex;flex-direction:column;gap:10px}
   .btnRow{display:flex;gap:8px;flex-wrap:wrap}
   .danger{border-color:#8b2b2b !important;color:#ffc3c3 !important}
+
+  /* Simple badge styles inside library modal */
+  .lib-badge{display:inline-block;padding:2px 6px;border:1px solid var(--border);border-radius:999px;font-size:12px;margin-left:6px;color:#cbd5dc;background:#0f1113}
+  .lib-list{margin:0;padding-left:16px}
+  .lib-list li{margin:6px 0}
 </style>
 </head>
 <body>
@@ -78,6 +84,9 @@
   <button id="viewFront" class="btn" title="Front (X → camera)">Front View</button>
   <button id="viewSide"  class="btn" title="Side (Y → camera)">Side View</button>
   <button id="viewTop"   class="btn" title="Top (Z → camera)">Top View</button>
+  <button id="viewIso"   class="btn" title="Isometric (x←↘, y→↘, z↑)">Isometric</button>
+  <button id="toggleBeams" class="btn" title="Show or hide thick beam graphics" aria-pressed="true">Hide Beam Graphics</button>
+  <button id="toggleStress" class="btn" title="Show von Mises stress colormap" aria-pressed="false">Show Stress Map</button>
   <button id="btnSolve">Solve</button>
   <button id="btnSave">Save Model Spec</button>
   <button id="btnReset">Reset</button>
@@ -87,19 +96,31 @@
   <div class="panel">
     <h2>Model Spec (3D)</h2>
     <div class="body">
+
 <textarea id="spec" spellcheck="false" placeholder="# 3D compact spec
 # Global options (optional)
 exag = 20           # displacement exaggeration for view
-nu   = 0.30         # Poisson (only used if G not provided)
+nu   = 0.30         # Poisson (used if G not provided)
+
+# Optional libraries
+materials:
+  steel: E=210e9 nu=0.30
+  al6061: E=69e9 nu=0.33
+
+xsections:
+  tube50x4: shape=tube D=0.05 t=0.004 up=(0,0,1)
+  col: shape=rect b=0.08 h=0.16 up=(0,0,1)
 
 nodes:
   1: (0, 0, 0)
   2: (1, 0, 0)
 
 beams:
-  # id: i-j  E=...  A=...  Iy=...  Iz=...  J=...  [G=...]  [up=(0,0,1)] [rigid]
-  # End releases: releaseA=Rx,Ry,Rz | releaseB=all | hingeA | pin@2 etc.
-  1: 1-2  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  # Pick one method per beam (do not mix on a single line):
+  # - New: material:<name> xsection:<name>   OR   material:<name> shape=rect b=.. h=.. [up=(..)] [rigid]
+  # - Legacy: E=... A=... Iy=... Iz=... J=... [G=...] [up=(..)] [rigid]
+  
+  1: 1-2  material:steel xsection:col
 
 conditions:
   1: fixed
@@ -108,14 +129,16 @@ conditions:
 
       <div class="row">
         <select id="preset">
-          <option value="mixed">Preset: Mixed joint at a node (rigid + pinned)</option>
+          <option value="unittest">Preset: Unit Test</option>
           <option value="cantilever">Preset: Cantilever (Z load)</option>
           <option value="portal">Preset: Portal frame</option>
           <option value="space">Preset: Space frame corner load</option>
           <option value="compliant">Preset: Compliant Mount (sprung support)</option>
+          <option value="newspec">Preset: Library + Cross-Sections (new spec)</option>
         </select>
         <button class="btn" id="btnPreset">Load Preset</button>
         <button class="btn" id="btnXSec">Cross-Section…</button>
+        <button class="btn" id="btnLibs" title="View parsed materials and cross-sections">Libraries…</button>
         <span class="preset-tip">Left-drag: orbit • Shift/🖱️middle/right-drag: pan • Wheel: zoom • <b>Double-click: reset</b></span>
       </div>
       <div class="errors" id="errors"></div>
@@ -284,6 +307,13 @@ conditions:
 
           <fieldset>
             <legend>Spec Snippet</legend>
+            <div class="formRow" style="grid-template-columns: auto 1fr; align-items:center; margin-bottom:6px">
+              <label for="snMode">Snippet mode</label>
+              <select id="snMode">
+                <option value="props">Properties (E, A, Iy, Iz, J, G)</option>
+                <option value="shape">Shape (shape=.. dims.. up=(..))</option>
+              </select>
+            </div>
             <div class="out" id="snippet">E=210e9 A=... Iy=... Iz=... J=... G=... up=(0,0,1)</div>
             <div class="btnRow" style="margin-top:8px">
               <button class="btn" id="btnCopy">Copy</button>
@@ -306,11 +336,55 @@ conditions:
   </div>
 </div>
 
+<!-- Libraries Modal -->
+<div class="modalOverlay" id="libsOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="libsTitle">
+    <header>
+      <h3 id="libsTitle">Materials & Cross-Sections</h3>
+      <div class="spacer"></div>
+      <button id="libsClose" class="btn">Close</button>
+    </header>
+    <div class="content">
+      <div class="help" style="margin-bottom:8px">
+        Define in the spec as:
+        <div class="out" style="margin-top:6px">
+materials:
+  steel: E=210e9 nu=0.30
+  al6061: E=69e9 nu=0.33
+
+xsections:
+  tube50x4: shape=tube D=0.05 t=0.004 up=(0,0,1)
+  col: shape=rect b=0.08 h=0.16 up=(0,0,1)
+
+# In beams, pick one method per beam:
+# - New: material:steel xsection:tube50x4  (or material:steel shape=rect b=... h=...)
+# - Legacy: E=... A=... Iy=... Iz=... J=... [G=...]
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <fieldset>
+            <legend>Materials</legend>
+            <ul id="libMaterials" class="lib-list"></ul>
+          </fieldset>
+        </div>
+        <div>
+          <fieldset>
+            <legend>Cross-Sections</legend>
+            <ul id="libXSections" class="lib-list"></ul>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =========================
    Core Data / UI refs
    ========================= */
 let nodes=[], beams=[], conditions={}, results=null, nuGlobal=null, exagOverride=null;
+let materialsLib={}, xsectionsLib={};
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -342,6 +416,74 @@ function parseReleaseList(s){
 }
 function mergeRel(a,b){ return {rx:!!(a?.rx||b?.rx), ry:!!(a?.ry||b?.ry), rz:!!(a?.rz||b?.rz)}; }
 
+// Compute cross-section properties from shape + dims (SI units)
+function computeSectionProps(shape, dims){
+  const d = k => Number(dims?.[k]);
+  const out = {A:NaN, Iy:NaN, Iz:NaN, J:NaN, dims:{}};
+  const pi=Math.PI;
+  const isFiniteN = (...vals)=>vals.every(v=>isFinite(v) && v>0);
+
+  if(!shape) return null;
+  const sh = String(shape).toLowerCase();
+  if(sh==='rect'){
+    const b=d('b'), h=d('h');
+    if(!isFiniteN(b,h)) return null;
+    out.A = b*h;
+    out.Iy = b*h*h*h/12;
+    out.Iz = h*b*b*b/12;
+    let B=b, H=h; if(H>B){ const t=B; B=H; H=t; }
+    const r=H/B; out.J = B*H*H*H*(1/3 - 0.21*r*(1 - 0.2*r*r*r*r));
+    out.dims={b,h};
+    return out;
+  } else if(sh==='recttube' || sh==='recttube'){
+    const B=d('b'), H=d('h'), t=d('t');
+    if(!isFiniteN(B,H,t) || B<=2*t || H<=2*t) return null;
+    const Bi=B-2*t, Hi=H-2*t;
+    out.A = B*H - Bi*Hi;
+    out.Iy = (B*H**3 - Bi*Hi**3)/12;
+    out.Iz = (H*B**3 - Hi*Bi**3)/12;
+    const Am=(B-t)*(H-t);
+    const denom = 2*(B+H-2*t)/t;
+    out.J = 4*Am*Am/denom;
+    out.dims={B, H, t};
+    return out;
+  } else if(sh==='circ' || sh==='circle'){
+    const D=d('d');
+    if(!isFiniteN(D)) return null;
+    out.A = pi*D*D/4;
+    out.Iy = out.Iz = pi*Math.pow(D,4)/64;
+    out.J = pi*Math.pow(D,4)/32;
+    out.dims={d:D};
+    return out;
+  } else if(sh==='tube' || sh==='hollow' || sh==='pipe'){
+    const D=d('d'), t=d('t');
+    if(!isFiniteN(D,t)) return null;
+    const di=D-2*t; if(di<=0) return null;
+    out.A = pi*(D*D - di*di)/4;
+    out.Iy = out.Iz = pi*(Math.pow(D,4)-Math.pow(di,4))/64;
+    out.J = pi*(Math.pow(D,4)-Math.pow(di,4))/32;
+    out.dims={D, t};
+    return out;
+  } else if(sh==='ibeam' || sh==='i-beam' || sh==='wideflange'){
+    const Bf=d('bf'), H=d('h'), tf=d('tf'), tw=d('tw');
+    if(!isFiniteN(Bf,H,tf,tw)) return null;
+    const hw = H - 2*tf; if(hw<=0) return null;
+    out.A = 2*(Bf*tf) + (tw*hw);
+    const Iy_fl = Bf*tf**3/12;
+    const Iy_web = tw*hw**3/12;
+    out.Iy = 2*Iy_fl + Iy_web;
+    const Iz_fl_c = tf*Bf**3/12;
+    const dy = (H/2 - tf/2);
+    const Iz_fl = Iz_fl_c + (Bf*tf)*dy*dy;
+    const Iz_web = hw*tw**3/12;
+    out.Iz = 2*Iz_fl + Iz_web;
+    out.J = 2*(Bf*tf**3)/3 + (hw*tw**3)/3;
+    out.dims={Bf, H, tf, tw};
+    return out;
+  }
+  return null;
+}
+
 function parseSpec(text){
   const lines = text.split(/\r?\n/);
   let section=null;
@@ -351,10 +493,12 @@ function parseSpec(text){
   let tmpConds={};
   exagOverride=null;
   nuGlobal=null;
+  materialsLib={};
+  xsectionsLib={};
 
   const lineErr=(i,msg)=>errs.push(`Line ${i+1}: ${msg}`);
 
-  const secRe = /^\s*(nodes|beams|conditions)\s*:\s*$/i;
+  const secRe = /^\s*(materials|xsections|nodes|beams|conditions)\s*:\s*$/i;
   const exagRe = /^\s*exag\s*=\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*$/i;
   const nuRe   = /^\s*nu\s*=\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*$/i;
 
@@ -368,9 +512,45 @@ function parseSpec(text){
     if((m=s.match(exagRe))){ const v=parseFloat(m[1]); if(isFinite(v)) exagOverride=v; else lineErr(i,'Invalid exag'); continue; }
     if((m=s.match(nuRe))){ const v=parseFloat(m[1]); if(isFinite(v)) nuGlobal=v; else lineErr(i,'Invalid nu'); continue; }
 
-    if(!section){ lineErr(i,'Expected a section (nodes:, beams:, or conditions:)'); continue; }
+    if(!section){ lineErr(i,'Expected a section (materials:, xsections:, nodes:, beams:, or conditions:)'); continue; }
 
-    if(section==='nodes'){
+    if(section==='materials'){
+      // steel: E=210e9 nu=0.30
+      const mm=s.match(/^\s*([a-zA-Z0-9_\-]+)\s*:\s*(.*)$/);
+      if(!mm){ lineErr(i,'Material:  steel: E=210e9 nu=0.30'); continue; }
+      const name=mm[1];
+      const tail=mm[2]||'';
+      let E=NaN, nu=NaN, sy=NaN;
+      tail.split(/\s+/).filter(Boolean).forEach(tok=>{
+        const kv=tok.split('='); if(kv.length!==2) return;
+        const k=kv[0].toLowerCase(); const v=parseFloat(kv[1]);
+        if(k==='e' && isFinite(v)) E=v;
+        else if((k==='nu' || k==='v') && isFinite(v)) nu=v;
+        else if((k==='sy' || k==='fy' || k==='yield' || k==='sigy' || k==='sigma_y') && isFinite(v)) sy=v;
+      });
+      if(!isFinite(E) || !isFinite(nu)) { lineErr(i,`Material ${name}: need E and nu`); continue; }
+      materialsLib[name]={E, nu, sy: isFinite(sy)? sy : undefined};
+    } else if(section==='xsections'){
+      // name: shape=rect b=.. h=.. [up=(..)]
+      const mm=s.match(/^\s*([a-zA-Z0-9_\-]+)\s*:\s*(.*)$/);
+      if(!mm){ lineErr(i,'XSection:  tube50x4: shape=tube D=0.05 t=0.004 up=(0,0,1)'); continue; }
+      const name=mm[1];
+      const tail=mm[2]||'';
+      const def={shape:null, dims:{}, up:null};
+      tail.split(/\s+/).filter(Boolean).forEach(tok=>{
+        if(/^up=\(/i.test(tok)){
+          const m2=tok.match(/^up=\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)$/i);
+          if(m2) def.up=[parseFloat(m2[1]),parseFloat(m2[2]),parseFloat(m2[3])];
+          return;
+        }
+        const kv=tok.split('='); if(kv.length!==2) return;
+        const k=kv[0].toLowerCase(); const v=parseFloat(kv[1]);
+        if(k==='shape'){ def.shape=kv[1].toLowerCase(); }
+        else if(isFinite(v)) def.dims[k]=v;
+      });
+      if(!def.shape){ lineErr(i,`XSection ${name}: need shape=...`); continue; }
+      xsectionsLib[name]=def;
+    } else if(section==='nodes'){
       const re=/^\s*(\d+)\s*:\s*\(\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*,\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*,\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*\)\s*$/i;
       const mm=s.match(re);
       if(!mm){ lineErr(i,'Node:  3: (1.0, 2.0, 0.0)'); continue; }
@@ -380,59 +560,88 @@ function parseSpec(text){
     } else if(section==='beams'){
       const head=/^\s*(\d+)\s*:\s*(\d+)\s*-\s*(\d+)\s+(.*)$/i;
       const mm=s.match(head);
-      if(!mm){ lineErr(i,'Beam:  1: 1-2 E=.. A=.. Iy=.. Iz=.. J=.. [G=..] [up=(..)] [rigid] [releaseA=..]'); continue; }
+      if(!mm){ lineErr(i,'Beam:  1: 1-2 E=.. A=.. Iy=.. Iz=.. J=.. [G=..] [up=(..)] [rigid]'); continue; }
       const id=parseInt(mm[1],10), ni=parseInt(mm[2],10), nj=parseInt(mm[3],10);
       const tail=mm[4];
-      const parms={}; parms.releaseA={}; parms.releaseB={}; let targeted=[]; let rigid=false;
+      const parms={}; parms.releaseA={}; parms.releaseB={}; let rigid=false; let methodNew={material:null,xsec:null,shape:null,shapeDims:{},shapeUp:null};
 
       tail.split(/\s+/).filter(Boolean).forEach(tok=>{
-        if(/^up=\(/i.test(tok)){
+        if(/^material:/i.test(tok)){
+          const val=tok.replace(/^material:/i,'');
+          if(val) methodNew.material=val;
+        } else if(/^xsection:/i.test(tok)){
+          const val=tok.replace(/^xsection:/i,'');
+          if(val) methodNew.xsec=val;
+        } else if(/^shape=/i.test(tok)){
+          const val=tok.split('=')[1]; if(val) methodNew.shape=val.toLowerCase();
+        } else if(/^up=\(/i.test(tok)){
           const m2=tok.match(/^up=\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)$/i);
-          if(m2) parms.up=[parseFloat(m2[1]),parseFloat(m2[2]),parseFloat(m2[3])];
+          if(m2){
+            parms.up=[parseFloat(m2[1]),parseFloat(m2[2]),parseFloat(m2[3])];
+            methodNew.shapeUp=parms.up;
+          }
         } else if(/^rigid(?:=(true|1))?$/i.test(tok)){
           rigid=true;
-        } else if(/^releasea=/i.test(tok)){
-          parms.releaseA = mergeRel(parms.releaseA, parseReleaseList(tok.split('=')[1]));
-        } else if(/^releaseb=/i.test(tok)){
-          parms.releaseB = mergeRel(parms.releaseB, parseReleaseList(tok.split('=')[1]));
-        } else if(/^hingea$/i.test(tok) || /^pina$/i.test(tok)){
-          parms.releaseA = mergeRel(parms.releaseA, {ry:true, rz:true});
-        } else if(/^hingeb$/i.test(tok) || /^pinb$/i.test(tok)){
-          parms.releaseB = mergeRel(parms.releaseB, {ry:true, rz:true});
-        } else if(/^release@\d+=/i.test(tok) || /^hinge@\d+$/i.test(tok) || /^pin@\d+$/i.test(tok)){
-          targeted.push(tok); // handle after we know ends
+        // end-release tokens intentionally unsupported for now
         } else {
           const kv=tok.split('=');
           if(kv.length===2){
             const k=kv[0].toLowerCase(); const v=parseFloat(kv[1]);
-            if(isFinite(v)) parms[k]=v;
+            if(isFinite(v)){
+              parms[k]=v;
+              // capture dims when shape= inline method is used
+              if(['b','h','bf','tf','tw','d','d','t','b','h','b','h','b','h','rt_b','rt_h'].includes(k)){
+                methodNew.shapeDims[k]=v;
+              }
+              // but better: accept dims generically
+              methodNew.shapeDims[k]=v;
+            }
           }
         }
       });
-
-      // Node-targeted releases
-      targeted.forEach(tok=>{
-        const mR = tok.match(/^release@(\d+)=(.+)$/i);
-        const mH = tok.match(/^(hinge|pin)@(\d+)$/i);
-        if(mR){
-          const node=+mR[1]; const rel=parseReleaseList(mR[2]);
-          if(node===ni) parms.releaseA = mergeRel(parms.releaseA, rel);
-          else if(node===nj) parms.releaseB = mergeRel(parms.releaseB, rel);
-          else errs.push(`Beam ${id}: release@${node} does not match its nodes`);
-        }else if(mH){
-          const node=+mH[2]; const rel={ry:true,rz:true};
-          if(node===ni) parms.releaseA = mergeRel(parms.releaseA, rel);
-          else if(node===nj) parms.releaseB = mergeRel(parms.releaseB, rel);
-          else errs.push(`Beam ${id}: ${mH[1]}@${node} does not match its nodes`);
-        }
-      });
-
-      const E=+parms['e'], A=+parms['a'], Iy=+parms['iy'], Iz=+parms['iz'], J=+parms['j'];
-      let G = (parms['g']!=null)? +parms['g'] : (isFinite(E) && isFinite(nuGlobal)? E/(2*(1+(+nuGlobal))) : NaN);
-      if(!isFinite(E)||!isFinite(A)||!isFinite(Iy)||!isFinite(Iz)||!isFinite(J)){ lineErr(i,'Provide E, A, Iy, Iz, J'); continue; }
+      // Determine method
+      const hasLegacy = ['e','a','iy','iz','j','g'].some(k=>parms[k]!=null);
+      const hasNew = !!(methodNew.material && (methodNew.xsec || methodNew.shape));
+      if(hasLegacy && hasNew){ lineErr(i,'Pick one method per beam: either material/xsection or legacy E/A/Iy/Iz/J'); continue; }
+      if(!hasLegacy && !hasNew){ lineErr(i,'Beam needs either material:.. + xsection:.. (or shape=.. dims) OR legacy E/A/Iy/Iz/J'); continue; }
       if(ni===nj){ lineErr(i,'Beam nodes must differ'); continue; }
       if(tmpBeams.some(b=>b.id===id)) lineErr(i,`Duplicate beam id ${id}`);
-      else tmpBeams.push({id,nodeA:ni,nodeB:nj,E,G:isFinite(G)?G:undefined,A,Iy,Iz,J, up:parms.up||null, rigid, releaseA:parms.releaseA, releaseB:parms.releaseB});
+
+      if(hasLegacy){
+        const E=+parms['e'], A=+parms['a'], Iy=+parms['iy'], Iz=+parms['iz'], J=+parms['j'];
+        let G = (parms['g']!=null)? +parms['g'] : (isFinite(E) && isFinite(nuGlobal)? E/(2*(1+(+nuGlobal))) : NaN);
+        if(!isFinite(E)||!isFinite(A)||!isFinite(Iy)||!isFinite(Iz)||!isFinite(J)){ lineErr(i,'Provide E, A, Iy, Iz, J'); continue; }
+        tmpBeams.push({id,nodeA:ni,nodeB:nj,E,G:isFinite(G)?G:undefined,A,Iy,Iz,J, up:parms.up||null, rigid, releaseA:parms.releaseA, releaseB:parms.releaseB});
+      } else {
+        // New method: resolve libraries and/or inline shape
+        const mname = methodNew.material;
+        const mat = materialsLib[mname];
+        if(!mat){ lineErr(i,`Unknown material '${mname}'`); continue; }
+        const E=mat.E, G=E/(2*(1+mat.nu));
+
+        let shapeKind=null, dims=null, upFromXsec=null;
+        if(methodNew.xsec){
+          const xs=xsectionsLib[methodNew.xsec];
+          if(!xs){ lineErr(i,`Unknown xsection '${methodNew.xsec}'`); continue; }
+          shapeKind=xs.shape; dims=xs.dims; upFromXsec=xs.up||null;
+        }else{ // inline shape
+          shapeKind=methodNew.shape; dims=methodNew.shapeDims; upFromXsec=null;
+        }
+        if(!shapeKind){ lineErr(i,'shape=... required for inline xsection'); continue; }
+
+        // Compute section properties from dims
+        const props = computeSectionProps(shapeKind, dims);
+        if(!props){ lineErr(i,`Invalid dimensions for shape '${shapeKind}'`); continue; }
+        const {A,Iy,Iz,J} = props;
+        const up = (parms.up || upFromXsec || null);
+
+        tmpBeams.push({
+          id,nodeA:ni,nodeB:nj,E,G,A,Iy,Iz,J, up, rigid,
+          releaseA:parms.releaseA, releaseB:parms.releaseB,
+          xsec:{kind:shapeKind, dims:props.dims},
+          material: mname
+        });
+      }
     } else if(section==='conditions'){
       const re=/^\s*((\d+))\s*:\s*([a-zA-Z_]+)(.*)$/i;
       const mm=s.match(re);
@@ -476,7 +685,7 @@ function parseSpec(text){
     if(hasFree && arr.length>1) errs.push(`Node ${nid}: 'free' cannot combine with other conditions`);
   });
 
-  return {errors:errs, model:{nodes:tmpNodes,beams:tmpBeams,conditions:tmpConds}, exagOverride, nuGlobal};
+  return {errors:errs, model:{nodes:tmpNodes,beams:tmpBeams,conditions:tmpConds}, libraries:{materials:materialsLib, xsections:xsectionsLib}, exagOverride, nuGlobal};
 }
 
 /* =========================
@@ -638,7 +847,7 @@ function solve3D(model){
     const Geff = e.rigid ? Gbase*RIGID : Gbase;
 
     const kL = kLocal3D(Eeff, Geff, e.A, e.Iy, e.Iz, e.J, L);
-    applyReleasesToLocalK(kL, e.releaseA, e.releaseB);
+    // End releases disabled
     const T  = T12(R);
     const kG = mul(tr(T), mul(kL, T));
 
@@ -741,6 +950,7 @@ function solve3D(model){
   );
 
   const beamForces={};
+  const beamForcesLocal={};
   for(const e of E){
     const ia=idxOf[e.nodeA], ib=idxOf[e.nodeB];
     const na=N[ia], nb=N[ib];
@@ -751,7 +961,7 @@ function solve3D(model){
                   (isFinite(e.E) && isFinite(nuGlobal)) ? e.E/(2*(1+nuGlobal)) : (e.E/2.6);
     const RIGID=1e6, Eeff=e.rigid?e.E*RIGID:e.E, Geff=e.rigid?Gbase*RIGID:Gbase;
     const kL=kLocal3D(Eeff,Geff,e.A,e.Iy,e.Iz,e.J,L);
-    applyReleasesToLocalK(kL, e.releaseA, e.releaseB);
+    // End releases disabled
     const u_g = [
       u[6*ia+0],u[6*ia+1],u[6*ia+2],u[6*ia+3],u[6*ia+4],u[6*ia+5],
       u[6*ib+0],u[6*ib+1],u[6*ib+2],u[6*ib+3],u[6*ib+4],u[6*ib+5],
@@ -763,9 +973,13 @@ function solve3D(model){
       endA:{Fx:f_g[0][0], Fy:f_g[1][0], Fz:f_g[2][0], Mx:f_g[3][0], My:f_g[4][0], Mz:f_g[5][0]},
       endB:{Fx:f_g[6][0], Fy:f_g[7][0], Fz:f_g[8][0], Mx:f_g[9][0], My:f_g[10][0], Mz:f_g[11][0]},
     };
+    beamForcesLocal[e.id]={
+      endA:{Fx:f_l[0][0], Fy:f_l[1][0], Fz:f_l[2][0], Mx:f_l[3][0], My:f_l[4][0], Mz:f_l[5][0]},
+      endB:{Fx:f_l[6][0], Fy:f_l[7][0], Fz:f_l[8][0], Mx:f_l[9][0], My:f_l[10][0], Mz:f_l[11][0]},
+    };
   }
 
-  return {displacements,reactions,beamForces};
+  return {displacements,reactions,beamForces, beamForcesLocal};
 }
 
 /* =========================
@@ -804,16 +1018,119 @@ function updateResultsUI(res, model){
 }
 
 /* =========================
+   Stress utilities (von Mises) + color map
+   ========================= */
+function sectionExtents(kind, dims){
+  const k=String(kind||'').toLowerCase();
+  if(k==='rect'){
+    const b = dims.B ?? dims.b ?? 0;
+    const h = dims.H ?? dims.h ?? 0;
+    return {y: Math.abs(h)/2, z: Math.abs(b)/2};
+  } else if(k==='recttube'){
+    const B = dims.B ?? dims.b ?? 0;
+    const H = dims.H ?? dims.h ?? 0;
+    return {y: Math.abs(H)/2, z: Math.abs(B)/2};
+  } else if(k==='ibeam' || k==='i-beam' || k==='wideflange'){
+    const Bf=dims.Bf ?? dims.bf ?? 0; const H=dims.H ?? dims.h ?? 0;
+    return {y: Math.abs(H)/2, z: Math.abs(Bf)/2};
+  } else { // circle/tube
+    const D = dims.D ?? dims.d ?? 0; const r=Math.abs(D)/2; return {y:r, z:r};
+  }
+}
+function vonMisesFromLocal(N,Vy,Vz,T,My,Mz, xsec){
+  const A=xsec.A, Iy=xsec.Iy, Iz=xsec.Iz, J=xsec.J;
+  if(!(isFinite(A)&&isFinite(Iy)&&isFinite(Iz)&&isFinite(J))) return NaN;
+  const ext=sectionExtents(xsec.kind, xsec.dims||{});
+  const y=ext.y||0, z=ext.z||0;
+  // Evaluate extreme normal stress at four corners; take max magnitude
+  function sigmaAt(yy,zz){ return (N/A) + (Mz*yy/Iz) - (My*zz/Iy); }
+  const s1=Math.abs(sigmaAt(+y,+z));
+  const s2=Math.abs(sigmaAt(+y,-z));
+  const s3=Math.abs(sigmaAt(-y,+z));
+  const s4=Math.abs(sigmaAt(-y,-z));
+  const sigma = Math.max(s1,s2,s3,s4);
+  // Torsion shear approx at outer radius
+  const r_t = Math.hypot(y,z) || 0;
+  const tau_t = Math.abs(T) * (r_t/(J||1));
+  // Shear due to V (simple average estimate)
+  const tau_v = Math.hypot(Vy,Vz) / (A||1);
+  const tau = Math.hypot(tau_t, tau_v);
+  return Math.sqrt(sigma*sigma + 3*tau*tau);
+}
+function computeStressStats(model, res){
+  if(!res) return null;
+  const bfL = res.beamForcesLocal||{};
+  let mn=Infinity,mx=-Infinity, any=false;
+  // Determine yield limit from used materials (min Sy across beams)
+  let syMin=Infinity;
+  (model.beams||[]).forEach(b=>{
+    const mname=b.material; const mat = mname? (materialsLib||{})[mname] : null;
+    const sy = mat?.sy;
+    if(isFinite(sy) && sy>0 && sy<syMin) syMin=sy;
+  });
+  for(const b of model.beams||[]){
+    if(!(b.xsec && b.xsec.kind)) continue;
+    const lf=bfL[b.id]; if(!lf) continue;
+    const A=b.A, Iy=b.Iy, Iz=b.Iz, J=b.J;
+    const xsecInfo={A,Iy,Iz,J,kind:b.xsec.kind,dims:b.xsec.dims||{}};
+    const Aend=lf.endA, Bend=lf.endB;
+    const S=16;
+    for(let i=0;i<=S;i++){
+      const t=i/S;
+      // For prismatic members with no distributed loads: N, V, T are constant.
+      const N = (Aend.Fx - Bend.Fx)/2;   // equals Aend.Fx when Bend.Fx = -Aend.Fx
+      const Vy= (Aend.Fy - Bend.Fy)/2;
+      const Vz= (Aend.Fz - Bend.Fz)/2;
+      const T = (Aend.Mx - Bend.Mx)/2;
+      // Bending moments vary linearly; flip B-end sign to align internal convention along the span
+      const My= (1-t)*Aend.My + t*(-Bend.My);
+      const Mz= (1-t)*Aend.Mz + t*(-Bend.Mz);
+      const vm = vonMisesFromLocal(N,Vy,Vz,T,My,Mz,xsecInfo);
+      if(isFinite(vm)){ any=true; if(vm<mn) mn=vm; if(vm>mx) mx=vm; }
+    }
+  }
+  let maxUse = mx;
+  if(isFinite(syMin) && syMin>0) maxUse = syMin;
+  return any ? {min:0, max:maxUse} : null;
+}
+function lerp(a,b,t){ return a + (b-a)*t; }
+function colorMap01(t){
+  // 6-point gradient: blue -> cyan -> green -> yellow -> orange -> red
+  const stops=[
+    {c:[59,130,246]},   // blue #3b82f6
+    {c:[6,182,212]},    // cyan #06b6d4
+    {c:[34,197,94]},    // green #22c55e
+    {c:[250,204,21]},   // yellow #facc15
+    {c:[251,146,60]},   // orange #fb923c
+    {c:[239,68,68]},    // red #ef4444
+  ];
+  const n = stops.length - 1;
+  const u = Math.max(0, Math.min(1, t));
+  if (u >= 1) { const c = stops[n].c; return `rgb(${c[0]},${c[1]},${c[2]})`; }
+  const x = u * n;
+  const i = Math.floor(x);
+  const f = x - i;
+  const a = stops[i].c, b = stops[i+1].c;
+  const r = Math.round(lerp(a[0],b[0],f)), g = Math.round(lerp(a[1],b[1],f)), bl = Math.round(lerp(a[2],b[2],f));
+  return `rgb(${r},${g},${bl})`;
+}
+
+/* =========================
    Viewer: free orbit, fixed scale, axis triad, dual shape, hinge glyphs
    ========================= */
 let cam={
-  yaw:45*Math.PI/180,
-  pitch:20*Math.PI/180,
+  // Default to isometric: x→left+down, y→right+down, z→up
+  // yaw = 225°, pitch = -atan(1/sqrt(2)) ≈ -35.264°
+  yaw: (225*Math.PI/180),
+  pitch: -Math.atan(1/Math.SQRT2),
   zoom:1,
   baseScale:1,
   panX:0, panY:0,
   target:{x:0,y:0,z:0},
 };
+let showBeamGraphics = true;
+let showStressMap = false;
+let stressStats = null; // {min, max}
 
 function setZoom(z){
   cam.zoom = Math.max(0.1, z);
@@ -903,41 +1220,114 @@ function render(model, res){
   ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,rect.width,rect.height);
 
-  // Axis triad
+  // Axis triad (3D arrows with orthographic sizing, clipped in a larger circle)
   const drawTriad = ()=>{
     const pad = 18;
-    const baseX = pad + 40;
-    const baseY = rect.height - pad - 40;
-    const L = 28;
+    const r = 44; // circle radius
+    const baseX = pad + r + 2;
+    const baseY = rect.height - pad - r - 2;
 
-    const R = cameraMatrix();
-    const proj = (vx,vy,vz)=>[ R[0][0]*vx + R[0][1]*vy + R[0][2]*vz,
-                               R[1][0]*vx + R[1][1]*vy + R[1][2]*vz ];
-    const arrow = (x1,y1,x2,y2,color,label)=>{
-      ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-      const ang=Math.atan2(y2-y1,x2-x1), h=8;
-      ctx.beginPath();
-      ctx.moveTo(x2,y2);
-      ctx.lineTo(x2 - h*Math.cos(ang - Math.PI/6), y2 - h*Math.sin(ang - Math.PI/6));
-      ctx.lineTo(x2 - h*Math.cos(ang + Math.PI/6), y2 - h*Math.sin(ang + Math.PI/6));
-      ctx.closePath(); ctx.fill();
-      ctx.font='11px ui-monospace,Consolas,monospace';
-      ctx.fillText(label, x2 + 6*Math.cos(ang), y2 + 6*Math.sin(ang));
-    };
-
+    // Background circle + clip
     ctx.save();
-    ctx.globalAlpha=0.12;
-    ctx.fillStyle='#ffffff';
-    ctx.beginPath(); ctx.arc(baseX, baseY, 34, 0, 2*Math.PI); ctx.fill();
-    ctx.restore();
+    ctx.globalAlpha=0.12; ctx.fillStyle='#ffffff';
+    ctx.beginPath(); ctx.arc(baseX, baseY, r, 0, 2*Math.PI); ctx.fill();
+    ctx.globalAlpha=1.0; ctx.beginPath(); ctx.arc(baseX, baseY, r-1, 0, 2*Math.PI); ctx.clip();
 
-    const [dxX,dyX]=proj(1,0,0);
-    const [dxY,dyY]=proj(0,1,0);
-    const [dxZ,dyZ]=proj(0,0,1);
-    arrow(baseX,baseY, baseX + L*dxX, baseY + L*dyX, '#ff5a5a', 'x');
-    arrow(baseX,baseY, baseX + L*dxY, baseY + L*dyY, '#5ad15a', 'y');
-    arrow(baseX,baseY, baseX + L*dxZ, baseY + L*dyZ, '#4e8cff', 'z');
+    // Camera bases and projectors
+    const R = cameraMatrix();
+    const right = R[0];
+    const upCam = [-R[1][0], -R[1][1], -R[1][2]];
+    const fwd = R[2];
+
+    // Converters
+    const scalePxPerWorld = (cam.baseScale||1)*cam.zoom;
+    const ox = rect.width/2 + cam.panX;
+    const oy = rect.height/2 + cam.panY;
+    function toCam(p){
+      const px=p.x - cam.target.x, py=p.y - cam.target.y, pz=p.z - cam.target.z;
+      return {
+        x: right[0]*px + right[1]*py + right[2]*pz,
+        y: -upCam[0]*px - upCam[1]*py - upCam[2]*pz,
+        z: fwd[0]*px + fwd[1]*py + fwd[2]*pz,
+      };
+    }
+    function toScreen(pc){ return {x: pc.x*scalePxPerWorld + ox, y: pc.y*scalePxPerWorld + oy, z: pc.z}; }
+    function screenToWorld(x,y, zcam=0){
+      const cx = (x - ox)/scalePxPerWorld, cy = (y - oy)/scalePxPerWorld;
+      return {
+        x: cam.target.x + right[0]*cx + (R[1][0])*cy + fwd[0]*zcam,
+        y: cam.target.y + right[1]*cx + (R[1][1])*cy + fwd[1]*zcam,
+        z: cam.target.z + right[2]*cx + (R[1][2])*cy + fwd[2]*zcam,
+      };
+    }
+
+    // Face queue for triad
+    const triadQ=[];
+    function qFace(pts, z, fill, a){ triadQ.push({pts, z, fill, a}); }
+    function cyl(a,b, Rloc, rad, seg, fill, alpha){
+      const ey=Rloc[1], ez=Rloc[2];
+      const A=[], B=[];
+      for(let k=0;k<seg;k++){
+        const th=2*Math.PI*k/seg; const sy=Math.sin(th)*rad, sz=Math.cos(th)*rad;
+        const p1={x:a.x+ey[0]*sy+ez[0]*sz, y:a.y+ey[1]*sy+ez[1]*sz, z:a.z+ey[2]*sy+ez[2]*sz};
+        const p2={x:b.x+ey[0]*sy+ez[0]*sz, y:b.y+ey[1]*sy+ez[1]*sz, z:b.z+ey[2]*sy+ez[2]*sz};
+        A.push(toScreen(toCam(p1))); B.push(toScreen(toCam(p2)));
+      }
+      for(let k=0;k<seg;k++){
+        const k2=(k+1)%seg; const f=[A[k],A[k2],B[k2],B[k]]; const z=(f[0].z+f[1].z+f[2].z+f[3].z)/4;
+        qFace(f.map(p=>({x:p.x,y:p.y})), z, fill, alpha);
+      }
+    }
+    function cone(bas, tip, Rloc, rad, seg, fill, alpha){
+      const ey=Rloc[1], ez=Rloc[2]; const apex=toScreen(toCam(tip)); const ring=[];
+      for(let k=0;k<seg;k++){
+        const th=2*Math.PI*k/seg; const sy=Math.sin(th)*rad, sz=Math.cos(th)*rad;
+        const p={x:bas.x+ey[0]*sy+ez[0]*sz, y:bas.y+ey[1]*sy+ez[1]*sz, z:bas.z+ey[2]*sy+ez[2]*sz};
+        ring.push(toScreen(toCam(p)));
+      }
+      for(let k=0;k<seg;k++){
+        const k2=(k+1)%seg; const a=ring[k], b=ring[k2], c=apex; const z=(a.z+b.z+c.z)/3;
+        qFace([{x:a.x,y:a.y},{x:b.x,y:b.y},{x:c.x,y:c.y}], z, fill, alpha);
+      }
+    }
+
+    const baseW = screenToWorld(baseX, baseY, 0);
+    // One more step longer
+    const headPx=10, labelOffPx=4, marginPx=2;
+    const Lpx = Math.max(0, r - headPx - labelOffPx - marginPx);
+    const rSpx = 2.2, rHpx=3.6; // fixed pixel radii
+
+    function drawAxis(dir, color, lab){
+      // Mimic force vectors: keep size orthographic (no dependence on projection length)
+      const dirCam = { x: right[0]*dir[0] + right[1]*dir[1] + right[2]*dir[2],
+                       y: -upCam[0]*dir[0] - upCam[1]*dir[1] - upCam[2]*dir[2] };
+      const Lw = Lpx / scalePxPerWorld;
+      const headLw = headPx/scalePxPerWorld; const shaftLw=Math.max(0,Lw-headLw);
+      const tip={x:baseW.x+dir[0]*Lw, y:baseW.y+dir[1]*Lw, z:baseW.z+dir[2]*Lw};
+      const mid={x:baseW.x+dir[0]*shaftLw, y:baseW.y+dir[1]*shaftLw, z:baseW.z+dir[2]*shaftLw};
+      // Stable upHint: prefer camera up; if nearly parallel, use camera right
+      const dotUp = dir[0]*upCam[0] + dir[1]*upCam[1] + dir[2]*upCam[2];
+      const upHint = Math.abs(dotUp)>0.95 ? right : upCam;
+      const Rloc = beamRotation(baseW, tip, upHint);
+      // Constant pixel radii converted to world units
+      const rS = rSpx/scalePxPerWorld, rH = rHpx/scalePxPerWorld;
+      cyl(baseW, mid, Rloc, rS, 12, color, 0.95);
+      cone(mid, tip, Rloc, rH, 12, color, 0.95);
+      // Label near tip in projected direction
+      const tipS=toScreen(toCam(tip)); const ang=Math.atan2(dirCam.y, dirCam.x);
+      ctx.fillStyle='#cbd5dc'; ctx.font='11px ui-monospace,Consolas,monospace';
+      ctx.fillText(lab, tipS.x + (labelOffPx-2)*Math.cos(ang), tipS.y + (labelOffPx-2)*Math.sin(ang));
+    }
+
+    drawAxis([1,0,0], '#ff5a5a', 'x');
+    drawAxis([0,1,0], '#5ad15a', 'y');
+    drawAxis([0,0,1], '#4e8cff', 'z');
+
+    // Flush triad
+    triadQ.sort((a,b)=> b.z - a.z);
+    triadQ.forEach(f=>{ ctx.save(); ctx.globalAlpha=f.a; ctx.fillStyle=f.fill; ctx.beginPath(); f.pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); }); ctx.closePath(); ctx.fill(); ctx.restore(); });
+
+    ctx.restore();
   };
 
   if(model.nodes.length===0){
@@ -963,38 +1353,208 @@ function render(model, res){
   const Pb = mapById(Pbase);
   const Pd = Pdef ? mapById(Pdef) : null;
 
-  // undeformed
-  ctx.save();
-  ctx.strokeStyle='#3a4550';
-  ctx.setLineDash([6,5]);
-  ctx.lineWidth=1.5;
-  model.beams.forEach(b=>{
-    const a=Pb[b.nodeA], c=Pb[b.nodeB];
-    if(!a||!c) return;
-    ctx.beginPath();
-    ctx.moveTo(a.x*scale+ox, a.y*scale+oy);
-    ctx.lineTo(c.x*scale+ox, c.y*scale+oy);
-    ctx.stroke();
-  });
-  ctx.setLineDash([]);
-  ctx.fillStyle='transparent'; ctx.strokeStyle='#637180'; ctx.lineWidth=1.2;
-  model.nodes.forEach(n=>{
-    const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
-    ctx.beginPath(); ctx.arc(px,py,4,0,2*Math.PI); ctx.stroke();
-  });
-  ctx.restore();
+  // (moved) Wireframe overlay drawn later so it always shows in both states
 
   // deformed
   if(Pd){
+    // Helper: robust 3D face drawing with painter's sort
+    const Rcam = cameraMatrix();
+    const target = cam.target;
+    function toCam(p){
+      const px = p.x - target.x, py = p.y - target.y, pz = p.z - target.z;
+      return {
+        x: Rcam[0][0]*px + Rcam[0][1]*py + Rcam[0][2]*pz,
+        y: Rcam[1][0]*px + Rcam[1][1]*py + Rcam[1][2]*pz,
+        z: Rcam[2][0]*px + Rcam[2][1]*py + Rcam[2][2]*pz,
+      };
+    }
+    function toScreen(pc){ return {x: pc.x*scale+ox, y: pc.y*scale+oy, z: pc.z}; }
+    const faceQ=[];
+    function queueFace(pts2d, zAvg, fill='#2a9df4', alpha=0.22){
+      faceQ.push({pts:pts2d, z:zAvg, fill, alpha});
+    }
+    function drawBox3D(na, nb, Rloc, H, B, fillColor='#2a9df4', alpha=0.22){
+      const hy=H*0.5, hz=B*0.5;
+      const ey=Rloc[1], ez=Rloc[2];
+      function add(a, sY, sZ){
+        return { x: a.x + ey[0]*sY + ez[0]*sZ,
+                 y: a.y + ey[1]*sY + ez[1]*sZ,
+                 z: a.z + ey[2]*sY + ez[2]*sZ };
+      }
+      const A1=add(na, +hy, +hz), A2=add(na, +hy, -hz), A3=add(na, -hy, -hz), A4=add(na, -hy, +hz);
+      const B1=add(nb, +hy, +hz), B2=add(nb, +hy, -hz), B3=add(nb, -hy, -hz), B4=add(nb, -hy, +hz);
+      const verts = [A1,A2,A3,A4,B1,B2,B3,B4].map(p=>toScreen(toCam(p)));
+      const faces=[
+        [0,1,2,3], // cap A
+        [4,5,6,7], // cap B
+        [0,4,5,1], // side 1
+        [1,5,6,2], // side 2
+        [2,6,7,3], // side 3
+        [3,7,4,0], // side 4
+      ];
+      // painter's sort by depth (farther first)
+      faces.forEach(idxs=>{
+        const zAvg = idxs.reduce((s,k)=>s+verts[k].z,0)/idxs.length;
+        const pts2 = idxs.map(k=>({x:verts[k].x,y:verts[k].y}));
+        queueFace(pts2, zAvg, fillColor, alpha);
+      });
+    }
+    function drawCylinder3D(na, nb, Rloc, radius, segments=20, fillColor='#2a9df4', alpha=0.18){
+      const ey=Rloc[1], ez=Rloc[2];
+      const ringA=[], ringB=[];
+      for(let k=0;k<segments;k++){
+        const th=2*Math.PI*k/segments; const sy=Math.sin(th)*radius, sz=Math.cos(th)*radius;
+        const a = { x: na.x + ey[0]*sy + ez[0]*sz,
+                    y: na.y + ey[1]*sy + ez[1]*sz,
+                    z: na.z + ey[2]*sy + ez[2]*sz };
+        const b = { x: nb.x + ey[0]*sy + ez[0]*sz,
+                    y: nb.y + ey[1]*sy + ez[1]*sz,
+                    z: nb.z + ey[2]*sy + ez[2]*sz };
+        ringA.push(toScreen(toCam(a)));
+        ringB.push(toScreen(toCam(b)));
+      }
+      const faces=[];
+      for(let k=0;k<segments;k++){
+        const k2=(k+1)%segments;
+        const face=[ {x:ringA[k].x,y:ringA[k].y,z:ringA[k].z},
+                     {x:ringA[k2].x,y:ringA[k2].y,z:ringA[k2].z},
+                     {x:ringB[k2].x,y:ringB[k2].y,z:ringB[k2].z},
+                     {x:ringB[k].x,y:ringB[k].y,z:ringB[k].z} ];
+        const zavg=(face[0].z+face[1].z+face[2].z+face[3].z)/4;
+        faces.push({face, z:zavg});
+      }
+      faces.forEach(f=> queueFace(f.face.map(p=>({x:p.x,y:p.y})), f.z, fillColor, alpha));
+    }
+
     ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2;
     model.beams.forEach(b=>{
-      const a=Pd[b.nodeA], c=Pd[b.nodeB];
-      if(!a||!c) return;
-      ctx.beginPath();
-      ctx.moveTo(a.x*scale+ox, a.y*scale+oy);
-      ctx.lineTo(c.x*scale+ox, c.y*scale+oy);
-      ctx.stroke();
+      const a=Pd[b.nodeA], c=Pd[b.nodeB]; if(!a||!c) return;
+      if(showBeamGraphics && b.xsec && b.xsec.kind){
+        const na={x:a.wpos[0], y:a.wpos[1], z:a.wpos[2]};
+        const nb={x:c.wpos[0], y:c.wpos[1], z:c.wpos[2]};
+        const Rloc = beamRotation(na, nb, b.up);
+        const kind = String(b.xsec.kind).toLowerCase();
+        const useStress = showStressMap && results && (results.beamForcesLocal?.[b.id]);
+        if(useStress && stressStats && isFinite(stressStats.min) && isFinite(stressStats.max) && stressStats.max>stressStats.min){
+          // segment the beam
+          const lf = results.beamForcesLocal[b.id];
+          const Aend=lf.endA, Bend=lf.endB;
+          const A=b.A, Iy=b.Iy, Iz=b.Iz, J=b.J;
+          const xsecInfo={A,Iy,Iz,J,kind:b.xsec.kind,dims:b.xsec.dims||{}};
+          const S=18;
+          for(let i=0;i<S;i++){
+            const t0=i/S, t1=(i+1)/S;
+            const p0={x:na.x + (nb.x-na.x)*t0, y:na.y + (nb.y-na.y)*t0, z:na.z + (nb.z-na.z)*t0};
+            const p1={x:na.x + (nb.x-na.x)*t1, y:na.y + (nb.y-na.y)*t1, z:na.z + (nb.z-na.z)*t1};
+            // Use constant N,V,T and linear bending moments
+            const N = (Aend.Fx - Bend.Fx)/2;
+            const Vy= (Aend.Fy - Bend.Fy)/2;
+            const Vz= (Aend.Fz - Bend.Fz)/2;
+            const T = (Aend.Mx - Bend.Mx)/2;
+            const tm = (i+0.5)/S;
+            const My= (1-tm)*Aend.My + tm*(-Bend.My);
+            const Mz= (1-tm)*Aend.Mz + tm*(-Bend.Mz);
+            const vm = vonMisesFromLocal(N,Vy,Vz,T,My,Mz, xsecInfo);
+            const tcol = (stressStats && stressStats.max>0) ? (vm / stressStats.max) : 0;
+            const col = colorMap01(tcol);
+            if(kind==='rect' || kind==='recttube'){
+              const B = (b.xsec.dims.B ?? b.xsec.dims.b) || 0;
+              const H = (b.xsec.dims.H ?? b.xsec.dims.h) || 0;
+              drawBox3D(p0, p1, Rloc, H, B, col, 0.6);
+            } else if(kind==='ibeam' || kind==='i-beam' || kind==='wideflange'){
+              const Bf=b.xsec.dims.Bf||b.xsec.dims.bf||0;
+              const H=b.xsec.dims.H||b.xsec.dims.h||0;
+              const tf=b.xsec.dims.tf||0;
+              const tw=b.xsec.dims.tw||0;
+              const hw = Math.max(0, H - 2*tf);
+              const off = (H/2 - tf/2);
+              // top flange
+              const top0 = {x:p0.x + Rloc[1][0]*off, y:p0.y + Rloc[1][1]*off, z:p0.z + Rloc[1][2]*off};
+              const top1 = {x:p1.x + Rloc[1][0]*off, y:p1.y + Rloc[1][1]*off, z:p1.z + Rloc[1][2]*off};
+              drawBox3D(top0, top1, Rloc, tf, Bf, col, 0.6);
+              // bottom flange
+              const bot0 = {x:p0.x - Rloc[1][0]*off, y:p0.y - Rloc[1][1]*off, z:p0.z - Rloc[1][2]*off};
+              const bot1 = {x:p1.x - Rloc[1][0]*off, y:p1.y - Rloc[1][1]*off, z:p1.z - Rloc[1][2]*off};
+              drawBox3D(bot0, bot1, Rloc, tf, Bf, col, 0.6);
+              // web
+              drawBox3D(p0, p1, Rloc, hw, tw, col, 0.6);
+            } else { // round
+              const D = (b.xsec.dims.D || b.xsec.dims.d || 0);
+              const rad = Math.max(0, D*0.5);
+              drawCylinder3D(p0, p1, Rloc, rad, 18, col, 0.6);
+            }
+          }
+        } else {
+          // no stress overlay
+          if(kind==='rect' || kind==='recttube'){
+            const B = (b.xsec.dims.B ?? b.xsec.dims.b) || 0;
+            const H = (b.xsec.dims.H ?? b.xsec.dims.h) || 0;
+            drawBox3D(na, nb, Rloc, H, B);
+          } else if(kind==='ibeam' || kind==='i-beam' || kind==='wideflange'){
+            const Bf=b.xsec.dims.Bf||b.xsec.dims.bf||0;
+            const H=b.xsec.dims.H||b.xsec.dims.h||0;
+            const tf=b.xsec.dims.tf||0;
+            const tw=b.xsec.dims.tw||0;
+            const hw = Math.max(0, H - 2*tf);
+            const off = (H/2 - tf/2);
+            // top flange
+            const topA = {x:na.x + Rloc[1][0]*off, y:na.y + Rloc[1][1]*off, z:na.z + Rloc[1][2]*off};
+            const topB = {x:nb.x + Rloc[1][0]*off, y:nb.y + Rloc[1][1]*off, z:nb.z + Rloc[1][2]*off};
+            drawBox3D(topA, topB, Rloc, tf, Bf);
+            // bottom flange
+            const botA = {x:na.x - Rloc[1][0]*off, y:na.y - Rloc[1][1]*off, z:na.z - Rloc[1][2]*off};
+            const botB = {x:nb.x - Rloc[1][0]*off, y:nb.y - Rloc[1][1]*off, z:nb.z - Rloc[1][2]*off};
+            drawBox3D(botA, botB, Rloc, tf, Bf);
+            // web
+            drawBox3D(na, nb, Rloc, hw, tw);
+          } else if(kind==='circ' || kind==='circle' || kind==='tube' || kind==='pipe' || kind==='hollow'){
+            const D = (b.xsec.dims.D || b.xsec.dims.d || 0);
+            const rad = Math.max(0, D*0.5);
+            drawCylinder3D(na, nb, Rloc, rad, 20);
+          } else {
+            // Fallback thin line
+            ctx.beginPath(); ctx.moveTo(a.x*scale+ox,a.y*scale+oy); ctx.lineTo(c.x*scale+ox,c.y*scale+oy); ctx.stroke();
+          }
+        }
+      } else {
+        // Legacy beam: thin line
+        if(!showBeamGraphics){ ctx.beginPath(); ctx.moveTo(a.x*scale+ox,a.y*scale+oy); ctx.lineTo(c.x*scale+ox,c.y*scale+oy); ctx.stroke(); }
+      }
     });
+
+    // Flush faces: global depth sort (far → near)
+    faceQ.sort((a,b)=> b.z - a.z);
+    faceQ.forEach(f=>{
+      ctx.save();
+      ctx.globalAlpha = f.alpha;
+      ctx.fillStyle = f.fill;
+      ctx.beginPath();
+      f.pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
+      ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = Math.min(0.8, f.alpha*2.5);
+      ctx.strokeStyle = '#1e293b'; ctx.lineWidth=1.0; ctx.stroke();
+      ctx.restore();
+    });
+
+    // Always overlay undeformed wireframe (dashed)
+    ctx.save();
+    ctx.strokeStyle='#3a4550'; ctx.lineWidth=1.5; ctx.setLineDash([6,5]);
+    model.beams.forEach(b=>{ const a=Pb[b.nodeA], c=Pb[b.nodeB]; if(!a||!c) return; ctx.beginPath(); ctx.moveTo(a.x*scale+ox, a.y*scale+oy); ctx.lineTo(c.x*scale+ox, c.y*scale+oy); ctx.stroke(); });
+    ctx.setLineDash([]);
+    ctx.fillStyle='transparent'; ctx.strokeStyle='#637180'; ctx.lineWidth=1.2;
+    model.nodes.forEach(n=>{ const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy; ctx.beginPath(); ctx.arc(px,py,4,0,2*Math.PI); ctx.stroke(); });
+    ctx.restore();
+
+    // Always overlay deformed centerlines (even when beam graphics are shown)
+    if(showBeamGraphics){
+      ctx.save();
+      ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2; ctx.setLineDash([]); ctx.globalAlpha=0.9;
+      model.beams.forEach(b=>{
+        const a=Pd[b.nodeA], c=Pd[b.nodeB]; if(!a||!c) return;
+        ctx.beginPath(); ctx.moveTo(a.x*scale+ox, a.y*scale+oy); ctx.lineTo(c.x*scale+ox, c.y*scale+oy); ctx.stroke();
+      });
+      ctx.restore();
+    }
 
     ctx.fillStyle='#80ed99';
     model.nodes.forEach(n=>{
@@ -1010,6 +1570,74 @@ function render(model, res){
       const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
       ctx.fillText(n.id, px+6, py-6);
     });
+    // Draw undeformed thick beams if enabled
+    if(showBeamGraphics){
+      const Rcam = cameraMatrix();
+      function toCam(p){
+        const px = p.x - cam.target.x, py = p.y - cam.target.y, pz = p.z - cam.target.z;
+        return {
+          x: Rcam[0][0]*px + Rcam[0][1]*py + Rcam[0][2]*pz,
+          y: Rcam[1][0]*px + Rcam[1][1]*py + Rcam[1][2]*pz,
+          z: Rcam[2][0]*px + Rcam[2][1]*py + Rcam[2][2]*pz,
+        };
+      }
+      function toScreen(pc){ return {x: pc.x*scale+ox, y: pc.y*scale+oy, z: pc.z}; }
+      const faceQ0=[];
+      function queueFace0(pts2d, zAvg, fill='#2a9df4', alpha=0.22){ faceQ0.push({pts:pts2d, z:zAvg, fill, alpha}); }
+      function drawBox3D(na, nb, Rloc, H, B){
+        const hy=H*0.5, hz=B*0.5; const ey=Rloc[1], ez=Rloc[2];
+        function add(a, sY, sZ){ return { x: a.x + ey[0]*sY + ez[0]*sZ, y: a.y + ey[1]*sY + ez[1]*sZ, z: a.z + ey[2]*sY + ez[2]*sZ }; }
+        const A1=add(na, +hy, +hz), A2=add(na, +hy, -hz), A3=add(na, -hy, -hz), A4=add(na, -hy, +hz);
+        const B1=add(nb, +hy, +hz), B2=add(nb, +hy, -hz), B3=add(nb, -hy, -hz), B4=add(nb, -hy, +hz);
+        const verts = [A1,A2,A3,A4,B1,B2,B3,B4].map(p=>toScreen(toCam(p)));
+        const faces=[[0,1,2,3],[4,5,6,7],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]];
+        faces.forEach(idxs=>{
+          const zAvg = idxs.reduce((s,k)=>s+verts[k].z,0)/idxs.length;
+          const pts2 = idxs.map(k=>({x:verts[k].x,y:verts[k].y}));
+          queueFace0(pts2, zAvg, '#2a9df4', 0.22);
+        });
+      }
+      function drawCylinder3D(na, nb, Rloc, radius, segments=20){
+        const ey=Rloc[1], ez=Rloc[2]; const ringA=[], ringB=[];
+        for(let k=0;k<segments;k++){
+          const th=2*Math.PI*k/segments; const sy=Math.sin(th)*radius, sz=Math.cos(th)*radius;
+          const a = { x: na.x + ey[0]*sy + ez[0]*sz, y: na.y + ey[1]*sy + ez[1]*sz, z: na.z + ey[2]*sy + ez[2]*sz };
+          const b = { x: nb.x + ey[0]*sy + ez[0]*sz, y: nb.y + ey[1]*sy + ez[1]*sz, z: nb.z + ey[2]*sy + ez[2]*sz };
+          ringA.push(toScreen(toCam(a))); ringB.push(toScreen(toCam(b)));
+        }
+        const faces=[]; for(let k=0;k<segments;k++){ const k2=(k+1)%segments; const face=[{x:ringA[k].x,y:ringA[k].y,z:ringA[k].z},{x:ringA[k2].x,y:ringA[k2].y,z:ringA[k2].z},{x:ringB[k2].x,y:ringB[k2].y,z:ringB[k2].z},{x:ringB[k].x,y:ringB[k].y,z:ringB[k].z}]; const zavg=(face[0].z+face[1].z+face[2].z+face[3].z)/4; faces.push({face,z:zavg}); }
+        faces.forEach(f=> queueFace0(f.face.map(p=>({x:p.x,y:p.y})), f.z, '#2a9df4', 0.18));
+      }
+      model.beams.forEach(b=>{
+        if(!(b.xsec && b.xsec.kind)) return;
+        const na={x:(Pb[b.nodeA]?.wpos0||[0,0,0])[0], y:(Pb[b.nodeA]?.wpos0||[0,0,0])[1], z:(Pb[b.nodeA]?.wpos0||[0,0,0])[2]};
+        const nb={x:(Pb[b.nodeB]?.wpos0||[0,0,0])[0], y:(Pb[b.nodeB]?.wpos0||[0,0,0])[1], z:(Pb[b.nodeB]?.wpos0||[0,0,0])[2]};
+        const Rloc = beamRotation(na, nb, b.up);
+        const kind = String(b.xsec.kind).toLowerCase();
+        if(kind==='rect' || kind==='recttube'){
+          const B=(b.xsec.dims.B ?? b.xsec.dims.b) || 0; const H=(b.xsec.dims.H ?? b.xsec.dims.h) || 0; drawBox3D(na, nb, Rloc, H, B);
+        } else if(kind==='ibeam' || kind==='i-beam' || kind==='wideflange'){
+          const Bf=b.xsec.dims.Bf||b.xsec.dims.bf||0; const H=b.xsec.dims.H||b.xsec.dims.h||0; const tf=b.xsec.dims.tf||0; const tw=b.xsec.dims.tw||0; const hw=Math.max(0, H - 2*tf); const off=(H/2 - tf/2);
+          const topA={x:na.x + Rloc[1][0]*off, y:na.y + Rloc[1][1]*off, z:na.z + Rloc[1][2]*off}; const topB={x:nb.x + Rloc[1][0]*off, y:nb.y + Rloc[1][1]*off, z:nb.z + Rloc[1][2]*off}; drawBox3D(topA, topB, Rloc, tf, Bf);
+          const botA={x:na.x - Rloc[1][0]*off, y:na.y - Rloc[1][1]*off, z:na.z - Rloc[1][2]*off}; const botB={x:nb.x - Rloc[1][0]*off, y:nb.y - Rloc[1][1]*off, z:nb.z - Rloc[1][2]*off}; drawBox3D(botA, botB, Rloc, tf, Bf);
+          drawBox3D(na, nb, Rloc, hw, tw);
+        } else if(kind==='circ' || kind==='circle' || kind==='tube' || kind==='pipe' || kind==='hollow'){
+          const D=(b.xsec.dims.D || b.xsec.dims.d || 0); const rad=Math.max(0, D*0.5); drawCylinder3D(na, nb, Rloc, rad, 20);
+        }
+      });
+      // Flush faces globally
+      faceQ0.sort((a,b)=> b.z - a.z);
+      faceQ0.forEach(f=>{ ctx.save(); ctx.globalAlpha=f.alpha; ctx.fillStyle=f.fill; ctx.beginPath(); f.pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); }); ctx.closePath(); ctx.fill(); ctx.globalAlpha=Math.min(0.8, f.alpha*2.5); ctx.strokeStyle='#1e293b'; ctx.lineWidth=1.0; ctx.stroke(); ctx.restore(); });
+    }
+
+    // Always overlay undeformed wireframe (dashed)
+    ctx.save();
+    ctx.strokeStyle='#3a4550'; ctx.lineWidth=1.5; ctx.setLineDash([6,5]);
+    model.beams.forEach(b=>{ const a=Pb[b.nodeA], c=Pb[b.nodeB]; if(!a||!c) return; ctx.beginPath(); ctx.moveTo(a.x*scale+ox, a.y*scale+oy); ctx.lineTo(c.x*scale+ox, c.y*scale+oy); ctx.stroke(); });
+    ctx.setLineDash([]);
+    ctx.fillStyle='transparent'; ctx.strokeStyle='#637180'; ctx.lineWidth=1.2;
+    model.nodes.forEach(n=>{ const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy; ctx.beginPath(); ctx.arc(px,py,4,0,2*Math.PI); ctx.stroke(); });
+    ctx.restore();
   }
 
   // hinge glyphs at released ends
@@ -1021,11 +1649,48 @@ function render(model, res){
     if(b.releaseB && (b.releaseB.rx||b.releaseB.ry||b.releaseB.rz)) glyph(bx,by);
   });
 
-  // supports / forces (iconic)
+  // supports / forces (3D)
   const Rvec = cameraMatrix();
   const Picons = Pd || Pb;
+  // Arrow helpers: queue separate so arrows draw consistently
+  const arrowQ=[];
+  function queueArrowFace(pts2d, zAvg, fill='#ff6b6b', alpha=0.9){ arrowQ.push({pts:pts2d, z:zAvg, fill, alpha}); }
+  function drawCylinderArrow(na, nb, Rloc, radius, segments=14, fill='#ff6b6b', alpha=0.9){
+    const ey=Rloc[1], ez=Rloc[2];
+    const ringA=[], ringB=[];
+    for(let k=0;k<segments;k++){
+      const th=2*Math.PI*k/segments; const sy=Math.sin(th)*radius, sz=Math.cos(th)*radius;
+      const a = { x: na.x + ey[0]*sy + ez[0]*sz, y: na.y + ey[1]*sy + ez[1]*sz, z: na.z + ey[2]*sy + ez[2]*sz };
+      const b = { x: nb.x + ey[0]*sy + ez[0]*sz, y: nb.y + ey[1]*sy + ez[1]*sz, z: nb.z + ey[2]*sy + ez[2]*sz };
+      const as = toScreen(toCam(a)), bs = toScreen(toCam(b));
+      ringA.push(as); ringB.push(bs);
+    }
+    for(let k=0;k<segments;k++){
+      const k2=(k+1)%segments;
+      const face=[ ringA[k], ringA[k2], ringB[k2], ringB[k] ];
+      const zAvg=(face[0].z+face[1].z+face[2].z+face[3].z)/4;
+      queueArrowFace(face.map(p=>({x:p.x,y:p.y})), zAvg, fill, alpha);
+    }
+  }
+  function drawConeArrow(base, tip, Rloc, radius, segments=14, fill='#ff6b6b', alpha=0.9){
+    const ey=Rloc[1], ez=Rloc[2];
+    const apexS = toScreen(toCam(tip));
+    const ring=[];
+    for(let k=0;k<segments;k++){
+      const th=2*Math.PI*k/segments; const sy=Math.sin(th)*radius, sz=Math.cos(th)*radius;
+      const p = { x: base.x + ey[0]*sy + ez[0]*sz, y: base.y + ey[1]*sy + ez[1]*sz, z: base.z + ey[2]*sy + ez[2]*sz };
+      ring.push(toScreen(toCam(p)));
+    }
+    for(let k=0;k<segments;k++){
+      const k2=(k+1)%segments;
+      const a=ring[k], b=ring[k2], c=apexS;
+      const zAvg=(a.z+b.z+c.z)/3;
+      queueArrowFace([{x:a.x,y:a.y},{x:b.x,y:b.y},{x:c.x,y:c.y}], zAvg, fill, alpha);
+    }
+  }
+
   model.nodes.forEach(n=>{
-    const p=Picons[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
+    const p=Picons[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy; // still used for supports icons
     const conds=(model.conditions[n.id]||[]);
     conds.forEach(c=>{
       ctx.strokeStyle='#aaa'; ctx.lineWidth=1;
@@ -1038,16 +1703,30 @@ function render(model, res){
         ctx.beginPath(); ctx.moveTo(px-8,py+10); ctx.lineTo(px+8,py+10); ctx.stroke();
       }else if(c.type==='force'){
         const fx=c.fx||0, fy=c.fy||0, fz=c.fz||0;
-        const fx2 =  Rvec[0][0]*fx + Rvec[0][1]*fy + Rvec[0][2]*fz;
-        const fy2 =  Rvec[1][0]*fx + Rvec[1][1]*fy + Rvec[1][2]*fz;
-        const len = Math.hypot(fx2,fy2) || 1;
-        const L = 24*(Math.log10(1+Math.abs(fx)+Math.abs(fy)+Math.abs(fz))+1)/3;
-        const dx=L*(fx2/len), dy=L*(fy2/len);
-        ctx.strokeStyle='#ff6b6b';
-        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+dx,py+dy); ctx.stroke();
+        const mag3=Math.hypot(fx,fy,fz);
+        if(mag3<=0) return;
+        const dir=[fx/mag3, fy/mag3, fz/mag3];
+        // target length in pixels then convert to world units
+        const Lpx = Math.max(26, Math.min(110, 22 + 12*Math.log10(1+mag3)));
+        const Lw = Lpx/scale;
+        const headL = Math.max(0.24*Lw, 6/scale);
+        const shaftL = Math.max(0, Lw - headL);
+        const base = {x:p.wpos[0], y:p.wpos[1], z:p.wpos[2]};
+        const mid  = {x: base.x + dir[0]*shaftL, y: base.y + dir[1]*shaftL, z: base.z + dir[2]*shaftL};
+        const tip  = {x: base.x + dir[0]*Lw,     y: base.y + dir[1]*Lw,     z: base.z + dir[2]*Lw    };
+        // Build local frame for arrow along dir
+        const up=[0,0,1]; const almostCol=Math.abs(dir[0]*up[0]+dir[1]*up[1]+dir[2]*up[2])>0.98; const up2=almostCol?[0,1,0]:up;
+        const Rloc = beamRotation(base, tip, up2);
+        // Radii in world units with pixel lower bounds
+        const rShaft = Math.max(1.6/scale, Lw*0.03);
+        const rHead  = Math.max(2.8/scale, rShaft*2.0);
+        drawCylinderArrow(base, mid, Rloc, rShaft, 14, '#ff6b6b', 0.9);
+        drawConeArrow(mid, tip, Rloc, rHead, 14, '#ff6b6b', 0.9);
       }
     });
   });
+  // Flush arrow faces after queuing
+  if(arrowQ.length){ arrowQ.sort((a,b)=> b.z - a.z); arrowQ.forEach(f=>{ ctx.save(); ctx.globalAlpha=f.alpha; ctx.fillStyle=f.fill; ctx.beginPath(); f.pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); }); ctx.closePath(); ctx.fill(); ctx.restore(); }); }
 
   currentScreenMap={scale,ox,oy,pts:Pd||Pb, ptsBase:Pb};
   drawTriad();
@@ -1055,18 +1734,82 @@ function render(model, res){
   // legend
   ctx.save();
   ctx.font='12px ui-monospace,Consolas,monospace';
-  const x0 = rect.width-160, y0=18;
+  ctx.textBaseline='middle';
+  const x0 = rect.width-200, y0=18; const rowH=22; let ycur = y0;
+  // Node entry (always shown)
+  let cy = ycur + rowH/2;
+  ctx.fillStyle='#80ed99';
+  ctx.beginPath(); ctx.arc(x0+8, cy, 5, 0, 2*Math.PI); ctx.fill();
+  ctx.strokeStyle='#1e293b'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle='#cbd5dc'; ctx.fillText('node', x0+34, cy);
+  ycur += rowH; cy = ycur + rowH/2;
+  // Always show wireframe legend
   ctx.strokeStyle='#3a4550'; ctx.lineWidth=1.5; ctx.setLineDash([6,5]);
-  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+28,y0); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle='#cbd5dc'; ctx.fillText('undeformed', x0+34, y0+4);
-  ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(x0,y0+16); ctx.lineTo(x0+28,y0+16); ctx.stroke();
-  ctx.fillStyle='#cbd5dc'; ctx.fillText('deformed', x0+34, y0+20);
-  ctx.strokeStyle='#c6b48a'; ctx.lineWidth=1.6;
-  ctx.beginPath(); ctx.arc(x0+8,y0+34,5,0,2*Math.PI); ctx.stroke();
-  ctx.fillStyle='#cbd5dc'; ctx.fillText('hinge', x0+34, y0+38);
+  ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x0+28, cy); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#cbd5dc'; ctx.fillText('wireframe', x0+34, cy);
+  ycur += rowH; cy = ycur + rowH/2;
+  if(res){
+    ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x0+28, cy); ctx.stroke();
+    ctx.fillStyle='#cbd5dc'; ctx.fillText('deformed', x0+34, cy);
+    ycur += rowH; cy = ycur + rowH/2;
+  }
+  if(showBeamGraphics){
+    // Draw a filled face patch to represent beam solids (centered in row)
+    const w=28, h=10;
+    ctx.setLineDash([]);
+    ctx.fillStyle='#2a9df4';
+    ctx.globalAlpha=0.7;
+    ctx.fillRect(x0, cy - h/2, w, h);
+    ctx.globalAlpha=1.0;
+    ctx.strokeStyle='#1e293b'; ctx.lineWidth=1;
+    ctx.strokeRect(x0-0.5, cy - h/2 - 0.5, w+1, h+1);
+    ctx.fillStyle='#cbd5dc';
+    ctx.fillText(res ? 'beams (deformed)' : 'beams (undeformed)', x0+34, cy);
+    ycur += rowH; cy = ycur + rowH/2;
+  }
+  ctx.textBaseline='alphabetic';
   ctx.restore();
+
+  // Stress colorbar
+  if(showBeamGraphics && showStressMap && results && stressStats && isFinite(stressStats.max) && stressStats.max>0){
+    const barW = 16;
+    const pad = 16;
+    const barH = Math.max(220, Math.floor(rect.height * 0.7));
+    const x = rect.width - barW - pad;
+    // Shift down so the bottom aligns closer to the bottom of the view
+    const y = rect.height - barH - pad;
+    const n=96;
+    for(let i=0;i<n;i++){
+      const t=i/(n-1);
+      ctx.fillStyle=colorMap01(1-t);
+      const yy = y + Math.floor(i*(barH/(n-1)));
+      const hh = Math.ceil(barH/(n-1))+1;
+      ctx.fillRect(x, yy, barW, hh);
+    }
+    ctx.strokeStyle='#1f2937'; ctx.lineWidth=1; ctx.strokeRect(x-0.5,y-0.5,barW+1,barH+1);
+    // Ticks and labels in MPa
+    ctx.fillStyle='#cbd5dc'; ctx.font='11px ui-monospace,Consolas,monospace';
+    const fmtMPa=(v)=>{
+      const mp=v/1e6; // Pa -> MPa
+      if(!isFinite(mp)) return '';
+      if(Math.abs(mp)>=100) return mp.toFixed(0);
+      if(Math.abs(mp)>=10)  return mp.toFixed(1);
+      return mp.toFixed(2);
+    };
+    const ticks=[0,0.2,0.4,0.6,0.8,1.0];
+    ticks.forEach(t=>{
+      const yy = y + (1-t)*barH;
+      ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(x-6, yy); ctx.lineTo(x, yy); ctx.stroke();
+      const val = t*stressStats.max;
+      const label = fmtMPa(val);
+      ctx.fillStyle='#cbd5dc';
+      ctx.fillText(label, x - 8 - ctx.measureText(label).width, yy+4);
+    });
+    const title='σ_vM [MPa]';
+    ctx.fillText(title, x - 6 - ctx.measureText(title).width, y - 8);
+  }
 }
 
 /* =========================
@@ -1166,12 +1909,31 @@ zoomEl.addEventListener('change', ()=>{
   setZoom(parseFloat(zoomEl.value)||1);
   render({nodes,beams,conditions}, results);
 });
-canvas.addEventListener('dblclick', ()=>{
-  cam.yaw=45*Math.PI/180; cam.pitch=20*Math.PI/180; setZoom(1); cam.panX=0; cam.panY=0;
+document.getElementById('toggleBeams').addEventListener('click', (e)=>{
+  showBeamGraphics = !showBeamGraphics;
+  const btn = e.currentTarget;
+  btn.setAttribute('aria-pressed', showBeamGraphics? 'true':'false');
+  btn.textContent = showBeamGraphics ? 'Hide Beam Graphics' : 'Show Beam Graphics';
+  render({nodes,beams,conditions}, results);
+});
+document.getElementById('toggleStress').addEventListener('click', (e)=>{
+  if(!results){ setStatus('Solve first to compute stresses.', false); return; }
+  showStressMap = !showStressMap;
+  const btn = e.currentTarget;
+  btn.setAttribute('aria-pressed', showStressMap? 'true':'false');
+  btn.textContent = showStressMap ? 'Hide Stress Map' : 'Show Stress Map';
+  if(!stressStats) stressStats = computeStressStats({nodes,beams,conditions}, results);
+  render({nodes,beams,conditions}, results);
+});
+function setIsoView(){
+  cam.yaw = 225*Math.PI/180;
+  cam.pitch = -Math.atan(1/Math.SQRT2);
+  setZoom(1); cam.panX=0; cam.panY=0;
   computeTarget({nodes,beams,conditions});
   computeFitScale({nodes,beams,conditions}, results);
   render({nodes,beams,conditions}, results);
-});
+}
+canvas.addEventListener('dblclick', setIsoView);
 window.addEventListener('resize', ()=>{
   computeFitScale({nodes,beams,conditions}, results);
   render({nodes,beams,conditions}, results);
@@ -1182,10 +1944,38 @@ window.addEventListener('resize', ()=>{
    ========================= */
 const specEl=document.getElementById('spec');
 
+function updateLibrariesUI(libs){
+  const mUL = document.getElementById('libMaterials');
+  const xUL = document.getElementById('libXSections');
+  if(!mUL || !xUL) return;
+  mUL.innerHTML=''; xUL.innerHTML='';
+  const fmtEng=v=>{
+    if(!isFinite(v)) return '';
+    if(v===0) return '0';
+    const exp=Math.floor(Math.log10(Math.abs(v))); const exp3=Math.floor(exp/3)*3; const mant=v/Math.pow(10,exp3);
+    const mantStr=(Math.abs(mant)>=100?mant.toFixed(0):Math.abs(mant)>=10?mant.toFixed(1):mant.toFixed(2)).replace(/\.?0+$/,'');
+    return `${mantStr}e${exp3}`;
+  };
+  Object.entries(libs.materials||{}).forEach(([name,mat])=>{
+    const li=document.createElement('li');
+    const sy = (mat.sy!=null && isFinite(mat.sy)) ? ` Sy=${fmtEng(mat.sy)}` : '';
+    li.textContent = `${name}: E=${fmtEng(mat.E)} nu=${(mat.nu).toFixed(2)}${sy}`;
+    mUL.appendChild(li);
+  });
+  Object.entries(libs.xsections||{}).forEach(([name,xs])=>{
+    const li=document.createElement('li');
+    const dims = Object.entries(xs.dims||{}).map(([k,v])=>`${k}=${fmtEng(v)}`).join(' ');
+    const up = xs.up?` up=(${xs.up.join(',')})`:'';
+    li.textContent = `${name}: shape=${xs.shape} ${dims}${up}`;
+    xUL.appendChild(li);
+  });
+}
+
 function refreshFromSpec(){
-  const {errors, model, exagOverride: exo, nuGlobal: nug} = parseSpec(specEl.value);
+  const {errors, model, libraries: libs, exagOverride: exo, nuGlobal: nug} = parseSpec(specEl.value);
   if(exo!=null) exagEl.value=exo;
   if(nug!=null) nuGlobal=nug;
+  if(libs){ materialsLib = libs.materials||{}; xsectionsLib = libs.xsections||{}; updateLibrariesUI(libs); }
 
   errorsEl.textContent = errors.length ? errors.join('\n') : '';
   if(errors.length){
@@ -1201,6 +1991,8 @@ function refreshFromSpec(){
   computeTarget({nodes,beams,conditions});
   computeFitScale({nodes,beams,conditions}, results);
   updateResultsUI(results, {nodes,beams,conditions});
+  // reset stress stats when spec changes
+  stressStats = (results ? computeStressStats({nodes,beams,conditions}, results) : null);
   render({nodes,beams,conditions}, results);
 }
 specEl.addEventListener('input', refreshFromSpec);
@@ -1220,6 +2012,7 @@ document.getElementById('btnSolve').addEventListener('click', ()=>{
     }
     const out=solve3D(model);
     results=out; setStatus('Solved. Showing undeformed + deformed shapes.');
+    stressStats = computeStressStats(model, results);
     computeTarget(model);
     computeFitScale(model, results);
     updateResultsUI(results, model);
@@ -1231,6 +2024,7 @@ document.getElementById('btnSolve').addEventListener('click', ()=>{
     computeTarget({nodes,beams,conditions});
     computeFitScale({nodes,beams,conditions}, results);
     updateResultsUI(null, {nodes,beams,conditions});
+    stressStats=null;
     render({nodes,beams,conditions}, null);
   }
 });
@@ -1238,7 +2032,7 @@ document.getElementById('btnSolve').addEventListener('click', ()=>{
 document.getElementById('btnSave').addEventListener('click', saveModelSpecToESSA);
 
 document.getElementById('btnReset').addEventListener('click', ()=>{
-  specEl.value = presetText('mixed');
+  specEl.value = presetText('unittest');
   results=null; refreshFromSpec(); setStatus('Reset to preset.');
 });
 
@@ -1249,46 +2043,42 @@ exagEl.addEventListener('change', ()=>{
 });
 
 /* =========================
-   Presets (includes Mixed & Compliant)
+   Presets (includes Compliant)
    ========================= */
 function presetText(name){
-  if(name==='mixed'){
-    return `# Mixed joint at node 2: beams 1 & 2 rigidly connected, beam 3 pinned at node 2
-exag = 20
-nu   = 0.30
-
-nodes:
-  1: (0, 0, 0)
-  2: (1.2, 0, 0)
-  3: (1.2, 0.8, 0)
-  4: (0.4, 0.4, 0)
-
-beams:
-  # 'pin@2' releases Ry,Rz at the end connected to node 2
-  1: 1-2 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
-  2: 2-3 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1)
-  3: 2-4 E=210e9 A=0.01 Iy=6e-5 Iz=6e-5 J=1.2e-4 up=(0,0,1) pin@2
-
-conditions:
-  1: fixed
-  3: free
-  2: force Fx=0 Fy=0 Fz=-1000 Mx=0 My=0 Mz=0
-`;
-  } else if(name==='cantilever'){
+  if(name==='cantilever'){
     return `# 3D Cantilever along X with tip load in Z
 exag = 20
 nu   = 0.30
 
 nodes:
-  1: (0, 0, 0)
-  2: (1.0, 0, 0)
+  1:  (0.0, 0, 0)
+  2:  (0.1, 0, 0)
+  3:  (0.2, 0, 0)
+  4:  (0.3, 0, 0)
+  5:  (0.4, 0, 0)
+  6:  (0.5, 0, 0)
+  7:  (0.6, 0, 0)
+  8:  (0.7, 0, 0)
+  9:  (0.8, 0, 0)
+  10: (0.9, 0, 0)
+  11: (1.0, 0, 0)
 
 beams:
-  1: 1-2  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)  rigid
+  1: 1-2  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  2: 2-3  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  3: 3-4  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  4: 4-5  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  5: 5-6  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  6: 6-7  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  7: 7-8  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  8: 8-9  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  9: 9-10  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
+  10: 10-11  E=210e9  A=0.01  Iy=1e-4  Iz=1e-4  J=2e-4  up=(0,0,1)
 
 conditions:
   1: fixed
-  2: force Fx=0 Fy=0 Fz=-1000 Mx=0 My=0 Mz=0
+  11: force Fx=0 Fy=0 Fz=-1000 Mx=0 My=0 Mz=0
 `;
   } else if(name==='portal'){
     return `# Portal frame in XZ plane, Z up, load at top
@@ -1367,6 +2157,70 @@ conditions:
   3: force Fx=0 Fy=0 Fz=-1500 Mx=0 My=0 Mz=0
 `;
   }
+  else if(name==='newspec'){
+    return `# New-spec preset: libraries + cross-sections
+exag = 18
+
+materials:
+  steel:  E=210e9 nu=0.30
+  al6061: E=69e9  nu=0.33
+
+xsections:
+  col:       shape=rect b=0.08 h=0.16 up=(0,0,1)
+  tube50x4:  shape=tube D=0.05 t=0.004 up=(0,0,1)
+
+nodes:
+  1: (0, 0, 0)
+  2: (0, 0, 2)
+  3: (3, 0, 2)
+  4: (3, 0, 0)
+
+beams:
+  # Columns use rectangular section from library; beam uses tube from library
+  1: 1-2  material:steel xsection:col
+  2: 2-3  material:steel xsection:tube50x4
+  3: 3-4  material:steel xsection:col
+  # Example of inline shape (no xsection ref):
+  # 4: 2-4  material:al6061 shape=ibeam Bf=0.10 H=0.20 tf=0.008 tw=0.006 up=(0,0,1)
+
+conditions:
+  1: fixed
+  4: fixed
+  2: force Fx=0 Fy=0 Fz=-1500 Mx=0 My=0 Mz=0
+`;
+  }
+  else if(name==='unittest'){
+    return `# New-spec preset: libraries + cross-sections
+exag = 10
+
+materials:
+  steel:  E=210e9 nu=0.30
+
+xsections:
+  col: shape=rect b=0.1 h=0.1 up=(0,0,1)
+
+nodes:
+  1: (0.0, 0.0, 0.0)
+  2: (0.0, 0.0, 1.0)
+  3: (0.5, 0.0, 0.0)
+  4: (0.5, 0.0, 1.0)
+  5: (1.0, 0.0, 0.0)
+  6: (1.0, 0.0, 1.0)
+
+beams:
+  1: 1-2  material:steel xsection:col
+  2: 3-4  material:steel xsection:col
+  3: 5-6  material:steel xsection:col
+
+conditions:
+  1: fixed
+  2: force Fx=0 Fy=0 Fz=-100000 Mx=0 My=0 Mz=0
+  3: fixed
+  4: force Fx=0 Fy=1000 Fz=0 Mx=0 My=0 Mz=0
+  5: fixed
+  6: force Fx=1000 Fy=0 Fz=0 Mx=0 My=0 Mz=0
+`;
+  }
   return '';
 }
 document.getElementById('btnPreset').addEventListener('click', loadSelectedPresetOrFile);
@@ -1389,6 +2243,7 @@ const outIz = document.getElementById('outIz');
 const outJ = document.getElementById('outJ');
 const outG = document.getElementById('outG');
 const snippetEl = document.getElementById('snippet');
+const snMode = document.getElementById('snMode');
 const beamIdSelect = document.getElementById('beamIdSelect');
 const snRigid = document.getElementById('snRigid');
 
@@ -1442,6 +2297,7 @@ function computeProps(){
   const nu = parseFloat(matNu.value);
   const G = E/(2*(1+nu));
   let A=NaN, Iy=NaN, Iz=NaN, J=NaN;
+  let dimsForSnip={};
 
   const sh = shapeSel.value;
 
@@ -1455,6 +2311,7 @@ function computeProps(){
     if(H>B){ const t=B; B=H; H=t; }
     const r = H/B;
     J = B*H*H*H*(1/3 - 0.21*r*(1 - 0.2*r*r*r*r));
+    dimsForSnip={b,h};
   }else if(sh==='rectTube'){
     const B = parseFloat(document.getElementById('rt_B').value);
     const H = parseFloat(document.getElementById('rt_H').value);
@@ -1469,11 +2326,13 @@ function computeProps(){
       const denom = 2*(B+H-2*t)/t;
       J = 4*Am*Am/denom;
     }
+    dimsForSnip={B,H,t};
   }else if(sh==='circ'){
     const d = parseFloat(document.getElementById('c_d').value);
     A = Math.PI*d*d/4;
     Iy = Iz = Math.PI*Math.pow(d,4)/64;
     J = Math.PI*Math.pow(d,4)/32;
+    dimsForSnip={d};
   }else if(sh==='tube'){
     const D = parseFloat(document.getElementById('t_D').value);
     const t = parseFloat(document.getElementById('t_t').value);
@@ -1484,6 +2343,7 @@ function computeProps(){
       Iy = Iz = Math.PI*(Math.pow(D,4)-Math.pow(d,4))/64;
       J = Math.PI*(Math.pow(D,4)-Math.pow(d,4))/32;
     }
+    dimsForSnip={D,t};
   }else if(sh==='ibeam'){
     const Bf = parseFloat(document.getElementById('ib_Bf').value);
     const H  = parseFloat(document.getElementById('ib_H').value);
@@ -1503,6 +2363,7 @@ function computeProps(){
       Iz = 2*Iz_fl + Iz_web;
       J = 2*(Bf*tf**3)/3 + (hw*tw**3)/3;
     }
+    dimsForSnip={Bf,H,tf,tw};
   }
 
   outA.value  = eng(A);
@@ -1512,7 +2373,13 @@ function computeProps(){
   outG.value  = eng(G);
 
   const up = parseVec3(upVec.value);
-  let snip = `E=${eng(E)} A=${eng(A)} Iy=${eng(Iy)} Iz=${eng(Iz)} J=${eng(J)} G=${eng(G)} up=(${up[0]},${up[1]},${up[2]})`;
+  let snip='';
+  if((snMode?.value||'props')==='shape'){
+    const dimsTxt = Object.entries(dimsForSnip).map(([k,v])=>`${k}=${eng(v)}`).join(' ');
+    snip = `shape=${sh} ${dimsTxt} up=(${up[0]},${up[1]},${up[2]})`;
+  }else{
+    snip = `E=${eng(E)} A=${eng(A)} Iy=${eng(Iy)} Iz=${eng(Iz)} J=${eng(J)} G=${eng(G)} up=(${up[0]},${up[1]},${up[2]})`;
+  }
   if(document.getElementById('snRigid').checked) snip += ' rigid';
   snippetEl.textContent = snip;
 }
@@ -1520,6 +2387,7 @@ function computeProps(){
 shapeSel.addEventListener('change', ()=>{ showDims(shapeSel.value); computeProps(); });
 ['rect_b','rect_h','rt_B','rt_H','rt_t','c_d','t_D','t_t','ib_Bf','ib_H','ib_tf','ib_tw','upVec','matE','matNu','snRigid']
   .forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input', computeProps); });
+snMode.addEventListener('change', computeProps);
 
 function openModal(){
   overlay.style.display='flex';
@@ -1535,6 +2403,17 @@ btnXSec.addEventListener('click', openModal);
 btnClose.addEventListener('click', closeModal);
 overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
 document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && overlay.style.display==='flex') closeModal(); });
+
+// Libraries modal wiring
+const libsOverlay = document.getElementById('libsOverlay');
+const btnLibs = document.getElementById('btnLibs');
+const libsClose = document.getElementById('libsClose');
+function openLibs(){ libsOverlay.style.display='flex'; libsOverlay.setAttribute('aria-hidden','false'); }
+function closeLibs(){ libsOverlay.style.display='none'; libsOverlay.setAttribute('aria-hidden','true'); }
+btnLibs.addEventListener('click', openLibs);
+libsClose.addEventListener('click', closeLibs);
+libsOverlay.addEventListener('click', (e)=>{ if(e.target===libsOverlay) closeLibs(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && libsOverlay.style.display==='flex') closeLibs(); });
 
 function populateBeamIdSelect(beamArr){
   beamIdSelect.innerHTML = '';
@@ -1561,6 +2440,10 @@ document.getElementById('btnInsert').addEventListener('click', ()=>{
 });
 
 document.getElementById('btnApply').addEventListener('click', ()=>{
+  if((snMode?.value||'props')==='shape'){
+    alert('Apply works with Properties mode. Use Insert or Copy for shape snippets.');
+    return;
+  }
   const id = beamIdSelect.value;
   if(!id) return;
   const snip = snippetEl.textContent;
@@ -1599,7 +2482,7 @@ document.getElementById('btnApply').addEventListener('click', ()=>{
 document.getElementById('btnXSec').title = 'Compute E, A, Iy, Iz, J (and G) from a cross-section';
 document.getElementById('btnXSec').ariaHasPopup = 'dialog';
 
-specEl.value = presetText('mixed');
+specEl.value = presetText('unittest');
 refreshFromSpec();
 setZoom(1);
 updateMatFields(); // initialize material -> E, ν set + compute
@@ -1967,6 +2850,7 @@ document.getElementById('viewTop').addEventListener('click', ()=> {
   // Top: look along +Z (normal of the XY plane points at camera)
   setViewByNormal(0, 0, -1);
 });
+document.getElementById('viewIso').addEventListener('click', setIsoView);
 
 
 </script>
