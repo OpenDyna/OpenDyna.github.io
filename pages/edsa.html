@@ -425,6 +425,10 @@ xsections:
       <div class="btnRow" style="margin-top:12px">
         <button id="dynCompute" class="btn">Compute FRFs</button>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:#cbd5dc">
+        <input id="dynNormalize" type="checkbox" checked />
+        Normalize magnitude (divide by value at start frequency)
+      </label>
       <div id="dynErrors" class="dynamicsErrors"></div>
       <div id="dynInfo" class="help" style="margin-top:10px"></div>
       <div id="dynPlots" class="frf-grid">
@@ -487,6 +491,7 @@ const dynInfoEl = document.getElementById('dynInfo');
 const dynPlotsEl = document.getElementById('dynPlots');
 const dynMagCanvas = document.getElementById('frfMagCanvas');
 const dynPhaseCanvas = document.getElementById('frfPhaseCanvas');
+const dynNormalizeEl = document.getElementById('dynNormalize');
 const progressHUD = document.getElementById('progressHUD');
 const progressHUDBar = progressHUD.querySelector('.bar span');
 const progressHUDLabel = document.getElementById('progressHUDLabel');
@@ -1636,14 +1641,20 @@ function renderDynamicsResults(data){
 
   const freqValues = data.freqs;
   const phasesDeg = data.phases.map(series => series.map(v=>v*180/Math.PI));
+  const normalize = !!dynNormalizeEl?.checked;
   const magSeriesList = DOF_KEYS.map((key, idx)=>{
     const magnitudes = data.magnitudes[idx] || [];
+    let processed = magnitudes;
+    if(normalize && magnitudes.length){
+      const base = Math.abs(magnitudes[0]) > 1e-12 ? magnitudes[0] : 1;
+      processed = magnitudes.map(v=> v/(base||1));
+    }
     const peaks = findMagnitudePeaks(freqValues, magnitudes);
     const peakText = peaks.length ? peaks.map(p=>formatNoSci(p.freq)).join(', ') : '—';
     return {
       label: `${DOF_LABELS[idx]} [${DOF_UNITS[idx]}] (${peakText} Hz)`,
       color: DOF_COLORS[idx],
-      values: magnitudes
+      values: processed
     };
   });
   const phaseSeriesList = DOF_KEYS.map((key, idx)=>({
@@ -3768,6 +3779,11 @@ document.getElementById('dynClose').addEventListener('click', ()=>{
 });
 dynOverlay.addEventListener('click', (e)=>{ if(e.target===dynOverlay) { dynOverlay.style.display='none'; dynOverlay.setAttribute('aria-hidden','true'); }});
 document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && dynOverlay.style.display==='flex'){ dynOverlay.style.display='none'; dynOverlay.setAttribute('aria-hidden','true'); }});
+dynNormalizeEl?.addEventListener('change', ()=>{
+  if(lastFrfResults){
+    renderDynamicsResults(lastFrfResults);
+  }
+});
 
 function populateBeamIdSelect(beamArr){
   beamIdSelect.innerHTML = '';
