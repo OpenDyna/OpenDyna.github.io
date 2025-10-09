@@ -34,7 +34,7 @@
   .errors{margin-top:8px;color:var(--bad);white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace}
   .good{color:var(--accent2)}
   .canvasWrap{position:relative;min-height:260px;height:auto;flex:1 1 auto}
-  canvas{position:absolute;inset:0;width:100%;height:100%;background:#0b0d0f;border-radius:10px;cursor:grab}
+  #canvas{position:absolute;inset:0;width:100%;height:100%;background:#0b0d0f;border-radius:10px;cursor:grab}
   canvas.dragging{cursor:grabbing}
   #tooltip{position:absolute;background:#111;border:1px solid #333;padding:6px;border-radius:6px;display:none;pointer-events:none;white-space:pre;color:#eaeef2;font-family:ui-monospace,Consolas,monospace;font-size:12px}
   .results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -66,6 +66,14 @@
   .right{display:flex;flex-direction:column;gap:10px}
   .btnRow{display:flex;gap:8px;flex-wrap:wrap}
   .danger{border-color:#8b2b2b !important;color:#ffc3c3 !important}
+  .frf-grid{display:flex;flex-direction:column;gap:18px;margin-top:20px}
+  .frf-box{background:#101418;border:1px solid var(--border);border-radius:12px;padding:12px}
+  .frf-box h4{margin:0 0 8px 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px solid var(--border);border-radius:10px;background:#0b0f12;display:block}
+  .modal .summaryTable{width:100%;border-collapse:collapse;margin-top:16px;font-size:12px}
+  .modal .summaryTable th,.modal .summaryTable td{border:1px solid var(--border);padding:6px 8px;text-align:left}
+  .modal .summaryTable th{background:#14181b;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .dynamicsErrors{color:var(--bad);margin-top:10px;white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace}
 
   /* Simple badge styles inside library modal */
   .lib-badge{display:inline-block;padding:2px 6px;border:1px solid var(--border);border-radius:999px;font-size:12px;margin-left:6px;color:#cbd5dc;background:#0f1113}
@@ -87,6 +95,7 @@
   <button id="viewIso"   class="btn" title="Isometric (x←↘, y→↘, z↑)">Isometric</button>
   <button id="toggleBeams" class="btn" title="Show or hide thick beam graphics" aria-pressed="true">Hide Beam Graphics</button>
   <button id="toggleStress" class="btn" title="Show von Mises stress colormap" aria-pressed="false">Show Stress Map</button>
+  <button id="btnDynamics" class="btn">Dynamics…</button>
   <button id="btnSolve">Solve</button>
   <button id="btnSave">Save Model Spec</button>
   <button id="btnReset">Reset</button>
@@ -117,12 +126,15 @@ nodes:
 
 beams:
   # Pick one method per beam (do not mix on a single line):
-# - New: material:<name> xsection:<name>   OR   material:<name> shape=rect b=.. h=.. [up=(..)] [rigid]
-# - Legacy: E=... A=... Iy=... Iz=... J=... [G=...] [up=(..)] [rigid]
-# - Spring: spring k=...   # axial spring (force = k · ΔL)
-# - Rigid: rigid            # rigid link (ties all 6 DOFs)
-  
+  # - New: material:<name> xsection:<name>   OR   material:<name> shape=rect b=.. h=.. [up=(..)] [rigid]
+  # - Legacy: E=... A=... Iy=... Iz=... J=... [G=...] [up=(..)] [rigid]
+  # - Spring: spring k=...   # axial spring (force = k · ΔL)
+  # - Rigid: rigid            # rigid link (ties all 6 DOFs)
+
   1: 1-2  material:steel xsection:col
+
+masses:
+  1: mx=100 my=100 mz=100 ix=10 iy=10 iz=10
 
 conditions:
   1: fixed
@@ -382,12 +394,60 @@ xsections:
   </div>
 </div>
 
+<!-- Dynamics Modal -->
+<div class="modalOverlay" id="dynOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dynTitle" style="max-width:960px;width:min(94vw,960px);max-height:90vh;">
+    <header>
+      <h3 id="dynTitle">Modal &amp; Frequency Response</h3>
+      <div class="spacer"></div>
+      <button id="dynClose" class="btn">Close</button>
+    </header>
+    <div class="content">
+      <div class="formRow" style="grid-template-columns:repeat(3,minmax(140px,1fr));gap:12px">
+        <label>Start freq (Hz)<input id="dynFreqStart" type="number" step="0.1" value="1" /></label>
+        <label>End freq (Hz)<input id="dynFreqEnd" type="number" step="0.1" value="100" /></label>
+        <label>Samples<input id="dynFreqPoints" type="number" min="2" step="1" value="200" /></label>
+      </div>
+      <div class="formRow" style="grid-template-columns:repeat(2,minmax(160px,1fr));gap:12px;margin-top:10px">
+        <label>Drive node<select id="dynDriveNode"></select></label>
+        <label>Response node<select id="dynRespNode"></select></label>
+      </div>
+      <div class="help" style="margin-top:8px">
+        Damping uses Rayleigh <span class="kbd">C = 0.001 · K</span>. Responses are computed for all six DOFs at the response node.
+      </div>
+      <div class="btnRow" style="margin-top:12px">
+        <button id="dynCompute" class="btn">Compute FRFs</button>
+      </div>
+      <div id="dynErrors" class="dynamicsErrors"></div>
+      <div id="dynInfo" class="help" style="margin-top:10px"></div>
+      <div id="dynPlots" class="frf-grid">
+        <div class="frf-box">
+          <h4>Magnitude |H(ω)|</h4>
+          <canvas id="frfMagCanvas" class="frfCanvas"></canvas>
+        </div>
+        <div class="frf-box">
+          <h4>Phase ∠H(ω)</h4>
+          <canvas id="frfPhaseCanvas" class="frfCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =========================
    Core Data / UI refs
    ========================= */
 let nodes=[], beams=[], conditions={}, results=null, nuGlobal=null, exagOverride=null;
-let materialsLib={}, xsectionsLib={};
+let materialsLib={}, xsectionsLib={}, nodeMasses={};
+let lastAssembly=null, lastFrfResults=null;
+const DOF_KEYS=['ux','uy','uz','rx','ry','rz'];
+const DOF_LABELS=['UX','UY','UZ','RX','RY','RZ'];
+const DOF_UNITS=['m','m','m','rad','rad','rad'];
+const DAMPING_BETA=0.001;
+const DOF_COLORS=['#4cc9f0','#f72585','#ffba08','#38b000','#7209b7','#fb8b24'];
+const MASS_BOX_COLOR='#f9c74f';
+const MASS_BOX_ALPHA=0.6;
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -401,6 +461,17 @@ const nCondsEl = document.getElementById('nConds');
 const solveStateEl = document.getElementById('solveState');
 const exagEl = document.getElementById('exag');
 const zoomEl = document.getElementById('zoom');
+const dynOverlay = document.getElementById('dynOverlay');
+const dynFreqStartEl = document.getElementById('dynFreqStart');
+const dynFreqEndEl = document.getElementById('dynFreqEnd');
+const dynFreqPointsEl = document.getElementById('dynFreqPoints');
+const dynDriveNodeEl = document.getElementById('dynDriveNode');
+const dynRespNodeEl = document.getElementById('dynRespNode');
+const dynErrorsEl = document.getElementById('dynErrors');
+const dynInfoEl = document.getElementById('dynInfo');
+const dynPlotsEl = document.getElementById('dynPlots');
+const dynMagCanvas = document.getElementById('frfMagCanvas');
+const dynPhaseCanvas = document.getElementById('frfPhaseCanvas');
 
 function setStatus(msg, ok=true){
   statusBar.innerHTML = ok ? `<span class="good">✔</span> ${msg}` : `<span style="color:#ff6b6b">✖</span> ${msg}`;
@@ -494,6 +565,7 @@ function parseSpec(text){
   let tmpNodes=[];
   let tmpBeams=[];
   let tmpConds={};
+  let tmpMasses={};
   exagOverride=null;
   nuGlobal=null;
   materialsLib={};
@@ -501,7 +573,7 @@ function parseSpec(text){
 
   const lineErr=(i,msg)=>errs.push(`Line ${i+1}: ${msg}`);
 
-  const secRe = /^\s*(materials|xsections|nodes|beams|conditions)\s*:\s*$/i;
+  const secRe = /^\s*(materials|xsections|nodes|beams|conditions|masses)\s*:\s*$/i;
   const exagRe = /^\s*exag\s*=\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*$/i;
   const nuRe   = /^\s*nu\s*=\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*$/i;
 
@@ -552,7 +624,30 @@ function parseSpec(text){
         else if(isFinite(v)) def.dims[k]=v;
       });
       if(!def.shape){ lineErr(i,`XSection ${name}: need shape=...`); continue; }
-      xsectionsLib[name]=def;
+    xsectionsLib[name]=def;
+    } else if(section==='masses'){
+      const mm=s.match(/^\s*(\d+)\s*:\s*(.*)$/);
+      if(!mm){ lineErr(i,'Mass:  5: mx=100 my=100 mz=100 ix=10 iy=10 iz=10'); continue; }
+      const nid=parseInt(mm[1],10);
+      const tail=mm[2]||'';
+      const mass={mx:0,my:0,mz:0,ix:0,iy:0,iz:0,width:0,length:0,height:0};
+      tail.split(/\s+/).filter(Boolean).forEach(tok=>{
+        const kv=tok.split('=');
+        if(kv.length!==2) return;
+        const key=kv[0].toLowerCase();
+        const val=parseFloat(kv[1]);
+        if(!isFinite(val)) return;
+        if(key==='mx'||key==='my'||key==='mz'||key==='ix'||key==='iy'||key==='iz'){
+          mass[key]=val;
+        }else if(key==='width'||key==='w'){
+          mass.width=val;
+        }else if(key==='length'||key==='l'){
+          mass.length=val;
+        }else if(key==='height'||key==='h'){
+          mass.height=val;
+        }
+      });
+      tmpMasses[nid]=mass;
     } else if(section==='nodes'){
       const re=/^\s*(\d+)\s*:\s*\(\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*,\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*,\s*([-+]?(?:\d+\.?\d*|\d*\.?\d+)(?:e[-+]?\d+)?)\s*\)\s*$/i;
       const mm=s.match(re);
@@ -748,7 +843,7 @@ function parseSpec(text){
     if(hasFree && arr.length>1) errs.push(`Node ${nid}: 'free' cannot combine with other conditions`);
   });
 
-  return {errors:errs, model:{nodes:tmpNodes,beams:tmpBeams,conditions:tmpConds}, libraries:{materials:materialsLib, xsections:xsectionsLib}, exagOverride, nuGlobal};
+  return {errors:errs, model:{nodes:tmpNodes,beams:tmpBeams,conditions:tmpConds,masses:tmpMasses}, libraries:{materials:materialsLib, xsections:xsectionsLib}, exagOverride, nuGlobal};
 }
 
 /* =========================
@@ -790,6 +885,112 @@ function gauss(A,b){
     x[i]=aug[i][n]-s;
   }
   return x;
+}
+
+function cloneMatrix(mat){
+  return mat.map(row=>row.slice());
+}
+
+function jacobiEigenSym(matrix, tolerance=1e-9, maxIterations=200){
+  const n=matrix.length;
+  const A=cloneMatrix(matrix);
+  const V=Array.from({length:n},(_,i)=>{
+    const row=new Array(n).fill(0);
+    row[i]=1;
+    return row;
+  });
+  for(let iter=0; iter<maxIterations; iter++){
+    let p=0,q=1,maxVal=0;
+    for(let i=0;i<n;i++){
+      for(let j=i+1;j<n;j++){
+        const val=Math.abs(A[i][j]);
+        if(val>maxVal){ maxVal=val; p=i; q=j; }
+      }
+    }
+    if(maxVal<tolerance) break;
+    const app=A[p][p];
+    const aqq=A[q][q];
+    const apq=A[p][q];
+    const phi=0.5*Math.atan2(2*apq, aqq-app);
+    const c=Math.cos(phi);
+    const s=Math.sin(phi);
+
+    for(let j=0;j<n;j++){
+      if(j!==p && j!==q){
+        const apj=A[p][j];
+        const aqj=A[q][j];
+        const newApj=c*apj - s*aqj;
+        const newAqj=s*apj + c*aqj;
+        A[p][j]=newApj;
+        A[j][p]=newApj;
+        A[q][j]=newAqj;
+        A[j][q]=newAqj;
+      }
+    }
+    const appNew=c*c*app - 2*s*c*apq + s*s*aqq;
+    const aqqNew=s*s*app + 2*s*c*apq + c*c*aqq;
+    A[p][p]=appNew;
+    A[q][q]=aqqNew;
+    A[p][q]=0;
+    A[q][p]=0;
+
+    for(let j=0;j<n;j++){
+      const vip=V[j][p];
+      const viq=V[j][q];
+      V[j][p]=c*vip - s*viq;
+      V[j][q]=s*vip + c*viq;
+    }
+  }
+  const eigenvalues=A.map((row,i)=>row[i]);
+  return {values:eigenvalues, vectors:V};
+}
+
+function scaleMatrix(mat, factor){
+  return mat.map(row=>row.map(v=>v*factor));
+}
+
+function buildScaledStiffness(Kff, Mdiag, floor=1e-9){
+  const n=Kff.length;
+  const invSqrt= Mdiag.map(m=>1/Math.sqrt(Math.max(m, floor)));
+  const A=Array.from({length:n},()=>Array(n).fill(0));
+  for(let i=0;i<n;i++){
+    for(let j=0;j<n;j++){
+      A[i][j]=Kff[i][j]*invSqrt[i]*invSqrt[j];
+    }
+  }
+  return {matrix:A, invSqrt};
+}
+
+function subtractOmegaMass(Kff, Mdiag, omega){
+  const n=Kff.length;
+  const A=cloneMatrix(Kff);
+  const omega2=omega*omega;
+  for(let i=0;i<n;i++){
+    A[i][i]-=omega2*Mdiag[i];
+  }
+  return A;
+}
+
+function solveComplexSystem(A,B,fVec){
+  const n=A.length;
+  const size=2*n;
+  const block=Array.from({length:size},()=>Array(size).fill(0));
+  const rhs=new Array(size).fill(0);
+  for(let i=0;i<n;i++){
+    rhs[i]=fVec[i];
+    for(let j=0;j<n;j++){
+      block[i][j]=A[i][j];
+      block[i][j+n]=-B[i][j];
+      block[i+n][j]=B[i][j];
+      block[i+n][j+n]=A[i][j];
+    }
+  }
+  const sol=gauss(block,rhs);
+  if(!sol) return null;
+  return {
+    real: sol.slice(0,n),
+    imag: sol.slice(n)
+  };
 }
 
 /* =========================
@@ -888,12 +1089,11 @@ const RIGID_TRANS_PENALTY = 1e12;
 const RIGID_ROT_PENALTY = 1e9;
 
 /* =========================
-   Solver (3D) with Rigid + Releases
+   System Assembly (K, M, loads, constraints)
    ========================= */
-function solve3D(model){
-  const N=model.nodes, E=model.beams, C=model.conditions||{};
+function assembleSystem(model){
+  const N=model.nodes||[], E=model.beams||[], C=model.conditions||{};
   if(E.length===0) throw new Error('No beams defined');
-
   const hasSupport = Object.values(C).some(conds =>
     conds.some(c=>['fixed','pinned','slider'].includes(c.type) || c.type==='bushing_ground')
   );
@@ -901,10 +1101,23 @@ function solve3D(model){
 
   const idxOf={}; N.forEach((n,i)=>idxOf[n.id]=i);
   const n=N.length, dof=6*n;
-  let K=Array.from({length:dof},()=>Array(dof).fill(0));
-  let F=new Array(dof).fill(0);
+  const K=Array.from({length:dof},()=>Array(dof).fill(0));
+  const F=new Array(dof).fill(0);
   const fixed=new Set();
   const dofIndex=i=>[6*i+0,6*i+1,6*i+2,6*i+3,6*i+4,6*i+5];
+  const massDiag=new Array(dof).fill(0);
+  const masses = model.masses || nodeMasses || {};
+
+  N.forEach((node, i)=>{
+    const m = masses[node.id] || {};
+    const [ux,uy,uz,rx,ry,rz] = dofIndex(i);
+    if(isFinite(m.mx)) massDiag[ux] = m.mx;
+    if(isFinite(m.my)) massDiag[uy] = m.my;
+    if(isFinite(m.mz)) massDiag[uz] = m.mz;
+    if(isFinite(m.ix)) massDiag[rx] = m.ix;
+    if(isFinite(m.iy)) massDiag[ry] = m.iy;
+    if(isFinite(m.iz)) massDiag[rz] = m.iz;
+  });
 
   for(const e of E){
     const ia=idxOf[e.nodeA], ib=idxOf[e.nodeB];
@@ -1028,21 +1241,35 @@ function solve3D(model){
   const free=[]; for(let d=0; d<dof; d++) if(!fixed.has(d)) free.push(d);
   if(free.length===0) throw new Error('All DOFs are fixed');
 
-  const m=free.length;
-  const Kred=Array.from({length:m},()=>Array(m).fill(0));
-  const Fred=new Array(m).fill(0);
-  for(let p=0;p<m;p++){
+  return {K, F, fixed, free, idxOf, dofIndex, massDiag, dof};
+}
+
+/* =========================
+   Solver (3D) with Rigid + Releases
+   ========================= */
+function solve3D(model){
+  const assembly = assembleSystem(model);
+  const {K, F, free, dofIndex, massDiag} = assembly;
+  const dof = assembly.dof;
+  const fixed = assembly.fixed;
+  const idxOf = assembly.idxOf;
+  const N=model.nodes, E=model.beams||[], C=model.conditions||{};
+  const freeCount = free.length;
+
+  const Kred=Array.from({length:freeCount},()=>Array(freeCount).fill(0));
+  const Fred=new Array(freeCount).fill(0);
+  for(let p=0;p<freeCount;p++){
     Fred[p]=F[free[p]];
-    for(let q=0;q<m;q++) Kred[p][q]=K[free[p]][free[q]];
+    for(let q=0;q<freeCount;q++) Kred[p][q]=K[free[p]][free[q]];
   }
   const ured=gauss(Kred,Fred);
   if(!ured) throw new Error('Unstable structure (singular matrix)');
 
   const u=new Array(dof).fill(0);
-  for(let p=0;p<m;p++) u[free[p]]=ured[p];
+  for(let p=0;p<freeCount;p++) u[free[p]]=ured[p];
 
   const reactions={};
-  for(const nidStr of Object.keys(C)){
+  for(const nidStr of Object.keys(C||{})){
     const nid=parseInt(nidStr,10);
     const i=idxOf[nid]; if(i===undefined) continue;
     const [ux,uy,uz,rx,ry,rz]=dofIndex(i);
@@ -1197,7 +1424,411 @@ function solve3D(model){
     };
   }
 
-  return {displacements,reactions,beamForces, beamForcesLocal};
+  lastAssembly = {
+    K,
+    F,
+    free,
+    fixed,
+    idxOf,
+    dofIndex,
+    massDiag,
+    dof,
+    nodes: model.nodes,
+    beams: model.beams,
+    conditions: model.conditions||{}
+  };
+
+  return {displacements,reactions,beamForces, beamForcesLocal, massDiag, freeDofs:free};
+}
+
+function computeModalAndFrf(model, options){
+  const assembly = assembleSystem(model);
+  lastAssembly = assembly;
+
+  const {K, massDiag, free, dofIndex, idxOf, dof} = assembly;
+  const nFree = free.length;
+  if(nFree===0) throw new Error('All DOFs are fixed');
+
+  const globalToFree=new Array(dof).fill(-1);
+  free.forEach((d,i)=>globalToFree[d]=i);
+
+  const Kff = free.map(i=> free.map(j=> K[i][j]));
+  const Mff = free.map(i=> Math.max(massDiag[i], 1e-9));
+
+  const driveNode = options.driveNode;
+  const respNode = options.respNode;
+  if(!Number.isFinite(driveNode) || idxOf[driveNode]==null) throw new Error('Drive node not found');
+  if(!Number.isFinite(respNode) || idxOf[respNode]==null) throw new Error('Response node not found');
+  const driveNodeIdx = idxOf[driveNode];
+  const respNodeIdx = idxOf[respNode];
+  const driveGlobalDofs = dofIndex(driveNodeIdx);
+  const driveFreeIndices = driveGlobalDofs.map(g=>globalToFree[g]);
+  const respGlobalDofs = dofIndex(respNodeIdx);
+  const respFreeIndices = respGlobalDofs.map(g=>globalToFree[g]);
+  if(driveFreeIndices.every(idx=>idx<0)) throw new Error('All drive DOFs are constrained by supports');
+  if(respFreeIndices.every(idx=>idx<0)) throw new Error('All response DOFs are constrained by supports');
+
+  const freqStart = Math.max(0, Number(options.freqStart) || 0);
+  const freqEnd = Math.max(freqStart, Number(options.freqEnd) || freqStart);
+  const samples = Math.max(2, Math.floor(Number(options.samples) || 200));
+
+  const freqValues=[];
+  const magSeries=DOF_KEYS.map(()=>[]);
+  const phaseSeries=DOF_KEYS.map(()=>[]);
+
+  const massScaled = buildScaledStiffness(Kff, Mff);
+  const eigen = jacobiEigenSym(massScaled.matrix);
+  const eigenPairs = eigen.values
+    .map((lambda, idx)=>({lambda, idx}))
+    .filter(pair=>pair.lambda>1e-9)
+    .sort((a,b)=>a.lambda-b.lambda);
+  const modes = eigenPairs.slice(0, Math.min(12, eigenPairs.length)).map((pair,i)=>({
+    mode: i+1,
+    freq: Math.sqrt(pair.lambda)/(2*Math.PI)
+  }));
+
+  for(let k=0;k<samples;k++){
+    const t = samples===1 ? 0 : k/(samples-1);
+    const freq = freqStart + (freqEnd - freqStart)*t;
+    const omega = 2*Math.PI*freq;
+    const A = subtractOmegaMass(Kff, Mff, omega);
+    const B = scaleMatrix(Kff, omega * DAMPING_BETA);
+    freqValues.push(freq);
+    for(let dIndex=0; dIndex<DOF_KEYS.length; dIndex++){
+      const driveFree = driveFreeIndices[dIndex];
+      const respFree = respFreeIndices[dIndex];
+      let real=0, imag=0;
+      if(driveFree>=0){
+        const vec = new Array(nFree).fill(0);
+        vec[driveFree]=1;
+        const sol = solveComplexSystem(A,B,vec);
+        if(sol){
+          const respIdx = respFree>=0 ? respFree : driveFree;
+          if(respIdx>=0){
+            real = sol.real[respIdx];
+            imag = sol.imag[respIdx];
+          }
+        }
+      }
+      magSeries[dIndex].push(Math.hypot(real, imag));
+      phaseSeries[dIndex].push(Math.atan2(imag, real));
+    }
+  }
+
+  return {
+    freqs: freqValues,
+    magnitudes: magSeries,
+    phases: phaseSeries,
+    modes,
+    drive:{
+      node: driveNode
+    },
+    response:{
+      node: respNode
+    }
+  };
+}
+
+function renderDynamicsResults(data){
+  if(!data){
+    dynInfoEl.textContent='';
+    const ctxMag=dynMagCanvas.getContext('2d'); ctxMag.clearRect(0,0,dynMagCanvas.width,dynMagCanvas.height);
+    const ctxPhase=dynPhaseCanvas.getContext('2d'); ctxPhase.clearRect(0,0,dynPhaseCanvas.width,dynPhaseCanvas.height);
+    return;
+  }
+  dynInfoEl.textContent = `Drive node: ${data.drive.node} • Response node: ${data.response.node}`;
+
+  const freqValues = data.freqs;
+  const phasesDeg = data.phases.map(series => series.map(v=>v*180/Math.PI));
+  const magSeriesList = DOF_KEYS.map((key, idx)=>({
+    label: `${DOF_LABELS[idx]} (${DOF_UNITS[idx]})`,
+    color: DOF_COLORS[idx],
+    values: data.magnitudes[idx]
+  }));
+  const phaseSeriesList = DOF_KEYS.map((key, idx)=>({
+    label: `${DOF_LABELS[idx]} (${DOF_UNITS[idx]})`,
+    color: DOF_COLORS[idx],
+    values: phasesDeg[idx]
+  }));
+  drawLineChart(dynMagCanvas, freqValues, magSeriesList, {yLabel:'|H|', legend:true, logX:true});
+  drawLineChart(dynPhaseCanvas, freqValues, phaseSeriesList, {yLabel:'Phase (deg)', yTicks:[-180,-90,0,90,180], legend:true, logX:true});
+}
+
+function drawLineChart(canvas, xVals, seriesList, opts={}){
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const computedStyle = window.getComputedStyle(canvas);
+  const parentWidth = canvas.clientWidth || canvas.parentElement?.clientWidth || parseFloat(computedStyle.width) || 640;
+  const cssHeight = parseFloat(computedStyle.height) || canvas.clientHeight || 320;
+  const width = parentWidth;
+  const height = cssHeight;
+
+  canvas.width = Math.max(1, Math.floor(width*dpr));
+  canvas.height = Math.max(1, Math.floor(height*dpr));
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,width,height);
+
+  if(!xVals || !xVals.length || !seriesList || !seriesList.length){
+    ctx.fillStyle='#cbd5dc';
+    ctx.font='12px ui-monospace,Consolas,monospace';
+    ctx.fillText('No data', width/2-24, height/2);
+    return;
+  }
+
+  const padLeft=70, padRight=28, padTop=32, padBottom=44;
+  const plotWidth = Math.max(1, width - padLeft - padRight);
+  const plotHeight = Math.max(1, height - padTop - padBottom);
+  const logX = !!opts.logX;
+  const minPositive = 1e-9;
+  const rawXMin = xVals[0];
+  const rawXMax = xVals[xVals.length-1];
+  const safeX = xVals.map(v=>Math.max(v, minPositive));
+  const xMin = logX ? Math.log10(Math.max(rawXMin, minPositive)) : rawXMin;
+  const xMax = logX ? Math.log10(Math.max(rawXMax, minPositive)) : rawXMax;
+
+  const allValues = [];
+  seriesList.forEach(series=>{
+    if(series && series.values){
+      series.values.forEach(v=>{ if(Number.isFinite(v)) allValues.push(v); });
+    }
+  });
+  let yMin, yMax;
+  if(allValues.length){
+    yMin = Math.min(...allValues);
+    yMax = Math.max(...allValues);
+  }else{
+    yMin = -1; yMax = 1;
+  }
+  if(!Number.isFinite(yMin) || !Number.isFinite(yMax)){
+    yMin=-1; yMax=1;
+  }
+  let manualYTicks = null;
+  if(opts.yTicks && opts.yTicks.length){
+    manualYTicks = opts.yTicks;
+    const tickMin = Math.min(...manualYTicks);
+    const tickMax = Math.max(...manualYTicks);
+    yMin = Math.min(yMin, tickMin);
+    yMax = Math.max(yMax, tickMax);
+  }
+  if(Math.abs(yMax - yMin) < 1e-12){
+    const offset = (Math.abs(yMax) < 1 ? 1 : Math.abs(yMax)*0.1);
+    yMax += offset;
+    yMin -= offset;
+  }
+
+  const xToPx = xRaw => {
+    const xVal = logX ? Math.log10(Math.max(xRaw, minPositive)) : xRaw;
+    return padLeft + ((xVal - xMin) / (xMax - xMin || 1)) * plotWidth;
+  };
+  const yToPx = y => padTop + (1 - (y - yMin) / (yMax - yMin || 1)) * plotHeight;
+
+  ctx.strokeStyle='#2d343a';
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(padLeft, padTop);
+  ctx.lineTo(padLeft, padTop + plotHeight);
+  ctx.lineTo(padLeft + plotWidth, padTop + plotHeight);
+  ctx.stroke();
+
+  const tickCount = manualYTicks ? manualYTicks.length : 5;
+  ctx.fillStyle='#637180';
+  ctx.font='11px ui-monospace,Consolas,monospace';
+  for(let i=0;i<tickCount;i++){
+    const yVal = manualYTicks ? manualYTicks[i] : (yMin + ((tickCount===1?0:i/(tickCount-1))*(yMax-yMin)));
+    const yPx = yToPx(yVal);
+    ctx.beginPath();
+    ctx.moveTo(padLeft-4, yPx);
+    ctx.lineTo(padLeft, yPx);
+    ctx.stroke();
+    ctx.fillText(formatTick(yVal), 4, yPx+4);
+  }
+
+  if(logX){
+    const minVal = Math.pow(10, xMin);
+    const maxVal = Math.pow(10, xMax);
+    const tickValues=[];
+    const EPS=1e-9;
+    const addTick=val=>{
+      if(!Number.isFinite(val)) return;
+      if(val < minVal - EPS || val > maxVal + EPS) return;
+      for(const existing of tickValues){
+        if(Math.abs(existing - val) <= Math.max(1, val)*1e-9) return;
+      }
+      tickValues.push(val);
+    };
+    const minExp = Math.floor(Math.log10(minVal));
+    const maxExp = Math.floor(Math.log10(maxVal));
+    for(let exp=minExp; exp<=maxExp; exp++){
+      const base = Math.pow(10, exp);
+      const step = base;
+      const decadeEnd = base*10;
+      let start = Math.max(base, Math.ceil((minVal - EPS)/step)*step);
+      if(start < base - EPS) start = base;
+      for(let v=start; v<=decadeEnd + EPS && v<=maxVal + EPS; v+=step){
+        addTick(Number(v.toFixed(8)));
+      }
+    }
+    addTick(minVal);
+    addTick(maxVal);
+    tickValues.sort((a,b)=>a-b);
+    tickValues.forEach(val=>{
+      const xPx = xToPx(val);
+      ctx.beginPath();
+      ctx.moveTo(xPx, padTop + plotHeight);
+      ctx.lineTo(xPx, padTop + plotHeight + 4);
+      ctx.stroke();
+      const label = formatNoSci(val);
+      const labelWidth = ctx.measureText(label).width;
+      ctx.fillText(label, xPx - labelWidth/2, padTop + plotHeight + 20);
+    });
+  }else{
+    const xTickCount = Math.min(6, xVals.length);
+    for(let i=0;i<xTickCount;i++){
+      const denom = Math.max(1, xTickCount-1);
+      const t = xTickCount === 1 ? 0 : i/denom;
+      const xVal = xMin + t*(xMax-xMin);
+      const xPx = xToPx(xVal);
+      ctx.beginPath();
+      ctx.moveTo(xPx, padTop + plotHeight);
+      ctx.lineTo(xPx, padTop + plotHeight + 4);
+      ctx.stroke();
+      const label = formatNoSci(xVal);
+      const labelWidth = ctx.measureText(label).width;
+      ctx.fillText(label, xPx - labelWidth/2, padTop + plotHeight + 20);
+    }
+  }
+
+  seriesList.forEach(series=>{
+    if(!series || !series.values) return;
+    const color = series.color || '#4cc9f0';
+    ctx.strokeStyle=color;
+    ctx.lineWidth=1.8;
+    ctx.beginPath();
+    let penDown=false;
+    for(let i=0;i<xVals.length;i++){
+      const xVal = safeX[i];
+      const yVal = series.values[i];
+      if(!Number.isFinite(yVal)){
+        penDown=false;
+        continue;
+      }
+      const x=xToPx(xVal);
+      const y=yToPx(yVal);
+      if(!penDown){
+        ctx.moveTo(x,y);
+        penDown=true;
+      }else{
+        ctx.lineTo(x,y);
+      }
+    }
+    ctx.stroke();
+  });
+
+  ctx.fillStyle='#cbd5dc';
+  ctx.font='12px ui-monospace,Consolas,monospace';
+  if(opts.yLabel){
+    ctx.fillText(opts.yLabel, padLeft + 6, padTop + 14);
+  }
+
+  if(opts.legend){
+    const legendX = padLeft + plotWidth - 140;
+    const legendY = padTop + 12;
+    const lineHeight = 16;
+    seriesList.forEach((series, idx)=>{
+      if(!series || !series.label) return;
+      const y = legendY + idx*lineHeight;
+      ctx.fillStyle=series.color || '#4cc9f0';
+      ctx.fillRect(legendX, y-6, 14, 3);
+      ctx.fillStyle='#cbd5dc';
+      ctx.fillText(series.label, legendX + 20, y);
+    });
+  }
+}
+
+function formatTick(val){
+  if(!Number.isFinite(val)) return '—';
+  const absVal = Math.abs(val);
+  if(absVal === 0) return '0';
+  if(absVal >= 1000 || absVal < 0.01){
+    return val.toExponential(1);
+  }
+  if(absVal >= 100){
+    return val.toFixed(0);
+  }
+  if(absVal >= 10){
+    return val.toFixed(1);
+  }
+  return val.toFixed(2);
+}
+
+function formatNoSci(value){
+  if(!Number.isFinite(value)) return '—';
+  if(value === 0) return '0';
+  const abs = Math.abs(value);
+  let decimals;
+  if(abs >= 100){
+    decimals = 0;
+  }else if(abs >= 10){
+    decimals = 1;
+  }else if(abs >= 1){
+    decimals = 2;
+  }else{
+    decimals = Math.min(6, Math.ceil(-Math.log10(abs)));
+  }
+  let str = value.toFixed(decimals);
+  str = str.replace(/(\.[0-9]*[1-9])0+$/,'$1');
+  str = str.replace(/\.0+$/,'');
+  if(str === '-0') str = '0';
+  return str;
+}
+
+function populateDynamicsSelectors(){
+  const nodeOptions = nodes.map(n=>({value:String(n.id), label:`Node ${n.id}`}));
+  const makeOptions = (options, prev) => {
+    if(!options.length) return '<option value="">(none)</option>';
+    return options.map(opt=>`<option value="${opt.value}" ${opt.value===prev?'selected':''}>${opt.label}</option>`).join('');
+  };
+  const prevDrive = dynDriveNodeEl.value;
+  const prevResp = dynRespNodeEl.value;
+  dynDriveNodeEl.innerHTML = makeOptions(nodeOptions, prevDrive);
+  dynRespNodeEl.innerHTML = makeOptions(nodeOptions, prevResp);
+  if(dynDriveNodeEl.selectedIndex===-1 && dynDriveNodeEl.options.length) dynDriveNodeEl.selectedIndex=0;
+  if(dynRespNodeEl.selectedIndex===-1 && dynRespNodeEl.options.length) dynRespNodeEl.selectedIndex=0;
+  if(!nodeOptions.length){
+    dynDriveNodeEl.value='';
+    dynRespNodeEl.value='';
+  }
+}
+
+function handleDynamicsCompute(){
+  dynErrorsEl.textContent='';
+  try{
+    const freqStart = Number(dynFreqStartEl.value);
+    const freqEnd = Number(dynFreqEndEl.value);
+    const samples = Number(dynFreqPointsEl.value);
+    const driveNode = Number(dynDriveNodeEl.value);
+    const respNode = Number(dynRespNodeEl.value);
+    if(!nodes.length) throw new Error('Add nodes to the model first.');
+    if(!Number.isFinite(freqStart) || !Number.isFinite(freqEnd)) throw new Error('Enter a valid frequency range.');
+    if(freqStart<=0) throw new Error('Start frequency must be greater than zero for log scale.');
+    if(freqEnd <= freqStart) throw new Error('End frequency must be greater than start frequency.');
+    if(!Number.isFinite(samples) || samples < 2) throw new Error('Samples must be at least 2.');
+    if(!Number.isFinite(driveNode) || !Number.isFinite(respNode)) throw new Error('Select drive and response nodes.');
+    const model={nodes, beams, conditions, masses: nodeMasses};
+    const data = computeModalAndFrf(model, {
+      freqStart,
+      freqEnd,
+      samples,
+      driveNode,
+      respNode
+    });
+    lastFrfResults = data;
+    renderDynamicsResults(data);
+  }catch(err){
+    renderDynamicsResults(null);
+    dynErrorsEl.textContent = err.message || String(err);
+  }
 }
 
 /* =========================
@@ -1592,6 +2223,45 @@ function render(model, res){
     function queueFace(pts2d, zAvg, fill='#2a9df4', alpha=0.22){
       faceQ.push({pts:pts2d, z:zAvg, fill, alpha});
     }
+    function queueAxisAlignedBox(center, sx, sy, sz, fill=MASS_BOX_COLOR, alpha=MASS_BOX_ALPHA){
+      if(!(isFinite(sx)&&isFinite(sy)&&isFinite(sz))) return;
+      const hx=sx*0.5, hy=sy*0.5, hz=sz*0.5;
+      if(hx<=0 || hy<=0 || hz<=0) return;
+      const verts=[
+        {x:center.x - hx, y:center.y - hy, z:center.z - hz},
+        {x:center.x + hx, y:center.y - hy, z:center.z - hz},
+        {x:center.x + hx, y:center.y + hy, z:center.z - hz},
+        {x:center.x - hx, y:center.y + hy, z:center.z - hz},
+        {x:center.x - hx, y:center.y - hy, z:center.z + hz},
+        {x:center.x + hx, y:center.y - hy, z:center.z + hz},
+        {x:center.x + hx, y:center.y + hy, z:center.z + hz},
+        {x:center.x - hx, y:center.y + hy, z:center.z + hz},
+      ].map(p=>toScreen(toCam(p)));
+      const faces=[
+        [0,1,2,3],[4,5,6,7],
+        [0,1,5,4],[1,2,6,5],
+        [2,3,7,6],[3,0,4,7],
+      ];
+      faces.forEach(idx=>{
+        const pts2=idx.map(k=>({x:verts[k].x,y:verts[k].y}));
+        const zAvg=idx.reduce((sum,k)=>sum+verts[k].z,0)/idx.length;
+        queueFace(pts2, zAvg, fill, alpha);
+      });
+    }
+    function addMassBoxes(){
+      if(!nodeMasses) return;
+      Object.entries(nodeMasses).forEach(([nid, mass])=>{
+        if(!mass) return;
+        const w=Number(mass.width)||0;
+        const l=Number(mass.length)||0;
+        const h=Number(mass.height)||0;
+        if(!(w>0 && l>0 && h>0)) return;
+        const pt = Pd[nid] || Pb[nid];
+        if(!pt || !pt.wpos) return;
+        const center={x:pt.wpos[0], y:pt.wpos[1], z:pt.wpos[2]};
+        queueAxisAlignedBox(center, w, l, h);
+      });
+    }
     function drawBox3D(na, nb, Rloc, H, B, fillColor='#2a9df4', alpha=0.22){
       const hy=H*0.5, hz=B*0.5;
       const ey=Rloc[1], ez=Rloc[2];
@@ -1740,6 +2410,7 @@ function render(model, res){
         if(!showBeamGraphics){ ctx.beginPath(); ctx.moveTo(a.x*scale+ox,a.y*scale+oy); ctx.lineTo(c.x*scale+ox,c.y*scale+oy); ctx.stroke(); }
       }
     });
+    addMassBoxes();
 
     // Flush faces: global depth sort (far → near)
     faceQ.sort((a,b)=> b.z - a.z);
@@ -1789,44 +2460,82 @@ function render(model, res){
       const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
       ctx.fillText(n.id, px+6, py-6);
     });
-    // Draw undeformed thick beams if enabled
+    const Rcam = cameraMatrix();
+    function toCam(p){
+      const px = p.x - cam.target.x, py = p.y - cam.target.y, pz = p.z - cam.target.z;
+      return {
+        x: Rcam[0][0]*px + Rcam[0][1]*py + Rcam[0][2]*pz,
+        y: Rcam[1][0]*px + Rcam[1][1]*py + Rcam[1][2]*pz,
+        z: Rcam[2][0]*px + Rcam[2][1]*py + Rcam[2][2]*pz,
+      };
+    }
+    function toScreen(pc){ return {x: pc.x*scale+ox, y: pc.y*scale+oy, z: pc.z}; }
+    const faceQ0=[];
+    function queueFace0(pts2d, zAvg, fill='#2a9df4', alpha=0.22){ faceQ0.push({pts:pts2d, z:zAvg, fill, alpha}); }
+    function queueAxisAlignedBox0(center, sx, sy, sz, fill=MASS_BOX_COLOR, alpha=MASS_BOX_ALPHA){
+      if(!(isFinite(sx)&&isFinite(sy)&&isFinite(sz))) return;
+      const hx=sx*0.5, hy=sy*0.5, hz=sz*0.5;
+      if(hx<=0 || hy<=0 || hz<=0) return;
+      const verts=[
+        {x:center.x - hx, y:center.y - hy, z:center.z - hz},
+        {x:center.x + hx, y:center.y - hy, z:center.z - hz},
+        {x:center.x + hx, y:center.y + hy, z:center.z - hz},
+        {x:center.x - hx, y:center.y + hy, z:center.z - hz},
+        {x:center.x - hx, y:center.y - hy, z:center.z + hz},
+        {x:center.x + hx, y:center.y - hy, z:center.z + hz},
+        {x:center.x + hx, y:center.y + hy, z:center.z + hz},
+        {x:center.x - hx, y:center.y + hy, z:center.z + hz},
+      ].map(p=>toScreen(toCam(p)));
+      const faces=[
+        [0,1,2,3],[4,5,6,7],
+        [0,1,5,4],[1,2,6,5],
+        [2,3,7,6],[3,0,4,7],
+      ];
+      faces.forEach(idx=>{
+        const pts2=idx.map(k=>({x:verts[k].x,y:verts[k].y}));
+        const zAvg=idx.reduce((sum,k)=>sum+verts[k].z,0)/idx.length;
+        queueFace0(pts2, zAvg, fill, alpha);
+      });
+    }
+    function drawBox3D(na, nb, Rloc, H, B){
+      const hy=H*0.5, hz=B*0.5; const ey=Rloc[1], ez=Rloc[2];
+      function add(a, sY, sZ){ return { x: a.x + ey[0]*sY + ez[0]*sZ, y: a.y + ey[1]*sY + ez[1]*sZ, z: a.z + ey[2]*sY + ez[2]*sZ }; }
+      const A1=add(na, +hy, +hz), A2=add(na, +hy, -hz), A3=add(na, -hy, -hz), A4=add(na, -hy, +hz);
+      const B1=add(nb, +hy, +hz), B2=add(nb, +hy, -hz), B3=add(nb, -hy, -hz), B4=add(nb, -hy, +hz);
+      const verts = [A1,A2,A3,A4,B1,B2,B3,B4].map(p=>toScreen(toCam(p)));
+      const faces=[[0,1,2,3],[4,5,6,7],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]];
+      faces.forEach(idxs=>{
+        const zAvg = idxs.reduce((s,k)=>s+verts[k].z,0)/idxs.length;
+        const pts2 = idxs.map(k=>({x:verts[k].x,y:verts[k].y}));
+        queueFace0(pts2, zAvg, '#2a9df4', 0.22);
+      });
+    }
+    function drawCylinder3D(na, nb, Rloc, radius, segments=20){
+      const ey=Rloc[1], ez=Rloc[2]; const ringA=[], ringB=[];
+      for(let k=0;k<segments;k++){
+        const th=2*Math.PI*k/segments; const sy=Math.sin(th)*radius, sz=Math.cos(th)*radius;
+        const a = { x: na.x + ey[0]*sy + ez[0]*sz, y: na.y + ey[1]*sy + ez[1]*sz, z: na.z + ey[2]*sy + ez[2]*sz };
+        const b = { x: nb.x + ey[0]*sy + ez[0]*sz, y: nb.y + ey[1]*sy + ez[1]*sz, z: nb.z + ey[2]*sy + ez[2]*sz };
+        ringA.push(toScreen(toCam(a))); ringB.push(toScreen(toCam(b)));
+      }
+      const faces=[]; for(let k=0;k<segments;k++){ const k2=(k+1)%segments; const face=[{x:ringA[k].x,y:ringA[k].y,z:ringA[k].z},{x:ringA[k2].x,y:ringA[k2].y,z:ringA[k2].z},{x:ringB[k2].x,y:ringB[k2].y,z:ringB[k2].z},{x:ringB[k].x,y:ringB[k].y,z:ringB[k].z}]; const zavg=(face[0].z+face[1].z+face[2].z+face[3].z)/4; faces.push({face,z:zavg}); }
+      faces.forEach(f=> queueFace0(f.face.map(p=>({x:p.x,y:p.y})), f.z, '#2a9df4', 0.18));
+    }
+    function addMassBoxes0(){
+      if(!nodeMasses) return;
+      Object.entries(nodeMasses).forEach(([nid, mass])=>{
+        if(!mass) return;
+        const w=Number(mass.width)||0;
+        const l=Number(mass.length)||0;
+        const h=Number(mass.height)||0;
+        if(!(w>0 && l>0 && h>0)) return;
+        const pt = Pb[nid];
+        if(!pt || !pt.wpos) return;
+        const center={x:pt.wpos[0], y:pt.wpos[1], z:pt.wpos[2]};
+        queueAxisAlignedBox0(center, w, l, h);
+      });
+    }
     if(showBeamGraphics){
-      const Rcam = cameraMatrix();
-      function toCam(p){
-        const px = p.x - cam.target.x, py = p.y - cam.target.y, pz = p.z - cam.target.z;
-        return {
-          x: Rcam[0][0]*px + Rcam[0][1]*py + Rcam[0][2]*pz,
-          y: Rcam[1][0]*px + Rcam[1][1]*py + Rcam[1][2]*pz,
-          z: Rcam[2][0]*px + Rcam[2][1]*py + Rcam[2][2]*pz,
-        };
-      }
-      function toScreen(pc){ return {x: pc.x*scale+ox, y: pc.y*scale+oy, z: pc.z}; }
-      const faceQ0=[];
-      function queueFace0(pts2d, zAvg, fill='#2a9df4', alpha=0.22){ faceQ0.push({pts:pts2d, z:zAvg, fill, alpha}); }
-      function drawBox3D(na, nb, Rloc, H, B){
-        const hy=H*0.5, hz=B*0.5; const ey=Rloc[1], ez=Rloc[2];
-        function add(a, sY, sZ){ return { x: a.x + ey[0]*sY + ez[0]*sZ, y: a.y + ey[1]*sY + ez[1]*sZ, z: a.z + ey[2]*sY + ez[2]*sZ }; }
-        const A1=add(na, +hy, +hz), A2=add(na, +hy, -hz), A3=add(na, -hy, -hz), A4=add(na, -hy, +hz);
-        const B1=add(nb, +hy, +hz), B2=add(nb, +hy, -hz), B3=add(nb, -hy, -hz), B4=add(nb, -hy, +hz);
-        const verts = [A1,A2,A3,A4,B1,B2,B3,B4].map(p=>toScreen(toCam(p)));
-        const faces=[[0,1,2,3],[4,5,6,7],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]];
-        faces.forEach(idxs=>{
-          const zAvg = idxs.reduce((s,k)=>s+verts[k].z,0)/idxs.length;
-          const pts2 = idxs.map(k=>({x:verts[k].x,y:verts[k].y}));
-          queueFace0(pts2, zAvg, '#2a9df4', 0.22);
-        });
-      }
-      function drawCylinder3D(na, nb, Rloc, radius, segments=20){
-        const ey=Rloc[1], ez=Rloc[2]; const ringA=[], ringB=[];
-        for(let k=0;k<segments;k++){
-          const th=2*Math.PI*k/segments; const sy=Math.sin(th)*radius, sz=Math.cos(th)*radius;
-          const a = { x: na.x + ey[0]*sy + ez[0]*sz, y: na.y + ey[1]*sy + ez[1]*sz, z: na.z + ey[2]*sy + ez[2]*sz };
-          const b = { x: nb.x + ey[0]*sy + ez[0]*sz, y: nb.y + ey[1]*sy + ez[1]*sz, z: nb.z + ey[2]*sy + ez[2]*sz };
-          ringA.push(toScreen(toCam(a))); ringB.push(toScreen(toCam(b)));
-        }
-        const faces=[]; for(let k=0;k<segments;k++){ const k2=(k+1)%segments; const face=[{x:ringA[k].x,y:ringA[k].y,z:ringA[k].z},{x:ringA[k2].x,y:ringA[k2].y,z:ringA[k2].z},{x:ringB[k2].x,y:ringB[k2].y,z:ringB[k2].z},{x:ringB[k].x,y:ringB[k].y,z:ringB[k].z}]; const zavg=(face[0].z+face[1].z+face[2].z+face[3].z)/4; faces.push({face,z:zavg}); }
-        faces.forEach(f=> queueFace0(f.face.map(p=>({x:p.x,y:p.y})), f.z, '#2a9df4', 0.18));
-      }
       model.beams.forEach(b=>{
         if(!(b.xsec && b.xsec.kind)) return;
         const na={x:(Pb[b.nodeA]?.wpos0||[0,0,0])[0], y:(Pb[b.nodeA]?.wpos0||[0,0,0])[1], z:(Pb[b.nodeA]?.wpos0||[0,0,0])[2]};
@@ -1844,7 +2553,9 @@ function render(model, res){
           const D=(b.xsec.dims.D || b.xsec.dims.d || 0); const rad=Math.max(0, D*0.5); drawCylinder3D(na, nb, Rloc, rad, 20);
         }
       });
-      // Flush faces globally
+    }
+    addMassBoxes0();
+    if(faceQ0.length){
       faceQ0.sort((a,b)=> b.z - a.z);
       faceQ0.forEach(f=>{ ctx.save(); ctx.globalAlpha=f.alpha; ctx.fillStyle=f.fill; ctx.beginPath(); f.pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); }); ctx.closePath(); ctx.fill(); ctx.globalAlpha=Math.min(0.8, f.alpha*2.5); ctx.strokeStyle='#1e293b'; ctx.lineWidth=1.0; ctx.stroke(); ctx.restore(); });
     }
@@ -2199,9 +2910,11 @@ function refreshFromSpec(){
   errorsEl.textContent = errors.length ? errors.join('\n') : '';
   if(errors.length){
     setStatus('Parse errors. Fix spec to proceed.', false);
-    nodes=[]; beams=[]; conditions={}; results=null;
+    nodes=[]; beams=[]; conditions={}; nodeMasses={}; results=null;
+    lastAssembly=null; lastFrfResults=null;
   }else{
-    nodes=model.nodes; beams=model.beams; conditions=model.conditions; setStatus('Parsed OK.');
+    nodes=model.nodes; beams=model.beams; conditions=model.conditions; nodeMasses=model.masses||{}; setStatus('Parsed OK.');
+    lastAssembly=null; lastFrfResults=null;
   }
 
   // refresh modal beam id list if open
@@ -2213,6 +2926,7 @@ function refreshFromSpec(){
   // reset stress stats when spec changes
   stressStats = (results ? computeStressStats({nodes,beams,conditions}, results) : null);
   render({nodes,beams,conditions}, results);
+  if(dynOverlay.style.display==='flex') populateDynamicsSelectors();
 }
 specEl.addEventListener('input', refreshFromSpec);
 
@@ -2229,6 +2943,7 @@ document.getElementById('btnSolve').addEventListener('click', ()=>{
       render(model, null);
       return;
     }
+    nodeMasses = model.masses || {};
     const out=solve3D(model);
     results=out; setStatus('Solved. Showing undeformed + deformed shapes.');
     stressStats = computeStressStats(model, results);
@@ -2400,6 +3115,17 @@ beams:
   6: 3-7 spring k=100000
   7: 4-8 spring k=100000
   8: 5-9 spring k=100000
+
+masses:
+  1: mx=150 my=150 mz=150 ix=20 iy=20 iz=20 width=0.1 length=0.1 height=0.1
+  2: mx=80 my=80 mz=80 ix=12 iy=12 iz=12 width=0.1 length=0.1 height=0.1
+  3: mx=80 my=80 mz=80 ix=12 iy=12 iz=12 width=0.1 length=0.1 height=0.1
+  4: mx=80 my=80 mz=80 ix=12 iy=12 iz=12 width=0.1 length=0.1 height=0.1
+  5: mx=80 my=80 mz=80 ix=12 iy=12 iz=12 width=0.1 length=0.1 height=0.1
+  6: mx=300 my=300 mz=300 ix=40 iy=40 iz=40 width=0.1 length=0.1 height=0.1
+  7: mx=300 my=300 mz=300 ix=40 iy=40 iz=40 width=0.1 length=0.1 height=0.1
+  8: mx=300 my=300 mz=300 ix=40 iy=40 iz=40 width=0.1 length=0.1 height=0.1
+  9: mx=300 my=300 mz=300 ix=40 iy=40 iz=40 width=0.1 length=0.1 height=0.1
 
 conditions:
   2: force Fx=0 Fy=0 Fz=-1000 Mx=0 My=0 Mz=0
@@ -2666,6 +3392,31 @@ btnLibs.addEventListener('click', openLibs);
 libsClose.addEventListener('click', closeLibs);
 libsOverlay.addEventListener('click', (e)=>{ if(e.target===libsOverlay) closeLibs(); });
 document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && libsOverlay.style.display==='flex') closeLibs(); });
+
+document.getElementById('btnDynamics').addEventListener('click', ()=>{
+  document.querySelectorAll('canvas.frfCanvas').forEach(c=>{
+    if(c!==dynMagCanvas && c!==dynPhaseCanvas) c.remove();
+  });
+  dynOverlay.style.display='flex';
+  dynOverlay.setAttribute('aria-hidden','false');
+  populateDynamicsSelectors();
+  if(!dynFreqStartEl.value) dynFreqStartEl.value='1';
+  if(!dynFreqEndEl.value) dynFreqEndEl.value='100';
+  if(!dynFreqPointsEl.value) dynFreqPointsEl.value='200';
+  dynErrorsEl.textContent='';
+    if(lastFrfResults){
+      renderDynamicsResults(lastFrfResults);
+    }else{
+      renderDynamicsResults(null);
+    }
+});
+document.getElementById('dynCompute').addEventListener('click', handleDynamicsCompute);
+document.getElementById('dynClose').addEventListener('click', ()=>{
+  dynOverlay.style.display='none';
+  dynOverlay.setAttribute('aria-hidden','true');
+});
+dynOverlay.addEventListener('click', (e)=>{ if(e.target===dynOverlay) { dynOverlay.style.display='none'; dynOverlay.setAttribute('aria-hidden','true'); }});
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && dynOverlay.style.display==='flex'){ dynOverlay.style.display='none'; dynOverlay.setAttribute('aria-hidden','true'); }});
 
 function populateBeamIdSelect(beamArr){
   beamIdSelect.innerHTML = '';
