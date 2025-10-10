@@ -106,6 +106,9 @@
   <button id="btnSolve">Solve</button>
   <button id="btnSave">Save Model Spec</button>
   <button id="btnReset">Reset</button>
+  <button id="btnAnimate" class="btn" aria-pressed="false">Animate</button>
+  <label class="muted">Hz</label>
+  <input id="animateFreq" type="number" value="1" step="0.1" min="0.01" />
 </header>
 
 <div class="wrap">
@@ -467,6 +470,12 @@ const MASS_BOX_COLOR='#f9c74f';
 const MASS_BOX_ALPHA=0.6;
 const chartStates = new Map();
 const chartInteractive = new WeakSet();
+let animationActive=false;
+let animationRequest=null;
+let animationStart=0;
+let animationTimeSec=0;
+let animationMode=null;
+const ANIMATION_FREQ_HZ=1;
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -492,6 +501,8 @@ const dynPlotsEl = document.getElementById('dynPlots');
 const dynMagCanvas = document.getElementById('frfMagCanvas');
 const dynPhaseCanvas = document.getElementById('frfPhaseCanvas');
 const dynNormalizeEl = document.getElementById('dynNormalize');
+const btnAnimate = document.getElementById('btnAnimate');
+const animateFreqEl = document.getElementById('animateFreq');
 const progressHUD = document.getElementById('progressHUD');
 const progressHUDBar = progressHUD.querySelector('.bar span');
 const progressHUDLabel = document.getElementById('progressHUDLabel');
@@ -1798,15 +1809,19 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
     for(let exp=minExp; exp<=maxExp; exp++){
       const major = Math.pow(10, exp);
       if(major >= minVal - EPS && major <= maxVal + EPS){
-        tickVals.push({value:major, label:formatLabel(major)});
+        tickVals.push({value:major, label:formatLabel(major), major:true});
       }
       if(exp < maxExp){
-        for(let m=2; m<10; m++){ const minor = major * m; if(minor > 10*major + EPS || minor > maxVal + EPS) break; if(minor >= minVal - EPS){ tickVals.push({value:minor, label:null}); } }
+        for(let m=2; m<10; m++){
+          const minor = major * m;
+          if(minor > 10*major + EPS || minor > maxVal + EPS) break;
+          if(minor >= minVal - EPS){ tickVals.push({value:minor, label:null, major:false}); }
+        }
       }
     }
     if(!tickVals.length){
-      tickVals.push({value:minVal, label:formatLabel(minVal)});
-      tickVals.push({value:maxVal, label:formatLabel(maxVal)});
+      tickVals.push({value:minVal, label:formatLabel(minVal), major:true});
+      tickVals.push({value:maxVal, label:formatLabel(maxVal), major:true});
     }
     tickVals.sort((a,b)=>a.value-b.value);
     tickVals.forEach(tick=>{
@@ -1816,6 +1831,17 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
       ctx.moveTo(padLeft- (tick.label?4:2), yPx);
       ctx.lineTo(padLeft, yPx);
       ctx.stroke();
+      if(tick.major){
+        ctx.save();
+        ctx.strokeStyle='rgba(148, 163, 184, 0.18)';
+        ctx.lineWidth=1;
+        ctx.setLineDash([4,4]);
+        ctx.beginPath();
+        ctx.moveTo(padLeft, yPx);
+        ctx.lineTo(padLeft + plotWidth, yPx);
+        ctx.stroke();
+        ctx.restore();
+      }
       if(tick.label){
         const labelWidth = ctx.measureText(tick.label).width;
         ctx.fillText(tick.label, padLeft - 8 - labelWidth, yPx+4);
@@ -1831,6 +1857,15 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
       ctx.lineTo(padLeft, yPx);
       ctx.stroke();
       ctx.fillText(formatTick(yVal), 4, yPx+4);
+      ctx.save();
+      ctx.strokeStyle='rgba(148, 163, 184, 0.18)';
+      ctx.lineWidth=1;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.moveTo(padLeft, yPx);
+      ctx.lineTo(padLeft + plotWidth, yPx);
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -1839,38 +1874,52 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
     const maxVal = Math.pow(10, xMax);
     const tickValues=[];
     const EPS=1e-9;
-    const addTick=val=>{
+    const addTick=(val, major=true)=>{
       if(!Number.isFinite(val)) return;
       if(val < minVal - EPS || val > maxVal + EPS) return;
       for(const existing of tickValues){
-        if(Math.abs(existing - val) <= Math.max(1, val)*1e-9) return;
+        if(Math.abs(existing.value - val) <= Math.max(1, val)*1e-9) return;
       }
-      tickValues.push(val);
+      tickValues.push({value:val, major});
     };
     const minExp = Math.floor(Math.log10(minVal));
     const maxExp = Math.floor(Math.log10(maxVal));
     for(let exp=minExp; exp<=maxExp; exp++){
       const base = Math.pow(10, exp);
-      const step = base;
+      addTick(base, true);
       const decadeEnd = base*10;
-      let start = Math.max(base, Math.ceil((minVal - EPS)/step)*step);
-      if(start < base - EPS) start = base;
-      for(let v=start; v<=decadeEnd + EPS && v<=maxVal + EPS; v+=step){
-        addTick(Number(v.toFixed(8)));
+      for(let m=2; m<10; m++){
+        const minor = base * m;
+        if(minor > decadeEnd + EPS || minor > maxVal + EPS) break;
+        if(minor >= minVal - EPS){
+          addTick(Number(minor.toPrecision(8)), false);
+        }
       }
     }
     addTick(minVal);
     addTick(maxVal);
-    tickValues.sort((a,b)=>a-b);
-    tickValues.forEach(val=>{
-      const xPx = xToPx(val);
+    tickValues.sort((a,b)=>a.value-b.value);
+    tickValues.forEach(tick=>{
+      const xPx = xToPx(tick.value);
       ctx.beginPath();
       ctx.moveTo(xPx, padTop + plotHeight);
       ctx.lineTo(xPx, padTop + plotHeight + 4);
       ctx.stroke();
-      const label = formatNoSci(val);
-      const labelWidth = ctx.measureText(label).width;
-      ctx.fillText(label, xPx - labelWidth/2, padTop + plotHeight + 20);
+      const isMajor = tick.major !== false;
+      const label = (tick.value>=minVal-EPS && tick.value<=maxVal+EPS && isMajor) ? formatNoSci(tick.value) : null;
+      if(label){
+        const labelWidth = ctx.measureText(label).width;
+        ctx.fillText(label, xPx - labelWidth/2, padTop + plotHeight + 20);
+      }
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.moveTo(xPx, padTop);
+      ctx.lineTo(xPx, padTop + plotHeight);
+      ctx.stroke();
+      ctx.restore();
     });
   }else{
     const xTickCount = Math.min(6, xVals.length);
@@ -1884,8 +1933,16 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
       ctx.lineTo(xPx, padTop + plotHeight + 4);
       ctx.stroke();
       const label = formatNoSci(xVal);
-      const labelWidth = ctx.measureText(label).width;
-      ctx.fillText(label, xPx - labelWidth/2, padTop + plotHeight + 20);
+      ctx.fillText(label, xPx - ctx.measureText(label).width/2, padTop + plotHeight + 20);
+      ctx.save();
+      ctx.strokeStyle='rgba(148, 163, 184, 0.18)';
+      ctx.lineWidth=1;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.moveTo(xPx, padTop);
+      ctx.lineTo(xPx, padTop + plotHeight);
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -2070,6 +2127,59 @@ function findMagnitudePeaks(freqs, values){
   return peaks;
 }
 
+function computeDynamicMode(model, freqHz){
+  const assembly = assembleSystem(model);
+  const {K, F, free, dofIndex, massDiag} = assembly;
+  const nodesLocal = model.nodes || [];
+  const dof = assembly.dof;
+  const freeCount = free.length;
+  if(freeCount===0) throw new Error('All DOFs constrained');
+
+  const globalToFree=new Array(dof).fill(-1);
+  free.forEach((d,i)=>globalToFree[d]=i);
+
+  const Kff = free.map(i=> free.map(j=> K[i][j]));
+  const Mff = free.map(i=> Math.max(massDiag[i], 1e-9));
+  const load = new Array(freeCount).fill(0);
+  for(let p=0;p<freeCount;p++) load[p]=F[free[p]];
+
+  const omega = 2*Math.PI*freqHz;
+  const A = subtractOmegaMass(Kff, Mff, omega);
+  const B = scaleMatrix(Kff, omega * DAMPING_BETA);
+  const sol = solveComplexSystem(A,B,load);
+  if(!sol) throw new Error('Dynamic system singular');
+
+  const displacements={};
+  nodesLocal.forEach((node, idx)=>{
+    const base = 6*idx;
+    const comp={};
+    DOF_KEYS.forEach((key, localIdx)=>{
+      const g = base + localIdx;
+      const fi = globalToFree[g];
+      if(fi>=0){
+        const real = sol.real[fi]||0;
+        const imag = sol.imag[fi]||0;
+        comp[key]={amp:Math.hypot(real, imag), phase:Math.atan2(imag, real)};
+      }else{
+        comp[key]={amp:0, phase:0};
+      }
+    });
+    displacements[node.id]=comp;
+  });
+  return {freq:freqHz, sourceOmega:omega, displacements};
+}
+
+function hasNonzeroAmplitude(mode){
+  if(!mode || !mode.displacements) return false;
+  for(const comp of Object.values(mode.displacements)){
+    if(!comp) continue;
+    for(const key of DOF_KEYS){
+      if(comp[key]?.amp > 1e-12) return true;
+    }
+  }
+  return false;
+}
+
 function enableChartHover(canvas){
   if(chartInteractive.has(canvas)) return;
   canvas.addEventListener('mousemove', event=>handleChartHoverMove(canvas, event));
@@ -2104,6 +2214,75 @@ function handleChartHoverLeave(canvas){
   const state = chartStates.get(canvas);
   if(!state || state.hoverX == null) return;
   drawLineChart(canvas, state.xVals, state.seriesList, {...state.opts});
+}
+
+function toggleAnimation(){
+  if(animationActive){
+    stopAnimation();
+  }else{
+    startAnimation();
+  }
+}
+
+function startAnimation(){
+  if(animationActive) return;
+  if(!results){
+    setStatus('Solve first to animate.', false);
+    return;
+  }
+  let freqHz = parseFloat(animateFreqEl.value);
+  if(!isFinite(freqHz) || freqHz<=0){
+    freqHz = 1;
+    animateFreqEl.value = '1';
+  }
+  try{
+    const model = {nodes, beams, conditions, masses: nodeMasses};
+    const mode = computeDynamicMode(model, freqHz);
+    if(!mode || !hasNonzeroAmplitude(mode)){
+      setStatus('No dynamic response for the selected frequency.', false);
+      return;
+    }
+    animationMode = {
+      ...mode,
+      sourceFreq: freqHz,
+      omega: 2*Math.PI*ANIMATION_FREQ_HZ
+    };
+    computeFitScale({nodes,beams,conditions}, results);
+  }catch(err){
+    setStatus(`Dynamic solve failed: ${err.message||err}`, false);
+    animationMode=null;
+    return;
+  }
+  animationActive=true;
+  btnAnimate.setAttribute('aria-pressed','true');
+  btnAnimate.textContent='Stop Animation';
+  animationStart=performance.now();
+  animationTimeSec=0;
+  setStatus(`Animating dynamic response at ${freqHz.toFixed(3)} Hz (displayed at ${ANIMATION_FREQ_HZ} Hz).`);
+  animationRequest=requestAnimationFrame(stepAnimation);
+}
+
+function stopAnimation(){
+  animationActive=false;
+  if(animationRequest){ cancelAnimationFrame(animationRequest); animationRequest=null; }
+  animationStart=0;
+  animationTimeSec=0;
+  animationMode=null;
+  btnAnimate.setAttribute('aria-pressed','false');
+  btnAnimate.textContent='Animate';
+  setStatus('Animation stopped.');
+  computeFitScale({nodes,beams,conditions}, results);
+  render({nodes,beams,conditions}, results);
+}
+
+function stepAnimation(timestamp){
+  if(!animationActive){
+    return;
+  }
+  if(!animationStart) animationStart=timestamp;
+  animationTimeSec = (timestamp - animationStart)/1000;
+  render({nodes,beams,conditions}, results);
+  animationRequest=requestAnimationFrame(stepAnimation);
 }
 
 function populateDynamicsSelectors(){
@@ -2352,7 +2531,7 @@ function computeFitScale(model, res){
   const disp = res?.displacements || {};
   const getDisp = (id,exMul) => {
     const d=disp[id]||{ux:0,uy:0,uz:0};
-    return [d.ux*ex*exMul,d.uy*ex*exMul,d.uz*ex*exMul];
+    return [d.ux*ex,d.uy*ex,d.uz*ex];
   };
   if(!model.nodes.length){ cam.baseScale=1; return; }
 
@@ -2369,6 +2548,18 @@ function computeFitScale(model, res){
   });
   if(Rmax<1e-9) Rmax=1;
 
+  if(animationMode && animationMode.displacements){
+    model.nodes.forEach(n=>{
+      const dispDyn = animationMode.displacements[n.id];
+      if(!dispDyn) return;
+      const ampX = (dispDyn.ux?.amp || 0)*ex;
+      const ampY = (dispDyn.uy?.amp || 0)*ex;
+      const ampZ = (dispDyn.uz?.amp || 0)*ex;
+      const r = Math.hypot(ampX, ampY, ampZ);
+      if(r>Rmax) Rmax=r;
+    });
+  }
+
   const rect=canvas.getBoundingClientRect();
   const margin=40;
   const view = Math.max(10, Math.min(rect.width, rect.height) - 2*margin);
@@ -2380,8 +2571,20 @@ function projectPoints(model, res, exMul=1){
   const ex = (parseFloat(exagEl.value)||1) * exMul;
   const disp = res?.displacements || {};
   const getDisp = id => {
+    if(animationActive && animationMode?.displacements){
+      const dyn = animationMode.displacements[id];
+      if(dyn){
+        const t = animationTimeSec;
+        const omega = animationMode.omega || 0;
+        return [
+          (dyn.ux?.amp || 0)*ex*Math.cos(omega*t + (dyn.ux?.phase || 0)),
+          (dyn.uy?.amp || 0)*ex*Math.cos(omega*t + (dyn.uy?.phase || 0)),
+          (dyn.uz?.amp || 0)*ex*Math.cos(omega*t + (dyn.uz?.phase || 0))
+        ];
+      }
+    }
     const d=disp[id]||{ux:0,uy:0,uz:0};
-    return [d.ux*ex,d.uy*ex,d.uz*ex];
+    return [d.ux*ex*exMul,d.uy*ex*exMul,d.uz*ex*exMul];
   };
 
   const R = cameraMatrix();
@@ -3242,6 +3445,7 @@ function updateLibrariesUI(libs){
 
 function refreshFromSpec(){
   const {errors, model, libraries: libs, exagOverride: exo, nuGlobal: nug} = parseSpec(specEl.value);
+  if(animationActive) stopAnimation();
   if(exo!=null) exagEl.value=exo;
   if(nug!=null) nuGlobal=nug;
   if(libs){ materialsLib = libs.materials||{}; xsectionsLib = libs.xsections||{}; updateLibrariesUI(libs); }
@@ -3270,6 +3474,7 @@ function refreshFromSpec(){
 specEl.addEventListener('input', refreshFromSpec);
 
 document.getElementById('btnSolve').addEventListener('click', ()=>{
+  if(animationActive) stopAnimation();
   try{
     const parsed = parseSpec(specEl.value);
     const {errors, model} = parsed;
@@ -3784,6 +3989,7 @@ dynNormalizeEl?.addEventListener('change', ()=>{
     renderDynamicsResults(lastFrfResults);
   }
 });
+btnAnimate.addEventListener('click', toggleAnimation);
 
 function populateBeamIdSelect(beamArr){
   beamIdSelect.innerHTML = '';
