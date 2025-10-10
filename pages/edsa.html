@@ -8,6 +8,13 @@
   :root{
     --bg:#0e1113; --panel:#161a1d; --ink:#e7e9ec; --muted:#9aa4ad; --accent:#4cc9f0; --accent2:#80ed99; --bad:#ff6b6b;
     --border:#262b30; --overlay:rgba(0,0,0,.55);
+    --canvas-bg:#0b0d0f; --frf-canvas-bg:#0b0f12; --frf-border:#2d343a; --frf-axis:#637180;
+    --frf-grid:rgba(148,163,184,0.18); --frf-text:#cbd5dc; --frf-nodata:#cbd5dc;
+    --triad-label:#cbd5dc; --triad-backdrop:#ffffff;
+    --wireframe-stroke:#3a4550; --node-stroke:#637180; --node-fill:#80ed99; --node-text:#cbd5dc; --deformed-line:#4cc9f0;
+    --tooltip-bg:#111; --tooltip-border:#333; --tooltip-text:#eaeef2;
+    --frf-toggle-bg:#10161b; --frf-toggle-border:#262b30; --frf-toggle-text:#cbd5dc;
+    --frf-box-bg:#101418; --frf-box-border:#262b30;
   }
   *{box-sizing:border-box}
   html, body{height:100%}
@@ -34,9 +41,9 @@
   .errors{margin-top:8px;color:var(--bad);white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace}
   .good{color:var(--accent2)}
   .canvasWrap{position:relative;min-height:260px;height:auto;flex:1 1 auto}
-  #canvas{position:absolute;inset:0;width:100%;height:100%;background:#0b0d0f;border-radius:10px;cursor:grab}
+  #canvas{position:absolute;inset:0;width:100%;height:100%;background:var(--canvas-bg,#0b0d0f);border-radius:10px;cursor:grab}
   canvas.dragging{cursor:grabbing}
-  #tooltip{position:absolute;background:#111;border:1px solid #333;padding:6px;border-radius:6px;display:none;pointer-events:none;white-space:pre;color:#eaeef2;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  #tooltip{position:absolute;background:var(--tooltip-bg,#111);border:1px solid var(--tooltip-border,#333);padding:6px;border-radius:6px;display:none;pointer-events:none;white-space:pre;color:var(--tooltip-text,#eaeef2);font-family:ui-monospace,Consolas,monospace;font-size:12px}
   .results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   @media(max-width:1100px){ .results{grid-template-columns:1fr} }
   .results .card{border:1px solid var(--border);border-radius:10px;padding:10px;background:#0f1113}
@@ -67,11 +74,11 @@
   .btnRow{display:flex;gap:8px;flex-wrap:wrap}
   .danger{border-color:#8b2b2b !important;color:#ffc3c3 !important}
   .frf-grid{display:flex;flex-direction:column;gap:18px;margin-top:20px}
-  .frf-box{background:#101418;border:1px solid var(--border);border-radius:12px;padding:12px}
+  .frf-box{background:var(--frf-box-bg,#101418);border:1px solid var(--frf-box-border,var(--border));border-radius:12px;padding:12px;color:var(--frf-text,var(--ink))}
 .frf-box h4{margin:0 0 8px 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px solid var(--border);border-radius:10px;background:#0b0f12;display:block}
-.frf-toggle-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12px;color:#cbd5dc}
-.frf-toggle-group label{display:flex;align-items:center;gap:4px;background:#10161b;border:1px solid var(--border);padding:4px 8px;border-radius:8px;cursor:pointer}
+canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px solid var(--frf-border,var(--border));border-radius:10px;background:var(--frf-canvas-bg,#0b0f12);display:block}
+.frf-toggle-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12px;color:var(--frf-toggle-text,#cbd5dc)}
+.frf-toggle-group label{display:flex;align-items:center;gap:4px;background:var(--frf-toggle-bg,#10161b);border:1px solid var(--frf-toggle-border,var(--border));padding:4px 8px;border-radius:8px;cursor:pointer;color:var(--frf-toggle-text,#cbd5dc)}
 .frf-toggle-group input[type=checkbox]{accent-color:var(--accent)}
   .modal .summaryTable{width:100%;border-collapse:collapse;margin-top:16px;font-size:12px}
   .modal .summaryTable th,.modal .summaryTable td{border:1px solid var(--border);padding:6px 8px;text-align:left}
@@ -93,7 +100,7 @@ canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px 
 </head>
 <body>
 <header>
-  <h1>Elasto-Static Simuation & Analysis<span class="pill">(ESSA)</span></h1>
+  <h1>Elasto-Dynamics Simuation & Analysis<span class="pill">(EDSA)</span></h1>
   <div class="spacer"></div>
   <label class="muted">Exag</label>
   <input id="exag" type="number" value="1" step="1" />
@@ -104,6 +111,7 @@ canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px 
   <button id="viewTop"   class="btn" title="Top (Z → camera)">Top View</button>
   <button id="viewIso"   class="btn" title="Isometric (x←↘, y→↘, z↑)">Isometric</button>
   <button id="toggleBeams" class="btn" title="Show or hide thick beam graphics" aria-pressed="true">Hide Beam Graphics</button>
+  <button id="toggleNodeLabels" class="btn" title="Toggle node id text in the viewport" aria-pressed="true">Hide Node Labels</button>
   <button id="toggleStress" class="btn" title="Show von Mises stress colormap" aria-pressed="false">Show Stress Map</button>
   <button id="btnDynamics" class="btn">Dynamics…</button>
   <button id="btnSolve">Solve</button>
@@ -112,7 +120,9 @@ canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px 
   <button id="btnAnimate" class="btn" aria-pressed="false">Animate</button>
   <label class="muted">Hz</label>
   <input id="animateFreq" type="number" value="1" step="0.1" min="0.01" />
-  <button id="btnExportGif" class="btn">Export GIF</button>
+  <label class="muted">Line</label>
+  <input id="lineThickness" type="number" value="2" step="0.1" min="0.1" max="20" />
+  <button id="btnTheme" class="btn" aria-pressed="false" title="Toggle export-friendly palette">White Background</button>
 </header>
 
 <div class="wrap">
@@ -470,9 +480,113 @@ const DOF_KEYS=['ux','uy','uz','rx','ry','rz'];
 const DOF_LABELS=['UX','UY','UZ','RX','RY','RZ'];
 const DOF_UNITS=['m','m','m','rad','rad','rad'];
 const DAMPING_BETA=0.001;
-const DOF_COLORS=['#4cc9f0','#f72585','#ffba08','#38b000','#7209b7','#fb8b24'];
+const DOF_COLORS_DARK=['#4cc9f0','#f72585','#ffba08','#38b000','#7209b7','#fb8b24'];
+const DOF_COLORS_LIGHT=['#2563eb','#d946ef','#ea580c','#16a34a','#6366f1','#f59e0b'];
+const DOF_COLORS=[...DOF_COLORS_DARK];
 const MASS_BOX_COLOR='#f9c74f';
 const MASS_BOX_ALPHA=0.6;
+const THEMES={
+  dark:{
+    cssVars:{
+      '--canvas-bg':'#0b0d0f',
+      '--frf-canvas-bg':'#0b0f12',
+      '--frf-border':'#2d343a',
+      '--frf-axis':'#637180',
+      '--frf-grid':'rgba(148,163,184,0.18)',
+      '--frf-text':'#cbd5dc',
+      '--frf-nodata':'#cbd5dc',
+      '--triad-label':'#cbd5dc',
+      '--triad-backdrop':'#ffffff',
+      '--wireframe-stroke':'#3a4550',
+      '--node-stroke':'#637180',
+      '--node-fill':'#80ed99',
+      '--node-text':'#cbd5dc',
+      '--deformed-line':'#4cc9f0',
+      '--tooltip-bg':'#111',
+      '--tooltip-border':'#333',
+      '--tooltip-text':'#eaeef2',
+      '--frf-toggle-bg':'#10161b',
+      '--frf-toggle-border':'#262b30',
+      '--frf-toggle-text':'#cbd5dc',
+      '--frf-box-bg':'#101418',
+      '--frf-box-border':'#262b30'
+    },
+    three:{
+      canvasBg:'#0b0d0f',
+      triadBackdrop:'#ffffff',
+      triadLabel:'#cbd5dc',
+      textPrimary:'#cbd5dc',
+      faceStroke:'#1e293b',
+      wireframe:'#3a4550',
+      nodeStroke:'#637180',
+      nodeFill:'#80ed99',
+      nodeLabel:'#cbd5dc',
+      deformedLine:'#4cc9f0'
+    },
+    chart:{
+      axis:'#637180',
+      border:'#2d343a',
+      grid:'rgba(148,163,184,0.18)',
+      noData:'#cbd5dc',
+      label:'#cbd5dc',
+      hoverBg:'rgba(16,22,27,0.88)',
+      hoverBorder:'rgba(76,201,240,0.45)',
+      hoverLine:'rgba(76,201,240,0.75)',
+      hoverText:'#e7e9ec'
+    }
+  },
+  light:{
+    cssVars:{
+      '--canvas-bg':'#ffffff',
+      '--frf-canvas-bg':'#ffffff',
+      '--frf-border':'#cbd5e1',
+      '--frf-axis':'#334155',
+      '--frf-grid':'rgba(100,116,139,0.25)',
+      '--frf-text':'#0f172a',
+      '--frf-nodata':'#0f172a',
+      '--triad-label':'#1e293b',
+      '--triad-backdrop':'#0f172a',
+      '--wireframe-stroke':'#94a3b8',
+      '--node-stroke':'#475569',
+      '--node-fill':'#22c55e',
+      '--node-text':'#1e293b',
+      '--deformed-line':'#2563eb',
+      '--tooltip-bg':'#ffffff',
+      '--tooltip-border':'#cbd5e1',
+      '--tooltip-text':'#0f172a',
+      '--frf-toggle-bg':'#f1f5f9',
+      '--frf-toggle-border':'#cbd5e1',
+      '--frf-toggle-text':'#1e293b',
+      '--frf-box-bg':'#ffffff',
+      '--frf-box-border':'#cbd5e1'
+    },
+    three:{
+      canvasBg:'#ffffff',
+      triadBackdrop:'#0f172a',
+      triadLabel:'#1e293b',
+      textPrimary:'#1e293b',
+      faceStroke:'#cbd5e1',
+      wireframe:'#94a3b8',
+      nodeStroke:'#475569',
+      nodeFill:'#22c55e',
+      nodeLabel:'#1e293b',
+      deformedLine:'#2563eb'
+    },
+    chart:{
+      axis:'#334155',
+      border:'#cbd5e1',
+      grid:'rgba(148,163,184,0.25)',
+      noData:'#1e293b',
+      label:'#1e293b',
+      hoverBg:'rgba(255,255,255,0.92)',
+      hoverBorder:'rgba(37,99,235,0.45)',
+      hoverLine:'rgba(37,99,235,0.6)',
+      hoverText:'#0f172a'
+    }
+  }
+};
+let activeTheme=THEMES.dark;
+let currentThemeName='dark';
 const chartStates = new Map();
 const chartInteractive = new WeakSet();
 let animationActive=false;
@@ -481,13 +595,46 @@ let animationStart=0;
 let animationTimeSec=0;
 let animationMode=null;
 const ANIMATION_FREQ_HZ=1;
-const GIF_EXPORT_FRAMES=24;
 let frfVisibility = Object.fromEntries(DOF_KEYS.map(key=>[key,true]));
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const CANVAS_BG = '#0b0d0f';
 const tooltip = document.getElementById('tooltip');
+function getRenderedScreenBounds(padding=8){
+  if(!currentScreenMap) return null;
+  const {scale, ox, oy, pts, ptsBase} = currentScreenMap;
+  const dpr = window.devicePixelRatio || 1;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  let count = 0;
+  const pushPoints = map=>{
+    if(!map) return;
+    Object.values(map).forEach(p=>{
+      if(!p) return;
+      const x = (p.x * scale + ox) * dpr;
+      const y = (p.y * scale + oy) * dpr;
+      if(!Number.isFinite(x) || !Number.isFinite(y)) return;
+      if(x < minX) minX = x;
+      if(x > maxX) maxX = x;
+      if(y < minY) minY = y;
+      if(y > maxY) maxY = y;
+      count++;
+    });
+  };
+  pushPoints(pts);
+  pushPoints(ptsBase);
+  if(!count) return null;
+  const width = canvas.width;
+  const height = canvas.height;
+  const pad = Math.max(padding * dpr, Math.min(width, height) * 0.05);
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(width, maxX + pad);
+  maxY = Math.min(height, maxY + pad);
+  if(maxX <= minX || maxY <= minY){
+    return null;
+  }
+  return {minX, minY, maxX, maxY};
+}
 
 const errorsEl = document.getElementById('errors');
 const statusBar = document.getElementById('statusBar');
@@ -511,7 +658,9 @@ const dynPhaseCanvas = document.getElementById('frfPhaseCanvas');
 const dynNormalizeEl = document.getElementById('dynNormalize');
 const btnAnimate = document.getElementById('btnAnimate');
 const animateFreqEl = document.getElementById('animateFreq');
-const btnExportGif = document.getElementById('btnExportGif');
+const btnNodeLabels = document.getElementById('toggleNodeLabels');
+const lineThicknessEl = document.getElementById('lineThickness');
+const btnTheme = document.getElementById('btnTheme');
 const frfToggleGroup = document.getElementById('frfToggleGroup');
 const progressHUD = document.getElementById('progressHUD');
 const progressHUDBar = progressHUD.querySelector('.bar span');
@@ -521,6 +670,54 @@ let progressHUDStartTime=null;
 let progressHUDBaseLabel='';
 
 const nextFrame = () => new Promise(resolve => requestAnimationFrame(()=>resolve()));
+
+const MIN_LINE_THICKNESS = 0.25;
+const MAX_LINE_THICKNESS = 20;
+let lineThickness = 2;
+
+function formatLineThickness(value){
+  const rounded = Math.round(value*100)/100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/\.?0+$/,'');
+}
+function clampLineThickness(value){
+  const v = parseFloat(value);
+  if(!isFinite(v)) return null;
+  return Math.min(MAX_LINE_THICKNESS, Math.max(MIN_LINE_THICKNESS, v));
+}
+function getLineThickness(mult=1){
+  const m = isFinite(mult) ? mult : 1;
+  return Math.max(MIN_LINE_THICKNESS, lineThickness * m);
+}
+
+function getActiveTheme(){
+  return activeTheme || THEMES.dark;
+}
+
+function applyTheme(mode){
+  const targetName = mode === 'light' ? 'light' : 'dark';
+  const targetTheme = THEMES[targetName] || THEMES.dark;
+  const root = document.documentElement;
+  Object.entries(targetTheme.cssVars).forEach(([name, value])=>{
+    root.style.setProperty(name, value);
+  });
+  activeTheme = targetTheme;
+  currentThemeName = targetName;
+  const sourceColors = targetName === 'light' ? DOF_COLORS_LIGHT : DOF_COLORS_DARK;
+  DOF_COLORS.splice(0, DOF_COLORS.length, ...sourceColors);
+  if(btnTheme){
+    btnTheme.textContent = targetName === 'light' ? 'Dark Background' : 'White Background';
+    btnTheme.setAttribute('aria-pressed', targetName === 'light' ? 'true' : 'false');
+  }
+  document.body.classList.toggle('export-light', targetName === 'light');
+  setupFrfToggleGroup();
+  render({nodes,beams,conditions}, results);
+  renderDynamicsResults(lastFrfResults);
+}
+
+btnTheme?.addEventListener('click', ()=>{
+  const next = currentThemeName === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+});
 
 async function notifyProgress(progressCb, fraction, label){
   if(typeof progressCb === 'function'){
@@ -1700,6 +1897,16 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
   const baseOpts = {...opts};
   delete baseOpts.hoverX;
   const ctx=canvas.getContext('2d');
+  const chartTheme = getActiveTheme().chart || THEMES.dark.chart;
+  const axisColor = chartTheme.axis || '#637180';
+  const gridColor = chartTheme.grid || 'rgba(148, 163, 184, 0.18)';
+  const borderColor = chartTheme.border || '#2d343a';
+  const noDataColor = chartTheme.noData || axisColor;
+  const labelColor = chartTheme.label || axisColor;
+  const hoverLineColor = chartTheme.hoverLine || 'rgba(76,201,240,0.75)';
+  const hoverBg = chartTheme.hoverBg || 'rgba(16,22,27,0.88)';
+  const hoverBorder = chartTheme.hoverBorder || 'rgba(76,201,240,0.45)';
+  const hoverText = chartTheme.hoverText || '#e7e9ec';
   const dpr=window.devicePixelRatio||1;
   const computedStyle = window.getComputedStyle(canvas);
   const parentWidth = canvas.clientWidth || canvas.parentElement?.clientWidth || parseFloat(computedStyle.width) || 640;
@@ -1715,7 +1922,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
 
   if(!xVals || !xVals.length || !seriesList || !seriesList.length){
     chartStates.delete(canvas);
-    ctx.fillStyle='#cbd5dc';
+    ctx.fillStyle=noDataColor;
     ctx.font='12px ui-monospace,Consolas,monospace';
     ctx.fillText('No data', width/2-24, height/2);
     return;
@@ -1806,7 +2013,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
     return padTop + (1 - (yVal - yMinMap) / (yMaxMap - yMinMap || 1)) * plotHeight;
   };
 
-  ctx.strokeStyle='#2d343a';
+  ctx.strokeStyle=borderColor;
   ctx.lineWidth=1;
   ctx.beginPath();
   ctx.moveTo(padLeft, padTop);
@@ -1814,7 +2021,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
   ctx.lineTo(padLeft + plotWidth, padTop + plotHeight);
   ctx.stroke();
 
-  ctx.fillStyle='#637180';
+  ctx.fillStyle=axisColor;
   ctx.font='11px ui-monospace,Consolas,monospace';
   if(yAxisLog){
     const minVal = Math.pow(10, yMinMap);
@@ -1851,7 +2058,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
       ctx.stroke();
       if(tick.major){
         ctx.save();
-        ctx.strokeStyle='rgba(148, 163, 184, 0.18)';
+        ctx.strokeStyle=gridColor;
         ctx.lineWidth=1;
         ctx.setLineDash([4,4]);
         ctx.beginPath();
@@ -1876,7 +2083,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
       ctx.stroke();
       ctx.fillText(formatTick(yVal), 4, yPx+4);
       ctx.save();
-      ctx.strokeStyle='rgba(148, 163, 184, 0.18)';
+      ctx.strokeStyle=gridColor;
       ctx.lineWidth=1;
       ctx.setLineDash([4,4]);
       ctx.beginPath();
@@ -1930,7 +2137,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
         ctx.fillText(label, xPx - labelWidth/2, padTop + plotHeight + 20);
       }
       ctx.save();
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+      ctx.strokeStyle = gridColor;
       ctx.lineWidth = 1;
       ctx.setLineDash([4,4]);
       ctx.beginPath();
@@ -1953,7 +2160,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
       const label = formatNoSci(xVal);
       ctx.fillText(label, xPx - ctx.measureText(label).width/2, padTop + plotHeight + 20);
       ctx.save();
-      ctx.strokeStyle='rgba(148, 163, 184, 0.18)';
+      ctx.strokeStyle=gridColor;
       ctx.lineWidth=1;
       ctx.setLineDash([4,4]);
       ctx.beginPath();
@@ -2003,7 +2210,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
     if(xPx >= padLeft && xPx <= padLeft + plotWidth){
       ctx.save();
       ctx.setLineDash([4,4]);
-      ctx.strokeStyle='rgba(76,201,240,0.75)';
+      ctx.strokeStyle=hoverLineColor;
       ctx.lineWidth=1;
       ctx.beginPath();
       ctx.moveTo(xPx, padTop);
@@ -2019,11 +2226,11 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
       let boxX = xPx - boxWidth/2;
       boxX = Math.min(Math.max(boxX, padLeft), padLeft + plotWidth - boxWidth);
       const boxY = padTop + plotHeight - boxHeight - 6;
-      ctx.fillStyle='rgba(16,22,27,0.88)';
+      ctx.fillStyle=hoverBg;
       ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-      ctx.strokeStyle='rgba(76,201,240,0.45)';
+      ctx.strokeStyle=hoverBorder;
       ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-      ctx.fillStyle='#e7e9ec';
+      ctx.fillStyle=hoverText;
       ctx.fillText(freqLabel, boxX + padding, boxY + boxHeight - 6);
       ctx.restore();
     }
@@ -2037,7 +2244,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
     hoverX: Number.isFinite(hoverX) ? hoverX : null
   });
   if(baseOpts.hoverable) enableChartHover(canvas);
-  ctx.fillStyle='#cbd5dc';
+  ctx.fillStyle=labelColor;
   ctx.font='12px ui-monospace,Consolas,monospace';
   if(opts.yLabel){
     ctx.fillText(opts.yLabel, padLeft + 6, padTop + 14);
@@ -2053,7 +2260,7 @@ function drawLineChart(canvas, xVals, seriesList, opts={}){
       const y = legendY + idx*lineHeight;
       ctx.fillStyle=series.color || '#4cc9f0';
       ctx.fillRect(legendX, y-4, 12, 2);
-      ctx.fillStyle='#cbd5dc';
+      ctx.fillStyle=labelColor;
       ctx.font=legendFont;
       ctx.fillText(series.label, legendX + 16, y+2);
     });
@@ -2324,228 +2531,6 @@ function stepAnimation(timestamp){
   animationRequest=requestAnimationFrame(stepAnimation);
 }
 
-const GIF_PALETTE = (()=>{
-  const arr = new Uint8Array(256*3);
-  for(let ir=0; ir<6; ir++){
-    const rVal = Math.round((ir/5)*255);
-    for(let ig=0; ig<6; ig++){
-      const gVal = Math.round((ig/5)*255);
-      for(let ib=0; ib<6; ib++){
-        const bVal = Math.round((ib/5)*255);
-        const idx = ((ir*36) + (ig*6) + ib)*3;
-        arr[idx]=rVal;
-        arr[idx+1]=gVal;
-        arr[idx+2]=bVal;
-      }
-    }
-  }
-  return arr;
-})();
-
-const GIF_DELAY_CS = Math.max(1, Math.round((1000 / GIF_EXPORT_FRAMES)/10));
-
-function quantizeColor(r,g,b){
-  const ir = Math.min(5, Math.round((r/255)*5));
-  const ig = Math.min(5, Math.round((g/255)*5));
-  const ib = Math.min(5, Math.round((b/255)*5));
-  return ir*36 + ig*6 + ib;
-}
-
-function encodeIndexedGif(width,height,frames){
-  const bytes=[];
-  const writeByte = b => bytes.push(b & 0xff);
-  const writeUTF = str => { for(let i=0;i<str.length;i++) writeByte(str.charCodeAt(i)); };
-  const writeShort = v => { writeByte(v & 0xff); writeByte((v>>8)&0xff); };
-
-  // Header
-  writeUTF('GIF89a');
-  // Logical Screen Descriptor
-  writeShort(width);
-  writeShort(height);
-  writeByte(0x80 | 0x70 | 0x07); // Global color table flag + color resolution + size (256)
-  writeByte(0); // background color index
-  writeByte(0); // pixel aspect ratio
-  // Global Color Table
-  for(let i=0;i<GIF_PALETTE.length;i++) writeByte(GIF_PALETTE[i]);
-  // Netscape loop extension
-  writeByte(0x21); writeByte(0xff); writeByte(11); writeUTF('NETSCAPE2.0'); writeByte(3); writeByte(1); writeShort(0); writeByte(0);
-
-  frames.forEach(frame=>{
-    // Graphic Control Extension
-    writeByte(0x21); writeByte(0xf9); writeByte(4);
-    writeByte(0x00); // no disposal, no transparency
-    writeShort(GIF_DELAY_CS);
-    writeByte(0);
-    writeByte(0);
-    // Image Descriptor
-    writeByte(0x2c);
-    writeShort(0); writeShort(0);
-    writeShort(width); writeShort(height);
-    writeByte(0);
-    // Image Data
-    const minCodeSize = 8;
-    writeByte(minCodeSize);
-    const lzwData = lzwEncode(minCodeSize, frame);
-    for(let i=0;i<lzwData.length;i++) writeByte(lzwData[i]);
-  });
-
-  writeByte(0x3b);
-  return new Uint8Array(bytes);
-}
-
-function lzwEncode(minCodeSize, data){
-  const clearCode = 1 << minCodeSize;
-  const endCode = clearCode + 1;
-  let dict = new Map();
-  const resetDict = () => {
-    dict.clear();
-    for(let i=0;i<clearCode;i++) dict.set(i.toString(), i);
-  };
-  resetDict();
-  let dictSize = endCode + 1;
-  let codeSize = minCodeSize + 1;
-  let bitBuffer=0, bitCount=0;
-  const output=[];
-  const pushCode = code => {
-    bitBuffer |= code << bitCount;
-    bitCount += codeSize;
-    while(bitCount >= 8){
-      output.push(bitBuffer & 0xff);
-      bitBuffer >>= 8;
-      bitCount -= 8;
-    }
-  };
-  pushCode(clearCode);
-  let prefix = data[0].toString();
-  for(let i=1;i<data.length;i++){
-    const cur = data[i];
-    const key = prefix + ',' + cur;
-    if(dict.has(key)){
-      prefix = key;
-    }else{
-      pushCode(dict.get(prefix));
-      if(dictSize < 4096){
-        dict.set(key, dictSize++);
-        if(dictSize === (1<<codeSize) && codeSize < 12) codeSize++;
-      }else{
-        pushCode(clearCode);
-        resetDict();
-        dictSize = endCode + 1;
-        codeSize = minCodeSize + 1;
-      }
-      prefix = cur.toString();
-    }
-  }
-  pushCode(dict.get(prefix));
-  pushCode(endCode);
-  while(bitCount>0){
-    output.push(bitBuffer & 0xff);
-    bitBuffer >>= 8;
-    bitCount -=8;
-  }
-
-  const blocks=[];
-  let idx=0;
-  while(idx<output.length){
-    const blockLen = Math.min(255, output.length - idx);
-    blocks.push(blockLen);
-    for(let i=0;i<blockLen;i++) blocks.push(output[idx+i]);
-    idx += blockLen;
-  }
-  blocks.push(0); // terminator
-  return blocks;
-}
-
-async function exportAnimationGif(){
-  if(!results){
-    setStatus('Solve first to export animation.', false);
-    return;
-  }
-  let freqHz = parseFloat(animateFreqEl.value);
-  if(!isFinite(freqHz) || freqHz<=0){
-    freqHz = 1;
-    animateFreqEl.value = '1';
-  }
-  const prevActive = animationActive;
-  if(prevActive) stopAnimation();
-  const prevMode = animationMode;
-  const prevTime = animationTimeSec;
-
-  try{
-    let mode = animationMode;
-    if(!mode || Math.abs((mode.sourceFreq||0)-freqHz) > 1e-6){
-      mode = computeDynamicMode({nodes,beams,conditions,masses:nodeMasses}, freqHz);
-    }
-    if(!mode || !hasNonzeroAmplitude(mode)){
-      setStatus('No dynamic response for the selected frequency.', false);
-      return;
-    }
-
-    animationMode = {
-      ...mode,
-      sourceFreq: freqHz,
-      omega: 2*Math.PI*ANIMATION_FREQ_HZ
-    };
-    animationTimeSec = 0;
-    computeFitScale({nodes,beams,conditions}, results);
-
-    setStatus('Rendering GIF frames…');
-    await nextFrame();
-
-    const scaleFactor = Math.min(1, Math.max(0.5, 480 / canvas.width));
-    const scaledWidth = Math.max(240, Math.round(canvas.width * scaleFactor));
-    const scaledHeight = Math.max(180, Math.round(canvas.height * scaleFactor));
-    const captureCanvas = document.createElement('canvas');
-    captureCanvas.width = scaledWidth;
-    captureCanvas.height = scaledHeight;
-    const captureCtx = captureCanvas.getContext('2d');
-
-    const frameData=[];
-
-    for(let i=0;i<GIF_EXPORT_FRAMES;i++){
-      animationTimeSec = i / GIF_EXPORT_FRAMES;
-      render({nodes,beams,conditions}, results);
-      await nextFrame();
-      captureCtx.clearRect(0,0,scaledWidth,scaledHeight);
-      captureCtx.fillStyle = CANVAS_BG;
-      captureCtx.fillRect(0,0,scaledWidth,scaledHeight);
-      captureCtx.drawImage(canvas, 0, 0, scaledWidth, scaledHeight);
-      const imageData = captureCtx.getImageData(0,0,scaledWidth,scaledHeight);
-      const rgba = imageData.data;
-      const indexed = new Uint8Array(scaledWidth*scaledHeight);
-      for(let p=0,q=0; p<indexed.length; p++){
-        const r = rgba[q++];
-        const g = rgba[q++];
-        const b = rgba[q++];
-        q++;
-        indexed[p] = quantizeColor(r,g,b);
-      }
-      frameData.push(indexed);
-    }
-
-    const gifBytes = encodeIndexedGif(scaledWidth, scaledHeight, frameData);
-    const blob = new Blob([gifBytes], {type:'image/gif'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const timestamp = new Date().toISOString().replace(/[:.]/g,'-');
-    a.download = `essa-animation-${timestamp}.gif`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setStatus('Animation GIF exported.');
-  }catch(err){
-    setStatus(`GIF export failed: ${err.message||err}`, false);
-  }finally{
-    animationMode = prevMode;
-    animationTimeSec = prevTime;
-    computeFitScale({nodes,beams,conditions}, results);
-    render({nodes,beams,conditions}, results);
-    if(prevActive) startAnimation();
-  }
-}
-
 function populateDynamicsSelectors(){
   const nodeOptions = nodes.map(n=>({value:String(n.id), label:`Node ${n.id}`}));
   const makeOptions = (options, prev) => {
@@ -2758,6 +2743,7 @@ let cam={
   target:{x:0,y:0,z:0},
 };
 let showBeamGraphics = true;
+let showNodeLabels = true;
 let showStressMap = false;
 let stressStats = null; // {min, max}
 
@@ -2865,6 +2851,16 @@ function projectPoints(model, res, exMul=1){
 let currentScreenMap=null;
 
 function render(model, res){
+  const theme = getActiveTheme().three || THEMES.dark.three;
+  const canvasBg = theme.canvasBg || '#0b0d0f';
+  const triadBackdropColor = theme.triadBackdrop || '#ffffff';
+  const triadLabelColor = theme.triadLabel || theme.textPrimary || '#cbd5dc';
+  const nodeTextColor = theme.nodeLabel || theme.textPrimary || '#cbd5dc';
+  const faceStrokeColor = theme.faceStroke || '#1e293b';
+  const wireColor = theme.wireframe || '#3a4550';
+  const nodeStrokeColor = theme.nodeStroke || '#637180';
+  const nodeFillColor = theme.nodeFill || '#80ed99';
+  const deformedLineColor = theme.deformedLine || '#4cc9f0';
   const rect=canvas.getBoundingClientRect();
   const dpr=window.devicePixelRatio||1;
   canvas.width=Math.max(1, Math.floor(rect.width*dpr));
@@ -2872,7 +2868,7 @@ function render(model, res){
   ctx.setTransform(1,0,0,1,0,0);
   ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,rect.width,rect.height);
-  ctx.fillStyle = CANVAS_BG;
+  ctx.fillStyle = canvasBg;
   ctx.fillRect(0,0,rect.width,rect.height);
 
   // Axis triad (3D arrows with orthographic sizing, clipped in a larger circle)
@@ -2884,7 +2880,7 @@ function render(model, res){
 
     // Background circle + clip
     ctx.save();
-    ctx.globalAlpha=0.12; ctx.fillStyle='#ffffff';
+    ctx.globalAlpha=0.12; ctx.fillStyle=triadBackdropColor;
     ctx.beginPath(); ctx.arc(baseX, baseY, r, 0, 2*Math.PI); ctx.fill();
     ctx.globalAlpha=1.0; ctx.beginPath(); ctx.arc(baseX, baseY, r-1, 0, 2*Math.PI); ctx.clip();
 
@@ -2970,7 +2966,7 @@ function render(model, res){
       cone(mid, tip, Rloc, rH, 12, color, 0.95);
       // Label near tip in projected direction
       const tipS=toScreen(toCam(tip)); const ang=Math.atan2(dirCam.y, dirCam.x);
-      ctx.fillStyle='#cbd5dc'; ctx.font='11px ui-monospace,Consolas,monospace';
+      ctx.fillStyle=triadLabelColor; ctx.font='11px ui-monospace,Consolas,monospace';
       ctx.fillText(lab, tipS.x + (labelOffPx-2)*Math.cos(ang), tipS.y + (labelOffPx-2)*Math.sin(ang));
     }
 
@@ -3120,7 +3116,7 @@ function render(model, res){
       faces.forEach(f=> queueFace(f.face.map(p=>({x:p.x,y:p.y})), f.z, fillColor, alpha));
     }
 
-    ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2;
+    ctx.strokeStyle=deformedLineColor; ctx.lineWidth=getLineThickness();
     model.beams.forEach(b=>{
       const a=Pd[b.nodeA], c=Pd[b.nodeB]; if(!a||!c) return;
       if(showBeamGraphics && b.xsec && b.xsec.kind){
@@ -3227,23 +3223,23 @@ function render(model, res){
       f.pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
       ctx.closePath(); ctx.fill();
       ctx.globalAlpha = Math.min(0.8, f.alpha*2.5);
-      ctx.strokeStyle = '#1e293b'; ctx.lineWidth=1.0; ctx.stroke();
+      ctx.strokeStyle = faceStrokeColor; ctx.lineWidth=1.0; ctx.stroke();
       ctx.restore();
     });
 
     // Always overlay undeformed wireframe (dashed)
     ctx.save();
-    ctx.strokeStyle='#3a4550'; ctx.lineWidth=1.5; ctx.setLineDash([6,5]);
+    ctx.strokeStyle=wireColor; ctx.lineWidth=getLineThickness(0.75); ctx.setLineDash([6,5]);
     model.beams.forEach(b=>{ const a=Pb[b.nodeA], c=Pb[b.nodeB]; if(!a||!c) return; ctx.beginPath(); ctx.moveTo(a.x*scale+ox, a.y*scale+oy); ctx.lineTo(c.x*scale+ox, c.y*scale+oy); ctx.stroke(); });
     ctx.setLineDash([]);
-    ctx.fillStyle='transparent'; ctx.strokeStyle='#637180'; ctx.lineWidth=1.2;
+    ctx.fillStyle='transparent'; ctx.strokeStyle=nodeStrokeColor; ctx.lineWidth=1.2;
     model.nodes.forEach(n=>{ const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy; ctx.beginPath(); ctx.arc(px,py,4,0,2*Math.PI); ctx.stroke(); });
     ctx.restore();
 
     // Always overlay deformed centerlines (even when beam graphics are shown)
     if(showBeamGraphics){
       ctx.save();
-      ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2; ctx.setLineDash([]); ctx.globalAlpha=0.9;
+      ctx.strokeStyle=deformedLineColor; ctx.lineWidth=getLineThickness(); ctx.setLineDash([]); ctx.globalAlpha=0.9;
       model.beams.forEach(b=>{
         const a=Pd[b.nodeA], c=Pd[b.nodeB]; if(!a||!c) return;
         ctx.beginPath(); ctx.moveTo(a.x*scale+ox, a.y*scale+oy); ctx.lineTo(c.x*scale+ox, c.y*scale+oy); ctx.stroke();
@@ -3251,19 +3247,27 @@ function render(model, res){
       ctx.restore();
     }
 
-    ctx.fillStyle='#80ed99';
+    ctx.fillStyle=nodeFillColor;
     model.nodes.forEach(n=>{
       const p=Pd[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
       ctx.beginPath(); ctx.arc(px,py,4,0,2*Math.PI); ctx.fill();
-      ctx.fillStyle='#cbd5dc'; ctx.font='12px ui-monospace,Consolas,monospace';
-      ctx.fillText(n.id, px+6, py-6);
-      ctx.fillStyle='#80ed99';
+      if(showNodeLabels){
+        ctx.fillStyle=nodeTextColor;
+        ctx.font='12px ui-monospace,Consolas,monospace';
+        ctx.fillText(n.id, px+6, py-6);
+        ctx.fillStyle=nodeFillColor;
+      }
     });
   }else{
-    ctx.fillStyle='#cbd5dc'; ctx.font='12px ui-monospace,Consolas,monospace';
+    if(showNodeLabels){
+      ctx.fillStyle=nodeTextColor;
+      ctx.font='12px ui-monospace,Consolas,monospace';
+    }
     model.nodes.forEach(n=>{
       const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy;
-      ctx.fillText(n.id, px+6, py-6);
+      if(showNodeLabels){
+        ctx.fillText(n.id, px+6, py-6);
+      }
     });
     const Rcam = cameraMatrix();
     function toCam(p){
@@ -3362,15 +3366,15 @@ function render(model, res){
     addMassBoxes0();
     if(faceQ0.length){
       faceQ0.sort((a,b)=> b.z - a.z);
-      faceQ0.forEach(f=>{ ctx.save(); ctx.globalAlpha=f.alpha; ctx.fillStyle=f.fill; ctx.beginPath(); f.pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); }); ctx.closePath(); ctx.fill(); ctx.globalAlpha=Math.min(0.8, f.alpha*2.5); ctx.strokeStyle='#1e293b'; ctx.lineWidth=1.0; ctx.stroke(); ctx.restore(); });
+      faceQ0.forEach(f=>{ ctx.save(); ctx.globalAlpha=f.alpha; ctx.fillStyle=f.fill; ctx.beginPath(); f.pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); }); ctx.closePath(); ctx.fill(); ctx.globalAlpha=Math.min(0.8, f.alpha*2.5); ctx.strokeStyle=faceStrokeColor; ctx.lineWidth=1.0; ctx.stroke(); ctx.restore(); });
     }
 
     // Always overlay undeformed wireframe (dashed)
     ctx.save();
-    ctx.strokeStyle='#3a4550'; ctx.lineWidth=1.5; ctx.setLineDash([6,5]);
+    ctx.strokeStyle=wireColor; ctx.lineWidth=getLineThickness(0.75); ctx.setLineDash([6,5]);
     model.beams.forEach(b=>{ const a=Pb[b.nodeA], c=Pb[b.nodeB]; if(!a||!c) return; ctx.beginPath(); ctx.moveTo(a.x*scale+ox, a.y*scale+oy); ctx.lineTo(c.x*scale+ox, c.y*scale+oy); ctx.stroke(); });
     ctx.setLineDash([]);
-    ctx.fillStyle='transparent'; ctx.strokeStyle='#637180'; ctx.lineWidth=1.2;
+    ctx.fillStyle='transparent'; ctx.strokeStyle=nodeStrokeColor; ctx.lineWidth=1.2;
     model.nodes.forEach(n=>{ const p=Pb[n.id]; const px=p.x*scale+ox, py=p.y*scale+oy; ctx.beginPath(); ctx.arc(px,py,4,0,2*Math.PI); ctx.stroke(); });
     ctx.restore();
   }
@@ -3473,20 +3477,21 @@ function render(model, res){
   const x0 = rect.width-200, y0=18; const rowH=22; let ycur = y0;
   // Node entry (always shown)
   let cy = ycur + rowH/2;
-  ctx.fillStyle='#80ed99';
+  ctx.fillStyle=nodeFillColor;
   ctx.beginPath(); ctx.arc(x0+8, cy, 5, 0, 2*Math.PI); ctx.fill();
-  ctx.strokeStyle='#1e293b'; ctx.lineWidth=1; ctx.stroke();
-  ctx.fillStyle='#cbd5dc'; ctx.fillText('node', x0+34, cy);
+  ctx.strokeStyle=faceStrokeColor; ctx.lineWidth=1; ctx.stroke();
+  const nodeLegendText = showNodeLabels ? 'node (labels)' : 'node (no labels)';
+  ctx.fillStyle=nodeTextColor; ctx.fillText(nodeLegendText, x0+34, cy);
   ycur += rowH; cy = ycur + rowH/2;
   // Always show wireframe legend
-  ctx.strokeStyle='#3a4550'; ctx.lineWidth=1.5; ctx.setLineDash([6,5]);
+  ctx.strokeStyle=wireColor; ctx.lineWidth=getLineThickness(0.75); ctx.setLineDash([6,5]);
   ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x0+28, cy); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle='#cbd5dc'; ctx.fillText('wireframe', x0+34, cy);
+  ctx.fillStyle=nodeTextColor; ctx.fillText('wireframe', x0+34, cy);
   ycur += rowH; cy = ycur + rowH/2;
   if(res){
-    ctx.strokeStyle='#4cc9f0'; ctx.lineWidth=2; ctx.setLineDash([]);
+    ctx.strokeStyle=deformedLineColor; ctx.lineWidth=getLineThickness(); ctx.setLineDash([]);
     ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x0+28, cy); ctx.stroke();
-    ctx.fillStyle='#cbd5dc'; ctx.fillText('deformed', x0+34, cy);
+    ctx.fillStyle=nodeTextColor; ctx.fillText('deformed', x0+34, cy);
     ycur += rowH; cy = ycur + rowH/2;
   }
   if(showBeamGraphics){
@@ -3497,9 +3502,9 @@ function render(model, res){
     ctx.globalAlpha=0.7;
     ctx.fillRect(x0, cy - h/2, w, h);
     ctx.globalAlpha=1.0;
-    ctx.strokeStyle='#1e293b'; ctx.lineWidth=1;
+    ctx.strokeStyle=faceStrokeColor; ctx.lineWidth=1;
     ctx.strokeRect(x0-0.5, cy - h/2 - 0.5, w+1, h+1);
-    ctx.fillStyle='#cbd5dc';
+    ctx.fillStyle=nodeTextColor;
     ctx.fillText(res ? 'beams (deformed)' : 'beams (undeformed)', x0+34, cy);
     ycur += rowH; cy = ycur + rowH/2;
   }
@@ -3522,9 +3527,9 @@ function render(model, res){
       const hh = Math.ceil(barH/(n-1))+1;
       ctx.fillRect(x, yy, barW, hh);
     }
-    ctx.strokeStyle='#1f2937'; ctx.lineWidth=1; ctx.strokeRect(x-0.5,y-0.5,barW+1,barH+1);
+    ctx.strokeStyle=faceStrokeColor; ctx.lineWidth=1; ctx.strokeRect(x-0.5,y-0.5,barW+1,barH+1);
     // Ticks and labels in MPa
-    ctx.fillStyle='#cbd5dc'; ctx.font='11px ui-monospace,Consolas,monospace';
+    ctx.fillStyle=triadLabelColor; ctx.font='11px ui-monospace,Consolas,monospace';
     const fmtMPa=(v)=>{
       const mp=v/1e6; // Pa -> MPa
       if(!isFinite(mp)) return '';
@@ -3535,11 +3540,11 @@ function render(model, res){
     const ticks=[0,0.2,0.4,0.6,0.8,1.0];
     ticks.forEach(t=>{
       const yy = y + (1-t)*barH;
-      ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1;
+      ctx.strokeStyle=wireColor; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(x-6, yy); ctx.lineTo(x, yy); ctx.stroke();
       const val = t*stressStats.max;
       const label = fmtMPa(val);
-      ctx.fillStyle='#cbd5dc';
+      ctx.fillStyle=nodeTextColor;
       ctx.fillText(label, x - 8 - ctx.measureText(label).width, yy+4);
     });
     const title='σ_vM [MPa]';
@@ -3644,11 +3649,40 @@ zoomEl.addEventListener('change', ()=>{
   setZoom(parseFloat(zoomEl.value)||1);
   render({nodes,beams,conditions}, results);
 });
+if(lineThicknessEl){
+  lineThicknessEl.value = formatLineThickness(lineThickness);
+  lineThicknessEl.addEventListener('input', ()=>{
+    const v = clampLineThickness(lineThicknessEl.value);
+    if(v==null) return;
+    if(Math.abs(v - lineThickness) > 1e-6){
+      lineThickness = v;
+      render({nodes,beams,conditions}, results);
+    }else{
+      lineThickness = v;
+    }
+  });
+  lineThicknessEl.addEventListener('blur', ()=>{
+    const v = clampLineThickness(lineThicknessEl.value);
+    if(v==null){
+      lineThicknessEl.value = formatLineThickness(lineThickness);
+      return;
+    }
+    lineThickness = v;
+    lineThicknessEl.value = formatLineThickness(lineThickness);
+  });
+}
 document.getElementById('toggleBeams').addEventListener('click', (e)=>{
   showBeamGraphics = !showBeamGraphics;
   const btn = e.currentTarget;
   btn.setAttribute('aria-pressed', showBeamGraphics? 'true':'false');
   btn.textContent = showBeamGraphics ? 'Hide Beam Graphics' : 'Show Beam Graphics';
+  render({nodes,beams,conditions}, results);
+});
+btnNodeLabels?.addEventListener('click', (e)=>{
+  showNodeLabels = !showNodeLabels;
+  const btn = e.currentTarget;
+  btn.setAttribute('aria-pressed', showNodeLabels? 'true':'false');
+  btn.textContent = showNodeLabels ? 'Hide Node Labels' : 'Show Node Labels';
   render({nodes,beams,conditions}, results);
 });
 document.getElementById('toggleStress').addEventListener('click', (e)=>{
@@ -4253,8 +4287,7 @@ dynNormalizeEl?.addEventListener('change', ()=>{
   }
 });
 btnAnimate.addEventListener('click', toggleAnimation);
-btnExportGif.addEventListener('click', exportAnimationGif);
-setupFrfToggleGroup();
+applyTheme(currentThemeName);
 
 function populateBeamIdSelect(beamArr){
   beamIdSelect.innerHTML = '';
