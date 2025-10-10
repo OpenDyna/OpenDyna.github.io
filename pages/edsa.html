@@ -68,8 +68,11 @@
   .danger{border-color:#8b2b2b !important;color:#ffc3c3 !important}
   .frf-grid{display:flex;flex-direction:column;gap:18px;margin-top:20px}
   .frf-box{background:#101418;border:1px solid var(--border);border-radius:12px;padding:12px}
-  .frf-box h4{margin:0 0 8px 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-  canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px solid var(--border);border-radius:10px;background:#0b0f12;display:block}
+.frf-box h4{margin:0 0 8px 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px solid var(--border);border-radius:10px;background:#0b0f12;display:block}
+.frf-toggle-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12px;color:#cbd5dc}
+.frf-toggle-group label{display:flex;align-items:center;gap:4px;background:#10161b;border:1px solid var(--border);padding:4px 8px;border-radius:8px;cursor:pointer}
+.frf-toggle-group input[type=checkbox]{accent-color:var(--accent)}
   .modal .summaryTable{width:100%;border-collapse:collapse;margin-top:16px;font-size:12px}
   .modal .summaryTable th,.modal .summaryTable td{border:1px solid var(--border);padding:6px 8px;text-align:left}
   .modal .summaryTable th{background:#14181b;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
@@ -109,6 +112,7 @@
   <button id="btnAnimate" class="btn" aria-pressed="false">Animate</button>
   <label class="muted">Hz</label>
   <input id="animateFreq" type="number" value="1" step="0.1" min="0.01" />
+  <button id="btnExportGif" class="btn">Export GIF</button>
 </header>
 
 <div class="wrap">
@@ -432,6 +436,7 @@ xsections:
         <input id="dynNormalize" type="checkbox" checked />
         Normalize magnitude (divide by value at start frequency)
       </label>
+      <div id="frfToggleGroup" class="frf-toggle-group" aria-label="Toggle FRF curves"></div>
       <div id="dynErrors" class="dynamicsErrors"></div>
       <div id="dynInfo" class="help" style="margin-top:10px"></div>
       <div id="dynPlots" class="frf-grid">
@@ -476,9 +481,12 @@ let animationStart=0;
 let animationTimeSec=0;
 let animationMode=null;
 const ANIMATION_FREQ_HZ=1;
+const GIF_EXPORT_FRAMES=24;
+let frfVisibility = Object.fromEntries(DOF_KEYS.map(key=>[key,true]));
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const CANVAS_BG = '#0b0d0f';
 const tooltip = document.getElementById('tooltip');
 
 const errorsEl = document.getElementById('errors');
@@ -503,6 +511,8 @@ const dynPhaseCanvas = document.getElementById('frfPhaseCanvas');
 const dynNormalizeEl = document.getElementById('dynNormalize');
 const btnAnimate = document.getElementById('btnAnimate');
 const animateFreqEl = document.getElementById('animateFreq');
+const btnExportGif = document.getElementById('btnExportGif');
+const frfToggleGroup = document.getElementById('frfToggleGroup');
 const progressHUD = document.getElementById('progressHUD');
 const progressHUDBar = progressHUD.querySelector('.bar span');
 const progressHUDLabel = document.getElementById('progressHUDLabel');
@@ -1653,7 +1663,7 @@ function renderDynamicsResults(data){
   const freqValues = data.freqs;
   const phasesDeg = data.phases.map(series => series.map(v=>v*180/Math.PI));
   const normalize = !!dynNormalizeEl?.checked;
-  const magSeriesList = DOF_KEYS.map((key, idx)=>{
+  const magSeriesFull = DOF_KEYS.map((key, idx)=>{
     const magnitudes = data.magnitudes[idx] || [];
     let processed = magnitudes;
     if(normalize && magnitudes.length){
@@ -1673,8 +1683,16 @@ function renderDynamicsResults(data){
     color: DOF_COLORS[idx],
     values: phasesDeg[idx]
   }));
-  drawLineChart(dynMagCanvas, freqValues, magSeriesList, {yLabel:'|H|', legend:true, logX:true, logY:true, yTickFormat:'sci', hoverable:true});
-  drawLineChart(dynPhaseCanvas, freqValues, phaseSeriesList, {yLabel:'Phase (deg)', yTicks:[-180,-90,0,90,180], legend:false, logX:true, hoverable:true});
+  const visibleMag=[];
+  const visiblePhase=[];
+  DOF_KEYS.forEach((key, idx)=>{
+    if(frfVisibility[key]){
+      visibleMag.push(magSeriesFull[idx]);
+      visiblePhase.push(phaseSeriesList[idx]);
+    }
+  });
+  drawLineChart(dynMagCanvas, freqValues, visibleMag, {yLabel:'|H|', legend:true, logX:true, logY:true, yTickFormat:'sci', hoverable:true});
+  drawLineChart(dynPhaseCanvas, freqValues, visiblePhase, {yLabel:'Phase (deg)', yTicks:[-180,-90,0,90,180], legend:false, logX:true, hoverable:true});
 }
 
 function drawLineChart(canvas, xVals, seriesList, opts={}){
@@ -2216,6 +2234,27 @@ function handleChartHoverLeave(canvas){
   drawLineChart(canvas, state.xVals, state.seriesList, {...state.opts});
 }
 
+function setupFrfToggleGroup(){
+  if(!frfToggleGroup) return;
+  frfToggleGroup.innerHTML='';
+  DOF_KEYS.forEach((key, idx)=>{
+    const label=document.createElement('label');
+    const input=document.createElement('input');
+    input.type='checkbox';
+    input.checked=!!frfVisibility[key];
+    input.dataset.dof=key;
+    input.addEventListener('change', ()=>{
+      frfVisibility[key]=input.checked;
+      if(lastFrfResults) renderDynamicsResults(lastFrfResults);
+    });
+    label.style.borderColor = DOF_COLORS[idx];
+    label.style.color = DOF_COLORS[idx];
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(`${DOF_LABELS[idx]} (${DOF_UNITS[idx]})`));
+    frfToggleGroup.appendChild(label);
+  });
+}
+
 function toggleAnimation(){
   if(animationActive){
     stopAnimation();
@@ -2283,6 +2322,228 @@ function stepAnimation(timestamp){
   animationTimeSec = (timestamp - animationStart)/1000;
   render({nodes,beams,conditions}, results);
   animationRequest=requestAnimationFrame(stepAnimation);
+}
+
+const GIF_PALETTE = (()=>{
+  const arr = new Uint8Array(256*3);
+  for(let ir=0; ir<6; ir++){
+    const rVal = Math.round((ir/5)*255);
+    for(let ig=0; ig<6; ig++){
+      const gVal = Math.round((ig/5)*255);
+      for(let ib=0; ib<6; ib++){
+        const bVal = Math.round((ib/5)*255);
+        const idx = ((ir*36) + (ig*6) + ib)*3;
+        arr[idx]=rVal;
+        arr[idx+1]=gVal;
+        arr[idx+2]=bVal;
+      }
+    }
+  }
+  return arr;
+})();
+
+const GIF_DELAY_CS = Math.max(1, Math.round((1000 / GIF_EXPORT_FRAMES)/10));
+
+function quantizeColor(r,g,b){
+  const ir = Math.min(5, Math.round((r/255)*5));
+  const ig = Math.min(5, Math.round((g/255)*5));
+  const ib = Math.min(5, Math.round((b/255)*5));
+  return ir*36 + ig*6 + ib;
+}
+
+function encodeIndexedGif(width,height,frames){
+  const bytes=[];
+  const writeByte = b => bytes.push(b & 0xff);
+  const writeUTF = str => { for(let i=0;i<str.length;i++) writeByte(str.charCodeAt(i)); };
+  const writeShort = v => { writeByte(v & 0xff); writeByte((v>>8)&0xff); };
+
+  // Header
+  writeUTF('GIF89a');
+  // Logical Screen Descriptor
+  writeShort(width);
+  writeShort(height);
+  writeByte(0x80 | 0x70 | 0x07); // Global color table flag + color resolution + size (256)
+  writeByte(0); // background color index
+  writeByte(0); // pixel aspect ratio
+  // Global Color Table
+  for(let i=0;i<GIF_PALETTE.length;i++) writeByte(GIF_PALETTE[i]);
+  // Netscape loop extension
+  writeByte(0x21); writeByte(0xff); writeByte(11); writeUTF('NETSCAPE2.0'); writeByte(3); writeByte(1); writeShort(0); writeByte(0);
+
+  frames.forEach(frame=>{
+    // Graphic Control Extension
+    writeByte(0x21); writeByte(0xf9); writeByte(4);
+    writeByte(0x00); // no disposal, no transparency
+    writeShort(GIF_DELAY_CS);
+    writeByte(0);
+    writeByte(0);
+    // Image Descriptor
+    writeByte(0x2c);
+    writeShort(0); writeShort(0);
+    writeShort(width); writeShort(height);
+    writeByte(0);
+    // Image Data
+    const minCodeSize = 8;
+    writeByte(minCodeSize);
+    const lzwData = lzwEncode(minCodeSize, frame);
+    for(let i=0;i<lzwData.length;i++) writeByte(lzwData[i]);
+  });
+
+  writeByte(0x3b);
+  return new Uint8Array(bytes);
+}
+
+function lzwEncode(minCodeSize, data){
+  const clearCode = 1 << minCodeSize;
+  const endCode = clearCode + 1;
+  let dict = new Map();
+  const resetDict = () => {
+    dict.clear();
+    for(let i=0;i<clearCode;i++) dict.set(i.toString(), i);
+  };
+  resetDict();
+  let dictSize = endCode + 1;
+  let codeSize = minCodeSize + 1;
+  let bitBuffer=0, bitCount=0;
+  const output=[];
+  const pushCode = code => {
+    bitBuffer |= code << bitCount;
+    bitCount += codeSize;
+    while(bitCount >= 8){
+      output.push(bitBuffer & 0xff);
+      bitBuffer >>= 8;
+      bitCount -= 8;
+    }
+  };
+  pushCode(clearCode);
+  let prefix = data[0].toString();
+  for(let i=1;i<data.length;i++){
+    const cur = data[i];
+    const key = prefix + ',' + cur;
+    if(dict.has(key)){
+      prefix = key;
+    }else{
+      pushCode(dict.get(prefix));
+      if(dictSize < 4096){
+        dict.set(key, dictSize++);
+        if(dictSize === (1<<codeSize) && codeSize < 12) codeSize++;
+      }else{
+        pushCode(clearCode);
+        resetDict();
+        dictSize = endCode + 1;
+        codeSize = minCodeSize + 1;
+      }
+      prefix = cur.toString();
+    }
+  }
+  pushCode(dict.get(prefix));
+  pushCode(endCode);
+  while(bitCount>0){
+    output.push(bitBuffer & 0xff);
+    bitBuffer >>= 8;
+    bitCount -=8;
+  }
+
+  const blocks=[];
+  let idx=0;
+  while(idx<output.length){
+    const blockLen = Math.min(255, output.length - idx);
+    blocks.push(blockLen);
+    for(let i=0;i<blockLen;i++) blocks.push(output[idx+i]);
+    idx += blockLen;
+  }
+  blocks.push(0); // terminator
+  return blocks;
+}
+
+async function exportAnimationGif(){
+  if(!results){
+    setStatus('Solve first to export animation.', false);
+    return;
+  }
+  let freqHz = parseFloat(animateFreqEl.value);
+  if(!isFinite(freqHz) || freqHz<=0){
+    freqHz = 1;
+    animateFreqEl.value = '1';
+  }
+  const prevActive = animationActive;
+  if(prevActive) stopAnimation();
+  const prevMode = animationMode;
+  const prevTime = animationTimeSec;
+
+  try{
+    let mode = animationMode;
+    if(!mode || Math.abs((mode.sourceFreq||0)-freqHz) > 1e-6){
+      mode = computeDynamicMode({nodes,beams,conditions,masses:nodeMasses}, freqHz);
+    }
+    if(!mode || !hasNonzeroAmplitude(mode)){
+      setStatus('No dynamic response for the selected frequency.', false);
+      return;
+    }
+
+    animationMode = {
+      ...mode,
+      sourceFreq: freqHz,
+      omega: 2*Math.PI*ANIMATION_FREQ_HZ
+    };
+    animationTimeSec = 0;
+    computeFitScale({nodes,beams,conditions}, results);
+
+    setStatus('Rendering GIF frames…');
+    await nextFrame();
+
+    const scaleFactor = Math.min(1, Math.max(0.5, 480 / canvas.width));
+    const scaledWidth = Math.max(240, Math.round(canvas.width * scaleFactor));
+    const scaledHeight = Math.max(180, Math.round(canvas.height * scaleFactor));
+    const captureCanvas = document.createElement('canvas');
+    captureCanvas.width = scaledWidth;
+    captureCanvas.height = scaledHeight;
+    const captureCtx = captureCanvas.getContext('2d');
+
+    const frameData=[];
+
+    for(let i=0;i<GIF_EXPORT_FRAMES;i++){
+      animationTimeSec = i / GIF_EXPORT_FRAMES;
+      render({nodes,beams,conditions}, results);
+      await nextFrame();
+      captureCtx.clearRect(0,0,scaledWidth,scaledHeight);
+      captureCtx.fillStyle = CANVAS_BG;
+      captureCtx.fillRect(0,0,scaledWidth,scaledHeight);
+      captureCtx.drawImage(canvas, 0, 0, scaledWidth, scaledHeight);
+      const imageData = captureCtx.getImageData(0,0,scaledWidth,scaledHeight);
+      const rgba = imageData.data;
+      const indexed = new Uint8Array(scaledWidth*scaledHeight);
+      for(let p=0,q=0; p<indexed.length; p++){
+        const r = rgba[q++];
+        const g = rgba[q++];
+        const b = rgba[q++];
+        q++;
+        indexed[p] = quantizeColor(r,g,b);
+      }
+      frameData.push(indexed);
+    }
+
+    const gifBytes = encodeIndexedGif(scaledWidth, scaledHeight, frameData);
+    const blob = new Blob([gifBytes], {type:'image/gif'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const timestamp = new Date().toISOString().replace(/[:.]/g,'-');
+    a.download = `essa-animation-${timestamp}.gif`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setStatus('Animation GIF exported.');
+  }catch(err){
+    setStatus(`GIF export failed: ${err.message||err}`, false);
+  }finally{
+    animationMode = prevMode;
+    animationTimeSec = prevTime;
+    computeFitScale({nodes,beams,conditions}, results);
+    render({nodes,beams,conditions}, results);
+    if(prevActive) startAnimation();
+  }
 }
 
 function populateDynamicsSelectors(){
@@ -2611,6 +2872,8 @@ function render(model, res){
   ctx.setTransform(1,0,0,1,0,0);
   ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,rect.width,rect.height);
+  ctx.fillStyle = CANVAS_BG;
+  ctx.fillRect(0,0,rect.width,rect.height);
 
   // Axis triad (3D arrows with orthographic sizing, clipped in a larger circle)
   const drawTriad = ()=>{
@@ -3990,6 +4253,8 @@ dynNormalizeEl?.addEventListener('change', ()=>{
   }
 });
 btnAnimate.addEventListener('click', toggleAnimation);
+btnExportGif.addEventListener('click', exportAnimationGif);
+setupFrfToggleGroup();
 
 function populateBeamIdSelect(beamArr){
   beamIdSelect.innerHTML = '';
