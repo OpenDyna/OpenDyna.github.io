@@ -1318,6 +1318,20 @@ function beamRotation(pA,pB, upHint){
   ];
 }
 
+function rotationMatrixFromEuler(rx, ry, rz){
+  const cx = Math.cos(rx);
+  const sx = Math.sin(rx);
+  const cy = Math.cos(ry);
+  const sy = Math.sin(ry);
+  const cz = Math.cos(rz);
+  const sz = Math.sin(rz);
+  return [
+    [cz * cy,            cz * sy * sx - sz * cx,  cz * sy * cx + sz * sx],
+    [sz * cy,            sz * sy * sx + cz * cx,  sz * sy * cx - cz * sx],
+    [-sy,                cy * sx,                 cy * cx]
+  ];
+}
+
 function kLocal3D(E,G,A,Iy,Iz,J,L){
   const k=Array.from({length:12},()=>Array(12).fill(0));
   const EA_L = E*A/L;
@@ -3004,6 +3018,41 @@ function render(model, res){
   const Pb = mapById(Pbase);
   const Pd = Pdef ? mapById(Pdef) : null;
 
+  const nodeRotationCache = new Map();
+  function getNodeRotationMatrix(nid, exMul=1){
+    const key = `${exMul}|${nid}`;
+    if(nodeRotationCache.has(key)) return nodeRotationCache.get(key);
+    let rot=null;
+    if(exMul!==0){
+      if(animationActive && animationMode?.displacements){
+        const dyn = animationMode.displacements[nid];
+        if(dyn){
+          const t = animationTimeSec;
+          const omega = animationMode.omega || 0;
+          const rx = (dyn.rx?.amp || 0) * exMul * Math.cos(omega*t + (dyn.rx?.phase || 0));
+          const ry = (dyn.ry?.amp || 0) * exMul * Math.cos(omega*t + (dyn.ry?.phase || 0));
+          const rz = (dyn.rz?.amp || 0) * exMul * Math.cos(omega*t + (dyn.rz?.phase || 0));
+          if(Math.abs(rx)+Math.abs(ry)+Math.abs(rz) > 1e-12){
+            rot = rotationMatrixFromEuler(rx, ry, rz);
+          }
+        }
+      }
+      if(!rot){
+        const disp = res?.displacements?.[nid];
+        if(disp){
+          const rx = (disp.rx || 0) * exMul;
+          const ry = (disp.ry || 0) * exMul;
+          const rz = (disp.rz || 0) * exMul;
+          if(Math.abs(rx)+Math.abs(ry)+Math.abs(rz) > 1e-12){
+            rot = rotationMatrixFromEuler(rx, ry, rz);
+          }
+        }
+      }
+    }
+    nodeRotationCache.set(key, rot);
+    return rot;
+  }
+
   // (moved) Wireframe overlay drawn later so it always shows in both states
 
   // deformed
@@ -3024,19 +3073,33 @@ function render(model, res){
     function queueFace(pts2d, zAvg, fill='#2a9df4', alpha=0.22){
       faceQ.push({pts:pts2d, z:zAvg, fill, alpha});
     }
-    function queueAxisAlignedBox(center, sx, sy, sz, fill=MASS_BOX_COLOR, alpha=MASS_BOX_ALPHA){
+    function queueMassBox(center, sx, sy, sz, opts){
       if(!(isFinite(sx)&&isFinite(sy)&&isFinite(sz))) return;
       const hx=sx*0.5, hy=sy*0.5, hz=sz*0.5;
       if(hx<=0 || hy<=0 || hz<=0) return;
-      const verts=[
-        {x:center.x - hx, y:center.y - hy, z:center.z - hz},
-        {x:center.x + hx, y:center.y - hy, z:center.z - hz},
-        {x:center.x + hx, y:center.y + hy, z:center.z - hz},
-        {x:center.x - hx, y:center.y + hy, z:center.z - hz},
-        {x:center.x - hx, y:center.y - hy, z:center.z + hz},
-        {x:center.x + hx, y:center.y - hy, z:center.z + hz},
-        {x:center.x + hx, y:center.y + hy, z:center.z + hz},
-        {x:center.x - hx, y:center.y + hy, z:center.z + hz},
+      const options = opts || {};
+      const fill = options.fill ?? MASS_BOX_COLOR;
+      const alpha = options.alpha ?? MASS_BOX_ALPHA;
+      const rot = options.rotation || null;
+      const axisX = rot ? {x:rot[0][0], y:rot[1][0], z:rot[2][0]} : {x:1, y:0, z:0};
+      const axisY = rot ? {x:rot[0][1], y:rot[1][1], z:rot[2][1]} : {x:0, y:1, z:0};
+      const axisZ = rot ? {x:rot[0][2], y:rot[1][2], z:rot[2][2]} : {x:0, y:0, z:1};
+      const corner = (sxSign, sySign, szSign)=>{
+        return {
+          x: center.x + axisX.x*hx*sxSign + axisY.x*hy*sySign + axisZ.x*hz*szSign,
+          y: center.y + axisX.y*hx*sxSign + axisY.y*hy*sySign + axisZ.y*hz*szSign,
+          z: center.z + axisX.z*hx*sxSign + axisY.z*hy*sySign + axisZ.z*hz*szSign
+        };
+      };
+      const verts = [
+        corner(-1,-1,-1),
+        corner( 1,-1,-1),
+        corner( 1, 1,-1),
+        corner(-1, 1,-1),
+        corner(-1,-1, 1),
+        corner( 1,-1, 1),
+        corner( 1, 1, 1),
+        corner(-1, 1, 1)
       ].map(p=>toScreen(toCam(p)));
       const faces=[
         [0,1,2,3],[4,5,6,7],
@@ -3060,7 +3123,8 @@ function render(model, res){
         const pt = Pd[nid] || Pb[nid];
         if(!pt || !pt.wpos) return;
         const center={x:pt.wpos[0], y:pt.wpos[1], z:pt.wpos[2]};
-        queueAxisAlignedBox(center, w, l, h);
+        const rotation = getNodeRotationMatrix(nid, 1);
+        queueMassBox(center, w, l, h, rotation ? {rotation} : undefined);
       });
     }
     function drawBox3D(na, nb, Rloc, H, B, fillColor='#2a9df4', alpha=0.22){
@@ -3281,19 +3345,33 @@ function render(model, res){
     function toScreen(pc){ return {x: pc.x*scale+ox, y: pc.y*scale+oy, z: pc.z}; }
     const faceQ0=[];
     function queueFace0(pts2d, zAvg, fill='#2a9df4', alpha=0.22){ faceQ0.push({pts:pts2d, z:zAvg, fill, alpha}); }
-    function queueAxisAlignedBox0(center, sx, sy, sz, fill=MASS_BOX_COLOR, alpha=MASS_BOX_ALPHA){
+    function queueMassBox0(center, sx, sy, sz, opts){
       if(!(isFinite(sx)&&isFinite(sy)&&isFinite(sz))) return;
       const hx=sx*0.5, hy=sy*0.5, hz=sz*0.5;
       if(hx<=0 || hy<=0 || hz<=0) return;
+      const options = opts || {};
+      const fill = options.fill ?? MASS_BOX_COLOR;
+      const alpha = options.alpha ?? MASS_BOX_ALPHA;
+      const rot = options.rotation || null;
+      const axisX = rot ? {x:rot[0][0], y:rot[1][0], z:rot[2][0]} : {x:1, y:0, z:0};
+      const axisY = rot ? {x:rot[0][1], y:rot[1][1], z:rot[2][1]} : {x:0, y:1, z:0};
+      const axisZ = rot ? {x:rot[0][2], y:rot[1][2], z:rot[2][2]} : {x:0, y:0, z:1};
+      const corner = (sxSign, sySign, szSign)=>{
+        return {
+          x: center.x + axisX.x*hx*sxSign + axisY.x*hy*sySign + axisZ.x*hz*szSign,
+          y: center.y + axisX.y*hx*sxSign + axisY.y*hy*sySign + axisZ.y*hz*szSign,
+          z: center.z + axisX.z*hx*sxSign + axisY.z*hy*sySign + axisZ.z*hz*szSign
+        };
+      };
       const verts=[
-        {x:center.x - hx, y:center.y - hy, z:center.z - hz},
-        {x:center.x + hx, y:center.y - hy, z:center.z - hz},
-        {x:center.x + hx, y:center.y + hy, z:center.z - hz},
-        {x:center.x - hx, y:center.y + hy, z:center.z - hz},
-        {x:center.x - hx, y:center.y - hy, z:center.z + hz},
-        {x:center.x + hx, y:center.y - hy, z:center.z + hz},
-        {x:center.x + hx, y:center.y + hy, z:center.z + hz},
-        {x:center.x - hx, y:center.y + hy, z:center.z + hz},
+        corner(-1,-1,-1),
+        corner( 1,-1,-1),
+        corner( 1, 1,-1),
+        corner(-1, 1,-1),
+        corner(-1,-1, 1),
+        corner( 1,-1, 1),
+        corner( 1, 1, 1),
+        corner(-1, 1, 1),
       ].map(p=>toScreen(toCam(p)));
       const faces=[
         [0,1,2,3],[4,5,6,7],
@@ -3341,7 +3419,8 @@ function render(model, res){
         const pt = Pb[nid];
         if(!pt || !pt.wpos) return;
         const center={x:pt.wpos[0], y:pt.wpos[1], z:pt.wpos[2]};
-        queueAxisAlignedBox0(center, w, l, h);
+        const rotation = getNodeRotationMatrix(nid, 0);
+        queueMassBox0(center, w, l, h, rotation ? {rotation} : undefined);
       });
     }
     if(showBeamGraphics){
