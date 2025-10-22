@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ESSA</title>
+<script src="../assets/vendor/gifjs/gif.min.js" defer></script>
 <style>
   :root{
     --bg:#0e1113; --panel:#161a1d; --ink:#e7e9ec; --muted:#9aa4ad; --accent:#4cc9f0; --accent2:#80ed99; --bad:#ff6b6b;
@@ -19,7 +20,10 @@
   *{box-sizing:border-box}
   html, body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.25 system-ui,Segoe UI,Roboto,Ubuntu,Arial;display:flex;flex-direction:column;min-height:100vh}
-  header{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:5}
+  header{display:flex;flex-direction:column;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:5}
+  .headerTitleRow{display:flex;align-items:center;gap:12px;justify-content:space-between}
+  .headerControls{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-start}
+  .controlGroup{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:#10161b}
   header h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.2px}
   header .spacer{flex:1}
   header input[type=number]{width:80px;background:#0f1113;color:var(--ink);border:1px solid var(--border);padding:6px 8px;border-radius:8px}
@@ -100,29 +104,43 @@ canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px 
 </head>
 <body>
 <header>
-  <h1>Elasto-Dynamics Simuation & Analysis<span class="pill">(EDSA)</span></h1>
-  <div class="spacer"></div>
-  <label class="muted">Exag</label>
-  <input id="exag" type="number" value="1" step="1" />
-  <label class="muted">Zoom</label>
-  <input id="zoom" type="number" value="1" step="0.1" />
-  <button id="viewFront" class="btn" title="Front (X → camera)">Front View</button>
-  <button id="viewSide"  class="btn" title="Side (Y → camera)">Side View</button>
-  <button id="viewTop"   class="btn" title="Top (Z → camera)">Top View</button>
-  <button id="viewIso"   class="btn" title="Isometric (x←↘, y→↘, z↑)">Isometric</button>
-  <button id="toggleBeams" class="btn" title="Show or hide thick beam graphics" aria-pressed="true">Hide Beam Graphics</button>
-  <button id="toggleNodeLabels" class="btn" title="Toggle node id text in the viewport" aria-pressed="true">Hide Node Labels</button>
-  <button id="toggleStress" class="btn" title="Show von Mises stress colormap" aria-pressed="false">Show Stress Map</button>
-  <button id="btnDynamics" class="btn">Dynamics…</button>
-  <button id="btnSolve">Solve</button>
-  <button id="btnSave">Save Model Spec</button>
-  <button id="btnReset">Reset</button>
-  <button id="btnAnimate" class="btn" aria-pressed="false">Animate</button>
-  <label class="muted">Hz</label>
-  <input id="animateFreq" type="number" value="1" step="0.1" min="0.01" />
-  <label class="muted">Line</label>
-  <input id="lineThickness" type="number" value="2" step="0.1" min="0.1" max="20" />
-  <button id="btnTheme" class="btn" aria-pressed="false" title="Toggle export-friendly palette">White Background</button>
+  <div class="headerTitleRow">
+    <h1>Elasto-Dynamics Simuation & Analysis<span class="pill">(EDSA)</span></h1>
+  </div>
+  <div class="headerControls">
+    <div class="controlGroup">
+      <label class="muted">Exag</label>
+      <input id="exag" type="number" value="1" step="1" />
+      <label class="muted">Zoom</label>
+      <input id="zoom" type="number" value="1" step="0.1" />
+    </div>
+    <div class="controlGroup">
+      <button id="viewFront" class="btn" title="Front (X+ camera)">Front</button>
+      <button id="viewSide" class="btn" title="Side (Y+ camera)">Side</button>
+      <button id="viewTop" class="btn" title="Top (Z+ camera)">Top</button>
+      <button id="viewIso" class="btn" title="Isometric view">Iso</button>
+    </div>
+    <div class="controlGroup">
+      <button id="toggleBeams" class="btn" title="Show or hide thick beam graphics" aria-pressed="true">Hide Beams</button>
+      <button id="toggleNodeLabels" class="btn" title="Toggle node id text in the viewport" aria-pressed="true">Hide Labels</button>
+      <button id="toggleStress" class="btn" title="Show von Mises stress colormap" aria-pressed="false">Show Stress</button>
+      <button id="btnDynamics" class="btn">Dynamics</button>
+    </div>
+    <div class="controlGroup">
+      <button id="btnSolve">Solve</button>
+      <button id="btnSave">Save Spec</button>
+      <button id="btnReset">Reset</button>
+    </div>
+    <div class="controlGroup">
+      <button id="btnAnimate" class="btn" aria-pressed="false">Animate</button>
+      <button id="btnExportGif" class="btn">Export GIF</button>
+      <label class="muted">Hz</label>
+      <input id="animateFreq" type="number" value="1" step="0.01" min="0.01" />
+      <label class="muted">Line</label>
+      <input id="lineThickness" type="number" value="2" step="0.1" min="0.1" max="20" />
+      <button id="btnTheme" class="btn" aria-pressed="false" title="Toggle export-friendly palette">Light Theme</button>
+    </div>
+  </div>
 </header>
 
 <div class="wrap">
@@ -595,6 +613,9 @@ let animationStart=0;
 let animationTimeSec=0;
 let animationMode=null;
 const ANIMATION_FREQ_HZ=1;
+const GIF_EXPORT_FPS = 24;
+const GIF_WORKER_URL = '../assets/vendor/gifjs/gif.worker.js';
+let gifExportInProgress=false;
 let frfVisibility = Object.fromEntries(DOF_KEYS.map(key=>[key,true]));
 
 const canvas = document.getElementById('canvas');
@@ -657,6 +678,7 @@ const dynMagCanvas = document.getElementById('frfMagCanvas');
 const dynPhaseCanvas = document.getElementById('frfPhaseCanvas');
 const dynNormalizeEl = document.getElementById('dynNormalize');
 const btnAnimate = document.getElementById('btnAnimate');
+const btnExportGif = document.getElementById('btnExportGif');
 const animateFreqEl = document.getElementById('animateFreq');
 const btnNodeLabels = document.getElementById('toggleNodeLabels');
 const lineThicknessEl = document.getElementById('lineThickness');
@@ -705,7 +727,7 @@ function applyTheme(mode){
   const sourceColors = targetName === 'light' ? DOF_COLORS_LIGHT : DOF_COLORS_DARK;
   DOF_COLORS.splice(0, DOF_COLORS.length, ...sourceColors);
   if(btnTheme){
-    btnTheme.textContent = targetName === 'light' ? 'Dark Background' : 'White Background';
+    btnTheme.textContent = targetName === 'light' ? 'Dark Theme' : 'Light Theme';
     btnTheme.setAttribute('aria-pressed', targetName === 'light' ? 'true' : 'false');
   }
   document.body.classList.toggle('export-light', targetName === 'light');
@@ -2484,35 +2506,48 @@ function toggleAnimation(){
   }
 }
 
+function sanitizeAnimationFrequency(){
+  let freqHz = parseFloat(animateFreqEl.value);
+  if(!isFinite(freqHz) || freqHz<=0){
+    freqHz = 1;
+    animateFreqEl.value = '1';
+  }
+  return freqHz;
+}
+
+function buildAnimationMode(freqHz){
+  try{
+    const model = {nodes, beams, conditions, masses: nodeMasses};
+    const mode = computeDynamicMode(model, freqHz);
+    if(!mode || !hasNonzeroAmplitude(mode)){
+      setStatus('No dynamic response for the selected frequency.', false);
+      return null;
+    }
+    return {
+      ...mode,
+      sourceFreq: freqHz,
+      omega: 2*Math.PI*ANIMATION_FREQ_HZ
+    };
+  }catch(err){
+    setStatus(`Dynamic solve failed: ${err.message||err}`, false);
+    return null;
+  }
+}
+
 function startAnimation(){
   if(animationActive) return;
   if(!results){
     setStatus('Solve first to animate.', false);
     return;
   }
-  let freqHz = parseFloat(animateFreqEl.value);
-  if(!isFinite(freqHz) || freqHz<=0){
-    freqHz = 1;
-    animateFreqEl.value = '1';
-  }
-  try{
-    const model = {nodes, beams, conditions, masses: nodeMasses};
-    const mode = computeDynamicMode(model, freqHz);
-    if(!mode || !hasNonzeroAmplitude(mode)){
-      setStatus('No dynamic response for the selected frequency.', false);
-      return;
-    }
-    animationMode = {
-      ...mode,
-      sourceFreq: freqHz,
-      omega: 2*Math.PI*ANIMATION_FREQ_HZ
-    };
-    computeFitScale({nodes,beams,conditions}, results);
-  }catch(err){
-    setStatus(`Dynamic solve failed: ${err.message||err}`, false);
+  const freqHz = sanitizeAnimationFrequency();
+  const mode = buildAnimationMode(freqHz);
+  if(!mode){
     animationMode=null;
     return;
   }
+  animationMode = mode;
+  computeFitScale({nodes,beams,conditions}, results);
   animationActive=true;
   btnAnimate.setAttribute('aria-pressed','true');
   btnAnimate.textContent='Stop Animation';
@@ -2543,6 +2578,110 @@ function stepAnimation(timestamp){
   animationTimeSec = (timestamp - animationStart)/1000;
   render({nodes,beams,conditions}, results);
   animationRequest=requestAnimationFrame(stepAnimation);
+}
+
+async function exportAnimationGif(){
+  if(gifExportInProgress){
+    setStatus('GIF export already in progress.', false);
+    return;
+  }
+  if(!results){
+    setStatus('Solve first to animate.', false);
+    return;
+  }
+  if(typeof GIF === 'undefined'){
+    setStatus('GIF library did not load.', false);
+    return;
+  }
+
+  const freqHz = sanitizeAnimationFrequency();
+  const mode = buildAnimationMode(freqHz);
+  if(!mode) return;
+
+  const wasAnimating = animationActive;
+  const previousMode = animationMode;
+  const previousTime = animationTimeSec;
+  const previousButtonLabel = btnExportGif.textContent;
+  const previousAnimateDisabled = btnAnimate.disabled;
+
+  if(wasAnimating){
+    stopAnimation();
+  }
+
+  gifExportInProgress = true;
+  btnExportGif.disabled = true;
+  btnExportGif.textContent = 'Exporting...';
+  btnAnimate.disabled = true;
+
+  animationMode = mode;
+  animationActive = true;
+  animationTimeSec = 0;
+  computeFitScale({nodes,beams,conditions}, results);
+
+  const durationSec = 1 / ANIMATION_FREQ_HZ;
+  const frameCount = Math.max(2, Math.round(durationSec * GIF_EXPORT_FPS));
+  const frameDelayMs = Math.round((durationSec * 1000) / frameCount);
+  const gif = new GIF({
+    workers: 2,
+    quality: 10,
+    repeat: 0,
+    workerScript: GIF_WORKER_URL,
+    background: getComputedStyle(canvas).backgroundColor || '#000000'
+  });
+
+  setStatus(`Generating GIF (${frameCount} frames @ ${GIF_EXPORT_FPS} fps)...`);
+
+  try{
+    for(let i=0; i<frameCount; i++){
+      animationTimeSec = (durationSec * i) / frameCount;
+      render({nodes,beams,conditions}, results);
+      gif.addFrame(canvas, {copy:true, delay: frameDelayMs || 1});
+      await nextFrame();
+    }
+  }catch(err){
+    console.error('GIF export rendering failed', err);
+    finish(false, 'GIF frame capture failed.');
+    return;
+  }
+
+  setStatus('Encoding GIF...', true);
+  gif.on('finished', blob=>{
+    const baseName = mode.sourceFreq ? `essa_${mode.sourceFreq.toFixed(3).replace(/\./g,'-')}Hz` : 'essa_animation';
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = `${baseName}.gif`;
+    a.click();
+    URL.revokeObjectURL(url);
+    finish(true, 'GIF export complete.');
+  });
+
+  gif.on('error', err=>{
+    console.error('GIF export failed', err);
+    finish(false, 'GIF export failed.');
+  });
+
+  gif.render();
+
+  function finish(success, message){
+    gifExportInProgress = false;
+    btnExportGif.disabled = false;
+    btnExportGif.textContent = previousButtonLabel;
+    btnAnimate.disabled = previousAnimateDisabled;
+
+    animationActive = false;
+    animationMode = previousMode;
+    animationTimeSec = previousTime;
+
+    if(wasAnimating){
+      startAnimation();
+    }else{
+      computeFitScale({nodes,beams,conditions}, results);
+      render({nodes,beams,conditions}, results);
+    }
+
+    if(message) setStatus(message, success);
+  }
 }
 
 function populateDynamicsSelectors(){
@@ -2884,6 +3023,35 @@ function render(model, res){
   ctx.clearRect(0,0,rect.width,rect.height);
   ctx.fillStyle = canvasBg;
   ctx.fillRect(0,0,rect.width,rect.height);
+
+  const drawExcitationLabel = ()=>{
+    if(!(animationActive || gifExportInProgress)) return;
+    const freq = animationMode?.sourceFreq ?? parseFloat(animateFreqEl.value);
+    if(!Number.isFinite(freq) || freq<=0) return;
+    const label = `Excitation: ${freq.toFixed(3)} Hz`;
+    const padX = 10;
+    const padY = 6;
+    const x = 12;
+    const y = 12;
+    const textFont = '12px ui-monospace,Consolas,monospace';
+    ctx.save();
+    ctx.font = textFont;
+    const metrics = ctx.measureText(label);
+    const textHeight = 12;
+    const boxW = metrics.width + padX*2;
+    const boxH = textHeight + padY*2;
+    const bgColor = currentThemeName==='dark' ? 'rgba(15,17,19,0.78)' : 'rgba(255,255,255,0.85)';
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(x, y, boxW, boxH);
+    ctx.strokeStyle = faceStrokeColor;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x-0.5, y-0.5, boxW+1, boxH+1);
+    ctx.fillStyle = nodeTextColor;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, x + padX, y + padY);
+    ctx.restore();
+  };
 
   // Axis triad (3D arrows with orthographic sizing, clipped in a larger circle)
   const drawTriad = ()=>{
@@ -3562,18 +3730,32 @@ function render(model, res){
   const nodeLegendText = showNodeLabels ? 'node (labels)' : 'node (no labels)';
   ctx.fillStyle=nodeTextColor; ctx.fillText(nodeLegendText, x0+34, cy);
   ycur += rowH; cy = ycur + rowH/2;
-  // Always show wireframe legend
+  // Undeformed (wireframe) legend always shown
   ctx.strokeStyle=wireColor; ctx.lineWidth=getLineThickness(0.75); ctx.setLineDash([6,5]);
   ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x0+28, cy); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle=nodeTextColor; ctx.fillText('wireframe', x0+34, cy);
+  ctx.fillStyle=nodeTextColor; ctx.fillText('undeformed', x0+34, cy);
   ycur += rowH; cy = ycur + rowH/2;
-  if(res){
+
+  const hasDeformed = !!res;
+  const hasBeamSolids = showBeamGraphics && Array.isArray(model?.beams) && model.beams.some(b=>b && b.xsec && b.xsec.kind);
+  let hasMassBoxes=false;
+  if(nodeMasses){
+    for(const mass of Object.values(nodeMasses)){
+      if(!mass) continue;
+      const w=Number(mass.width)||0;
+      const l=Number(mass.length)||0;
+      const h=Number(mass.height)||0;
+      if(w>0 && l>0 && h>0){ hasMassBoxes=true; break; }
+    }
+  }
+
+  if(hasDeformed){
     ctx.strokeStyle=deformedLineColor; ctx.lineWidth=getLineThickness(); ctx.setLineDash([]);
     ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x0+28, cy); ctx.stroke();
     ctx.fillStyle=nodeTextColor; ctx.fillText('deformed', x0+34, cy);
     ycur += rowH; cy = ycur + rowH/2;
   }
-  if(showBeamGraphics){
+  if(hasBeamSolids){
     // Draw a filled face patch to represent beam solids (centered in row)
     const w=28, h=10;
     ctx.setLineDash([]);
@@ -3584,14 +3766,27 @@ function render(model, res){
     ctx.strokeStyle=faceStrokeColor; ctx.lineWidth=1;
     ctx.strokeRect(x0-0.5, cy - h/2 - 0.5, w+1, h+1);
     ctx.fillStyle=nodeTextColor;
-    ctx.fillText(res ? 'beams (deformed)' : 'beams (undeformed)', x0+34, cy);
+    ctx.fillText(hasDeformed ? 'beams (deformed)' : 'beams (undeformed)', x0+34, cy);
+    ycur += rowH; cy = ycur + rowH/2;
+  }
+  if(hasMassBoxes){
+    const size = 12;
+    ctx.setLineDash([]);
+    ctx.fillStyle=MASS_BOX_COLOR;
+    ctx.globalAlpha=MASS_BOX_ALPHA;
+    ctx.fillRect(x0, cy - size/2, size, size);
+    ctx.globalAlpha=1.0;
+    ctx.strokeStyle=faceStrokeColor;
+    ctx.strokeRect(x0-0.5, cy - size/2 - 0.5, size+1, size+1);
+    ctx.fillStyle=nodeTextColor;
+    ctx.fillText('mass', x0+34, cy);
     ycur += rowH; cy = ycur + rowH/2;
   }
   ctx.textBaseline='alphabetic';
   ctx.restore();
 
   // Stress colorbar
-  if(showBeamGraphics && showStressMap && results && stressStats && isFinite(stressStats.max) && stressStats.max>0){
+  if(hasBeamSolids && showStressMap && results && stressStats && isFinite(stressStats.max) && stressStats.max>0){
     const barW = 16;
     const pad = 16;
     const barH = Math.max(220, Math.floor(rect.height * 0.7));
@@ -3629,6 +3824,7 @@ function render(model, res){
     const title='σ_vM [MPa]';
     ctx.fillText(title, x - 6 - ctx.measureText(title).width, y - 8);
   }
+  drawExcitationLabel();
 }
 
 /* =========================
@@ -3754,14 +3950,14 @@ document.getElementById('toggleBeams').addEventListener('click', (e)=>{
   showBeamGraphics = !showBeamGraphics;
   const btn = e.currentTarget;
   btn.setAttribute('aria-pressed', showBeamGraphics? 'true':'false');
-  btn.textContent = showBeamGraphics ? 'Hide Beam Graphics' : 'Show Beam Graphics';
+  btn.textContent = showBeamGraphics ? 'Hide Beams' : 'Show Beams';
   render({nodes,beams,conditions}, results);
 });
 btnNodeLabels?.addEventListener('click', (e)=>{
   showNodeLabels = !showNodeLabels;
   const btn = e.currentTarget;
   btn.setAttribute('aria-pressed', showNodeLabels? 'true':'false');
-  btn.textContent = showNodeLabels ? 'Hide Node Labels' : 'Show Node Labels';
+  btn.textContent = showNodeLabels ? 'Hide Labels' : 'Show Labels';
   render({nodes,beams,conditions}, results);
 });
 document.getElementById('toggleStress').addEventListener('click', (e)=>{
@@ -3769,7 +3965,7 @@ document.getElementById('toggleStress').addEventListener('click', (e)=>{
   showStressMap = !showStressMap;
   const btn = e.currentTarget;
   btn.setAttribute('aria-pressed', showStressMap? 'true':'false');
-  btn.textContent = showStressMap ? 'Hide Stress Map' : 'Show Stress Map';
+  btn.textContent = showStressMap ? 'Hide Stress' : 'Show Stress';
   if(!stressStats) stressStats = computeStressStats({nodes,beams,conditions}, results);
   render({nodes,beams,conditions}, results);
 });
@@ -4366,6 +4562,7 @@ dynNormalizeEl?.addEventListener('change', ()=>{
   }
 });
 btnAnimate.addEventListener('click', toggleAnimation);
+btnExportGif.addEventListener('click', exportAnimationGif);
 applyTheme(currentThemeName);
 
 function populateBeamIdSelect(beamArr){
@@ -4531,7 +4728,7 @@ async function saveModelSpecToESSA() {
     await ws.write(text);
     await ws.close();
     setStatus(`Saved to ${dir.name}/${TEST_FILENAME}`);
-    await refreshUserFilesPreset(dir);   // refresh the dropdown so test.essa appears
+    await refreshUserFilesPreset(dir, {promptPermission:true});   // refresh the dropdown so test.essa appears
   }catch(err){
     console.error(err);
     setStatus('Save failed.', false);
@@ -4540,7 +4737,8 @@ async function saveModelSpecToESSA() {
 
 // --- Build "My Files (ESSA)" into the Presets dropdown from valid files ---
 let __essaFileMap = {}; // name -> { handle }
-async function refreshUserFilesPreset(dir) {
+async function refreshUserFilesPreset(dir, opts = {}) {
+  const { promptPermission = false } = opts;
   try{
     dir = dir || await idbGet('essaDir');
     if (!dir) return;
@@ -4548,6 +4746,7 @@ async function refreshUserFilesPreset(dir) {
     // Ensure permission is still valid
     const q = await dir.queryPermission?.({mode:'readwrite'});
     if (q !== 'granted') {
+      if (!promptPermission) return;
       const r = await dir.requestPermission?.({mode:'readwrite'});
       if (r !== 'granted') return;
     }
@@ -4595,7 +4794,7 @@ async function loadSelectedPresetOrFile() {
   if (val.startsWith('file:')) {
     const name = val.slice(5);
     const entry = __essaFileMap[name];
-    if (!entry) { await refreshUserFilesPreset(); }
+    if (!entry) { await refreshUserFilesPreset(undefined, {promptPermission:true}); }
 
     try{
       const file = await entry.handle.getFile();
@@ -4751,7 +4950,7 @@ document.getElementById('btnSave').addEventListener('click', async () => {
 
       setStatus(`Saved to ${dir.name}/${cleaned}`);
       closeSaveModal();
-      await refreshUserFilesPreset(dir); // so it appears under "My Files (ESSA)"
+      await refreshUserFilesPreset(dir, {promptPermission:true}); // so it appears under "My Files (ESSA)"
     } catch (err) {
       console.error(err);
       saveErrors.textContent = 'Save failed. Check permissions or try a different name.';
