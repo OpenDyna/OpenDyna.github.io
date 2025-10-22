@@ -2634,7 +2634,10 @@ async function exportAnimationGif(){
 
   const durationSec = 1 / playbackHz;
   const frameCount = Math.max(2, Math.round(durationSec * GIF_EXPORT_FPS));
-  const frameDelayMs = Math.round((durationSec * 1000) / frameCount);
+  const totalDelayMs = Math.max(1, Math.round(durationSec * 1000));
+  const baseDelayMs = Math.max(1, Math.floor(totalDelayMs / frameCount));
+  const remainder = totalDelayMs - baseDelayMs * frameCount;
+  const frameDelays = Array.from({length:frameCount}, (_, idx)=> idx < remainder ? baseDelayMs + 1 : baseDelayMs);
   const gif = new GIF({
     workers: 2,
     quality: 10,
@@ -2643,14 +2646,16 @@ async function exportAnimationGif(){
     background: getComputedStyle(canvas).backgroundColor || '#000000'
   });
 
-  setStatus(`Generating GIF (${frameCount} frames @ ${GIF_EXPORT_FPS} fps)...`);
+  setStatus(`Generating GIF (${frameCount} frames, cycle ${totalDelayMs/1000}s)...`);
 
   try{
+    let elapsedMs = 0;
     for(let i=0; i<frameCount; i++){
-      animationTimeSec = (durationSec * i) / frameCount;
+      animationTimeSec = Math.min(durationSec, elapsedMs / 1000);
       render({nodes,beams,conditions}, results);
-      gif.addFrame(canvas, {copy:true, delay: frameDelayMs || 1});
+      gif.addFrame(canvas, {copy:true, delay: frameDelays[i]});
       await nextFrame();
+      elapsedMs += frameDelays[i];
     }
   }catch(err){
     console.error('GIF export rendering failed', err);
@@ -3038,6 +3043,8 @@ function render(model, res){
   ctx.fillStyle = canvasBg;
   ctx.fillRect(0,0,rect.width,rect.height);
 
+  const exFactor = parseFloat(exagEl.value) || 1;
+
   const drawExcitationLabel = ()=>{
     if(!(animationActive || gifExportInProgress)) return;
     const freq = animationMode?.sourceFreq ?? parseFloat(animateFreqEl.value);
@@ -3201,6 +3208,11 @@ function render(model, res){
   const Pd = Pdef ? mapById(Pdef) : null;
 
   const nodeRotationCache = new Map();
+  const transposeMat3 = (m)=>[
+    [m[0][0], m[1][0], m[2][0]],
+    [m[0][1], m[1][1], m[2][1]],
+    [m[0][2], m[1][2], m[2][2]],
+  ];
   function getNodeRotationMatrix(nid, exMul=1){
     const key = `${exMul}|${nid}`;
     if(nodeRotationCache.has(key)) return nodeRotationCache.get(key);
@@ -3302,10 +3314,13 @@ function render(model, res){
         const l=Number(mass.length)||0;
         const h=Number(mass.height)||0;
         if(!(w>0 && l>0 && h>0)) return;
-        const pt = Pd[nid] || Pb[nid];
+        const nodeId = Number(nid);
+        const ptDef = Pd ? Pd[nodeId] : null;
+        const pt = ptDef || Pb[nodeId];
         if(!pt || !pt.wpos) return;
         const center={x:pt.wpos[0], y:pt.wpos[1], z:pt.wpos[2]};
-        const rotation = getNodeRotationMatrix(nid, 1);
+        let rotation = getNodeRotationMatrix(nodeId, exFactor);
+        if(rotation && animationActive) rotation = transposeMat3(rotation);
         queueMassBox(center, w, l, h, rotation ? {rotation} : undefined);
       });
     }
@@ -3598,10 +3613,11 @@ function render(model, res){
         const l=Number(mass.length)||0;
         const h=Number(mass.height)||0;
         if(!(w>0 && l>0 && h>0)) return;
-        const pt = Pb[nid];
+        const nodeId = Number(nid);
+        const pt = Pb[nodeId];
         if(!pt || !pt.wpos) return;
         const center={x:pt.wpos[0], y:pt.wpos[1], z:pt.wpos[2]};
-        const rotation = getNodeRotationMatrix(nid, 0);
+        const rotation = getNodeRotationMatrix(nodeId, 0);
         queueMassBox0(center, w, l, h, rotation ? {rotation} : undefined);
       });
     }
