@@ -138,6 +138,12 @@ canvas.frfCanvas{width:100%;height:280px;min-height:280px !important;border:1px 
       <input id="animateFreq" type="number" value="1" step="1" min="0" />
       <label class="muted">Playback</label>
       <input id="animatePlayback" type="number" value="1" step="1" min="0" />
+      <label class="muted">Start</label>
+      <select id="gifStartPhase">
+        <option value="positive">Max +</option>
+        <option value="zero">Zero</option>
+        <option value="negative">Max -</option>
+      </select>
       <label class="muted">Line</label>
       <input id="lineThickness" type="number" value="2" step="0.1" min="0.1" max="20" />
       <button id="btnTheme" class="btn" aria-pressed="false" title="Toggle export-friendly palette">Light Theme</button>
@@ -683,6 +689,7 @@ const btnAnimate = document.getElementById('btnAnimate');
 const btnExportGif = document.getElementById('btnExportGif');
 const animateFreqEl = document.getElementById('animateFreq');
 const animatePlaybackEl = document.getElementById('animatePlayback');
+const gifStartPhaseEl = document.getElementById('gifStartPhase');
 const btnNodeLabels = document.getElementById('toggleNodeLabels');
 const lineThicknessEl = document.getElementById('lineThickness');
 const btnTheme = document.getElementById('btnTheme');
@@ -2527,6 +2534,16 @@ function sanitizePlaybackFrequency(){
   return freqHz;
 }
 
+function getGifStartPhaseFraction(){
+  const val = gifStartPhaseEl?.value || 'positive';
+  switch(val){
+    case 'zero': return 0.25; // quarter cycle (zero crossing, positive-going)
+    case 'negative': return 0.5; // half cycle
+    case 'positive':
+    default: return 0; // start at max +
+  }
+}
+
 function buildAnimationMode(freqHz, playbackHz){
   try{
     const model = {nodes, beams, conditions, masses: nodeMasses};
@@ -2633,6 +2650,7 @@ async function exportAnimationGif(){
   computeFitScale({nodes,beams,conditions}, results);
 
   const durationSec = 1 / playbackHz;
+  const startPhaseFraction = getGifStartPhaseFraction();
   const frameCount = Math.max(2, Math.round(durationSec * GIF_EXPORT_FPS));
   const totalDelayMs = Math.max(1, Math.round(durationSec * 1000));
   const baseDelayMs = Math.max(1, Math.floor(totalDelayMs / frameCount));
@@ -2649,9 +2667,10 @@ async function exportAnimationGif(){
   setStatus(`Generating GIF (${frameCount} frames, cycle ${totalDelayMs/1000}s)...`);
 
   try{
-    let elapsedMs = 0;
+    let elapsedMs = Math.round((startPhaseFraction % 1) * totalDelayMs);
     for(let i=0; i<frameCount; i++){
-      animationTimeSec = Math.min(durationSec, elapsedMs / 1000);
+      const tSec = (elapsedMs % totalDelayMs) / 1000;
+      animationTimeSec = tSec;
       render({nodes,beams,conditions}, results);
       gif.addFrame(canvas, {copy:true, delay: frameDelays[i]});
       await nextFrame();
