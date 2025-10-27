@@ -1,0 +1,1806 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SimuStream</title>
+<style>
+  :root {
+    --bg:#0e1113; --panel:#161a1d; --ink:#e7e9ec; --muted:#9aa4ad; --border:#262b30;
+    --ok:#1db954; --warn:#ffb703; --bad:#ef4444;
+    --sidebar-size:300px;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font:14px/1.3 system-ui,Segoe UI,Roboto,Ubuntu,Arial;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  header {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 14px;
+    border-bottom:1px solid var(--border);
+    background:var(--panel);
+    position:sticky;
+    top:0;
+    z-index:10;
+    flex-wrap:wrap;
+  }
+  header input[type="text"] {
+    width:260px;
+    max-width:100%;
+    background:#0b0e10;
+    color:var(--ink);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:8px 10px;
+  }
+  header button {
+    background:#11161a;
+    color:var(--ink);
+    border:1px solid var(--border);
+    padding:8px 12px;
+    border-radius:4px;
+    cursor:pointer;
+  }
+  header button:hover { border-color:#2f363d; }
+  header .status {
+    margin-left:0;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .inline-control {
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    font-size:11px;
+    color:var(--muted);
+  }
+  header .inline-control input {
+    width:110px;
+    background:#0b0e10;
+    color:var(--ink);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:6px 8px;
+  }
+  .indicators {
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-left:auto;
+    flex-wrap:wrap;
+  }
+  .chip {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:6px 10px;
+    background:#0b0e10;
+    font-size:12px;
+    color:var(--ink);
+  }
+  .dot {
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:var(--muted);
+  }
+  .dot.ok { background:var(--ok); }
+  .dot.warn { background:var(--warn); }
+  .dot.bad { background:var(--bad); }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+  main {
+    flex:1;
+    display:grid;
+    grid-template-columns:minmax(200px,var(--sidebar-size)) 6px minmax(320px,1fr);
+    gap:0;
+    padding:0;
+    min-height:0;
+    align-items:stretch;
+  }
+  @media (max-width:900px){
+    main {
+      grid-template-columns:1fr;
+      grid-template-rows:minmax(200px,var(--sidebar-size)) 6px minmax(320px,1fr);
+    }
+  }
+  .panel {
+    border:1px solid var(--border);
+    border-radius:0;
+    background:var(--panel);
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    min-height:0;
+  }
+  .panel h2 {
+    margin:0;
+    font-size:14px;
+    font-weight:600;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  label {
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  input[type="number"] {
+    width:100%;
+    background:#0b0e10;
+    color:var(--ink);
+    border:1px solid var(--border);
+    border-radius:0;
+    padding:8px 10px;
+  }
+  .signal-list {
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    overflow:auto;
+    min-height:0;
+  }
+  .signals-hint {
+    border:1px dashed var(--border);
+    border-radius:0;
+    padding:18px 12px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .signal-chip {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:#0b0e10;
+    border:1px dashed var(--border);
+    border-radius:0;
+    padding:8px 10px;
+    cursor:grab;
+    user-select:none;
+  }
+  .signal-chip:active { cursor:grabbing; }
+  .signal-chip.dragging {
+    opacity:0.5;
+  }
+  .divider {
+    cursor:col-resize;
+    margin:0;
+    background:var(--border);
+    position:relative;
+    width:6px;
+    height:100%;
+    align-self:stretch;
+    touch-action:none;
+  }
+  .divider::before {
+    content:none;
+  }
+  @media (max-width:900px){
+    .divider {
+      cursor:row-resize;
+      height:6px;
+      width:100%;
+    }
+    .divider::before {
+      width:36px;
+      height:4px;
+    }
+  }
+  .workspace-panel {
+    padding:0;
+    position:relative;
+    overflow:hidden;
+  }
+  .workspace {
+    flex:1;
+    position:relative;
+    border-radius:0;
+    background:#0b0e10;
+    border:1px solid var(--border);
+    margin:0;
+    overflow:hidden;
+  }
+  .workspace.empty::after {
+    content:'Right-click to add a plot group';
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--muted);
+    font-size:13px;
+    pointer-events:none;
+  }
+  .workspace-hint { display:none; }
+  .workspace-menu {
+    position:absolute;
+    background:#11161a;
+    border:1px solid var(--border);
+    border-radius:0;
+    box-shadow:0 10px 40px rgba(0,0,0,0.45);
+    padding:6px 0;
+    min-width:160px;
+    z-index:20;
+  }
+  .workspace-menu[hidden] { display:none; }
+  .workspace-menu button {
+    width:100%;
+    background:none;
+    border:0;
+    color:var(--ink);
+    text-align:left;
+    padding:8px 14px;
+    font:13px system-ui,Segoe UI,Roboto,Ubuntu,Arial;
+    cursor:pointer;
+  }
+  .workspace-menu button:hover {
+    background:rgba(255,255,255,0.05);
+  }
+  .plot-group {
+    position:absolute;
+    display:flex;
+    flex-direction:column;
+    border:1px solid var(--border);
+    background:#101418;
+    min-width:240px;
+    min-height:200px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.35);
+    overflow:hidden;
+  }
+  .plot-group.dragging {
+    box-shadow:0 16px 34px rgba(0,0,0,0.55);
+  }
+  .group-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 10px;
+    cursor:grab;
+    background:rgba(255,255,255,0.03);
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    user-select:none;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .group-header:active { cursor:grabbing; }
+  .group-title {
+    font-weight:600;
+    color:var(--ink);
+  }
+  .group-body {
+    position:relative;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    padding:6px;
+    min-height:120px;
+  }
+  .group-body.empty {
+    justify-content:center;
+    align-items:center;
+  }
+  .group-drop-hint {
+    border:1px dashed var(--border);
+    border-radius:0;
+    padding:18px;
+    color:var(--muted);
+    font-size:13px;
+    text-align:center;
+    pointer-events:none;
+    width:100%;
+  }
+  .plot-group.drop-hover {
+    border-color:#3b434b;
+  }
+  .resize-handle {
+    position:absolute;
+    width:14px;
+    height:14px;
+    bottom:4px;
+    right:4px;
+    border-radius:0;
+    cursor:se-resize;
+    background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.15));
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .chart-wrapper {
+    display:flex;
+    flex-direction:column;
+    flex:1 1 0;
+    background:#0b0e10;
+    border:1px solid var(--border);
+    border-radius:0;
+    padding:4px 6px 6px;
+    gap:4px;
+    min-height:0;
+  }
+  .chart-wrapper canvas {
+    width:100%;
+    height:100%;
+    min-height:0;
+    display:block;
+    flex:1;
+  }
+  .scatter-axis-row {
+    display:flex;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .scatter-slot {
+    flex:1;
+    border:1px dashed var(--border);
+    padding:10px;
+    font-size:12px;
+    color:var(--muted);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:grab;
+    user-select:none;
+  }
+  .scatter-slot strong {
+    font-size:12px;
+    color:var(--ink);
+  }
+  .scatter-slot span {
+    flex:1;
+    text-align:right;
+  }
+  .scatter-slot.assigned {
+    border-style:solid;
+    color:var(--ink);
+  }
+  .scatter-slot.drop-hover {
+    border-color:#3b434b;
+    background:rgba(255,255,255,0.04);
+  }
+  .scatter-slot .scatter-clear {
+    margin-left:10px;
+    font-size:11px;
+    color:var(--warn);
+    cursor:pointer;
+  }
+  .scatter-container {
+    display:flex;
+    flex-direction:column;
+    flex:1;
+    min-height:0;
+  }
+  .scatter-canvas {
+    flex:1;
+    width:100%;
+    height:100%;
+  }
+  .chart-label {
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+    cursor:pointer;
+    user-select:none;
+  }
+  .chart-label:hover {
+    color:var(--warn);
+  }
+  .checkbox {
+    flex-direction:row;
+    align-items:center;
+    gap:8px;
+  }
+  .checkbox input {
+    width:auto;
+    transform:translateY(1px);
+  }
+</style>
+</head>
+<body>
+  <header>
+    <strong>SimuStream</strong>
+    <input id="url" type="text" value="http://localhost:8060/stream" aria-label="Stream URL"/>
+    <button id="btnConnect">Connect</button>
+    <button id="btnDisconnect">Disconnect</button>
+    <button id="btnPause">Pause</button>
+    <button id="btnClear">Clear</button>
+    <label class="checkbox">
+      <input id="autoReconnect" type="checkbox" checked/>
+      <span>Auto-reconnect</span>
+    </label>
+    <label class="inline-control" for="windowSec">
+      Window (s)
+      <input id="windowSec" type="number" min="0" step="0.1" value="20"/>
+    </label>
+    <label class="inline-control" for="cadence">
+      Refresh rate (Hz)
+      <input id="cadence" type="number" min="1" max="240" step="1" value="100"/>
+    </label>
+    <div class="indicators">
+      <div class="chip" title="How close the stream is to wall clock (smoothed)">
+        <span class="dot" id="rtDot"></span>
+        <span>Real-time:</span>
+        <span class="mono" id="rtLag">- ms</span>
+      </div>
+      <div class="chip" title="Smoothed incoming sample rate">
+        <span>Rate:</span>
+        <span class="mono" id="rateHz">- Hz</span>
+      </div>
+      <div class="chip" title="Latest simulation time">
+        <span>t:</span>
+        <span class="mono" id="simT">- s</span>
+      </div>
+    </div>
+    <span class="status" id="status">Idle</span>
+  </header>
+
+  <main>
+    <aside class="panel">
+      <h2>Signals</h2>
+      <div id="signalsList" class="signal-list" aria-label="Available signals"></div>
+    </aside>
+    <div id="sidebarResizer" class="divider" role="separator" aria-label="Resize signals panel"></div>
+    <section class="panel workspace-panel" aria-label="Plot workspace">
+      <div id="workspaceHint" class="workspace-hint">Right-click to add a plot group</div>
+      <div id="workspace" class="workspace empty" tabindex="0"></div>
+      <div id="workspaceMenu" class="workspace-menu" hidden>
+        <button type="button" data-action="add-timeseries">Add Timeseries Group</button>
+        <button type="button" data-action="add-scatter">Add Scatter Group</button>
+      </div>
+    </section>
+  </main>
+
+<script>
+(function(){
+  const urlEl = document.getElementById('url');
+  const btnConnect = document.getElementById('btnConnect');
+  const btnDisconnect = document.getElementById('btnDisconnect');
+  const btnPause = document.getElementById('btnPause');
+  const btnClear = document.getElementById('btnClear');
+  const chkAuto = document.getElementById('autoReconnect');
+  const statusEl = document.getElementById('status');
+  const listEl = document.getElementById('signalsList');
+  const sidebarResizer = document.getElementById('sidebarResizer');
+  const mainEl = document.querySelector('main');
+  const workspacePanel = document.querySelector('.workspace-panel');
+  const workspace = document.getElementById('workspace');
+  const workspaceHint = document.getElementById('workspaceHint');
+  const workspaceMenu = document.getElementById('workspaceMenu');
+  const windowEl = document.getElementById('windowSec');
+  const cadenceEl = document.getElementById('cadence');
+  const rtDot = document.getElementById('rtDot');
+  const rtLagEl = document.getElementById('rtLag');
+  const rateHzEl = document.getElementById('rateHz');
+  const simTEl = document.getElementById('simT');
+  const rootStyle = document.documentElement.style;
+
+  let es = null;
+  let paused = false;
+  let reconnectTimer = null;
+  let reconnectAttempt = 0;
+  let lastDraw = 0;
+  let lastDPR = window.devicePixelRatio || 1;
+  let wallStart = null;
+  let lastArrivalWall = null;
+  let lagMsEMA = null;
+  let rateEMA = null;
+
+  const available = new Map(); // name -> element
+  const seriesSignals = new Map(); // name -> { data, chart, wrapper, groupId }
+  const known = new Set();
+  const groups = new Map();    // id -> { id, type, el, body, ... }
+  let nextGroupId = 1;
+  let layoutPending = false;
+  let lastSimTime = null;
+  let contextMenuPos = null;
+
+  function getWindowSpan(){
+    if (!windowEl) return 0;
+    const val = Number(windowEl.value);
+    return Number.isFinite(val) && val > 0 ? val : 0;
+  }
+
+  function getRefreshIntervalMs(){
+    if (!cadenceEl) return 0;
+    const hz = Number(cadenceEl.value);
+    return Number.isFinite(hz) && hz > 0 ? 1000 / hz : 0;
+  }
+
+  function scheduleChartResize(){
+    if (layoutPending) return;
+    layoutPending = true;
+    requestAnimationFrame(()=>{
+      layoutPending = false;
+      const span = getWindowSpan();
+      seriesSignals.forEach(entry=>{
+        entry.chart.resize();
+        entry.chart.draw(entry.data, span, lastSimTime);
+      });
+      groups.forEach(group=>{
+        if (group.type === 'scatter' && group.scatter){
+          group.scatter.chart.resize();
+          group.scatter.chart.draw(group.scatter.data);
+        }
+      });
+    });
+  }
+
+  function applyWindowSetting(){
+    if (!windowEl) return;
+    const raw = windowEl.value.trim();
+    if (raw === '') return;
+    let numeric = Number(raw);
+    if (!Number.isFinite(numeric)) numeric = 0;
+    const sanitized = Math.max(0, numeric);
+    if (sanitized !== numeric) windowEl.value = sanitized.toString();
+    if (sanitized > 0){
+      seriesSignals.forEach(entry=>{
+        if (!entry.data.length) return;
+        const latest = entry.data[entry.data.length - 1].x;
+        const cutoff = latest - sanitized;
+        while (entry.data.length && entry.data[0].x < cutoff){
+          entry.data.shift();
+        }
+      });
+      groups.forEach(group=>{
+        if (group.type === 'scatter' && group.scatter){
+          const data = group.scatter.data;
+          if (!data.length) return;
+          const cutoffTime = (lastSimTime != null ? lastSimTime : data[data.length - 1].t) - sanitized;
+          let idx = 0;
+          while (idx < data.length && data[idx].t < cutoffTime) idx++;
+          if (idx > 0) data.splice(0, idx);
+        }
+      });
+    }
+    scheduleChartResize();
+  }
+
+  class MiniChart {
+    constructor(canvas){
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.marg = { l:36, r:6, t:6, b:16 };
+      this.ratio = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+      this.resize();
+    }
+    resize(){
+      const rect = this.canvas.getBoundingClientRect();
+      const w = Math.max(100, rect.width);
+      const h = Math.max(60, rect.height);
+      this.width = w;
+      this.height = h;
+      this.canvas.width = Math.round(w * this.ratio);
+      this.canvas.height = Math.round(h * this.ratio);
+    }
+    draw(points, windowSpan=0, latestTime=null){
+      const ctx = this.ctx;
+      ctx.save();
+      ctx.scale(this.ratio, this.ratio);
+      ctx.clearRect(0, 0, this.canvas.width / this.ratio, this.canvas.height / this.ratio);
+      ctx.fillStyle = '#101418';
+      ctx.fillRect(0, 0, this.width, this.height);
+
+      const mw = this.width - this.marg.l - this.marg.r;
+      const mh = this.height - this.marg.t - this.marg.b;
+
+      const span = (typeof windowSpan === 'number' && isFinite(windowSpan) && windowSpan > 0) ? windowSpan : 0;
+      let xMin, xMax;
+      if (span > 0){
+        const latest = (typeof latestTime === 'number' && isFinite(latestTime))
+          ? latestTime
+          : (points.length ? points[points.length - 1].x : span);
+        xMax = latest;
+        xMin = latest - span;
+      } else if (points.length){
+        xMin = points[0].x;
+        xMax = points[points.length - 1].x;
+        if (!isFinite(xMin) || !isFinite(xMax)){
+          xMin = 0;
+          xMax = 1;
+        }
+        if (Math.abs(xMax - xMin) < 1e-6){
+          xMax = xMin + 1;
+        }
+      } else {
+        xMin = 0;
+        xMax = 1;
+      }
+
+      let minY = -1, maxY = 1;
+      if (points.length){
+        minY = maxY = points[0].y;
+        for (const p of points){
+          if (p.y < minY) minY = p.y;
+          if (p.y > maxY) maxY = p.y;
+        }
+        if (Math.abs(maxY - minY) < 1e-9){
+          maxY += 0.5;
+          minY -= 0.5;
+        }
+      }
+
+      const scaleX = mw / Math.max(1e-6, xMax - xMin);
+      const scaleY = mh / Math.max(1e-6, maxY - minY);
+
+      ctx.strokeStyle = '#1c2025';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(this.marg.l, this.marg.t);
+      ctx.lineTo(this.marg.l, this.height - this.marg.b);
+      ctx.lineTo(this.width - this.marg.r, this.height - this.marg.b);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#222831';
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      const zeroY = maxY >= 0 && minY <= 0 ? this.marg.t + (maxY - 0) * scaleY : null;
+      if (zeroY !== null){
+        const y = zeroY;
+        ctx.moveTo(this.marg.l, y);
+        ctx.lineTo(this.width - this.marg.r, y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = '#1db954';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let i = 0; i < points.length; i++){
+        const p = points[i];
+        const clampedX = Math.max(xMin, Math.min(xMax, p.x));
+        const x = this.marg.l + (clampedX - xMin) * scaleX;
+        const y = this.height - this.marg.b - (p.y - minY) * scaleY;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = '#7b8690';
+      ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(maxY.toFixed(3), 4, this.marg.t - 4);
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(minY.toFixed(3), 4, this.height - this.marg.b + 4);
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'right';
+      ctx.fillText(xMax.toFixed(2) + ' s', this.width - 4, this.height - this.marg.b + 4);
+      ctx.restore();
+    }
+  }
+
+  class ScatterChart {
+    constructor(canvas){
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.marg = { l:40, r:18, t:20, b:32 };
+      this.ratio = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+      this.resize();
+    }
+    resize(){
+      const rect = this.canvas.getBoundingClientRect();
+      const w = Math.max(100, rect.width);
+      const h = Math.max(100, rect.height);
+      this.width = w;
+      this.height = h;
+      this.canvas.width = Math.round(w * this.ratio);
+      this.canvas.height = Math.round(h * this.ratio);
+    }
+    draw(points){
+      const ctx = this.ctx;
+      ctx.save();
+      ctx.scale(this.ratio, this.ratio);
+      ctx.clearRect(0, 0, this.canvas.width / this.ratio, this.canvas.height / this.ratio);
+      ctx.fillStyle = '#101418';
+      ctx.fillRect(0, 0, this.width, this.height);
+
+      const leftBound = this.marg.l;
+      const rightBound = this.width - this.marg.r;
+      const topBound = this.marg.t;
+      const bottomBound = this.height - this.marg.b;
+      const innerWidth = Math.max(0, rightBound - leftBound);
+      const innerHeight = Math.max(0, bottomBound - topBound);
+
+      let minX = -1, maxX = 1;
+      let minY = -1, maxY = 1;
+      if (points.length){
+        minX = maxX = points[0].x;
+        minY = maxY = points[0].y;
+        for (const p of points){
+          if (p.x < minX) minX = p.x;
+          if (p.x > maxX) maxX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.y > maxY) maxY = p.y;
+        }
+        if (Math.abs(maxX - minX) < 1e-6){
+          maxX += 0.5;
+          minX -= 0.5;
+        }
+        if (Math.abs(maxY - minY) < 1e-6){
+          maxY += 0.5;
+          minY -= 0.5;
+        }
+      }
+
+      const scaleX = innerWidth / Math.max(1e-6, maxX - minX);
+      const scaleY = innerHeight / Math.max(1e-6, maxY - minY);
+
+      ctx.strokeStyle = '#1c2025';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(leftBound + 0.5, topBound + 0.5, Math.max(0, innerWidth - 1), Math.max(0, innerHeight - 1));
+
+      ctx.strokeStyle = '#222831';
+      ctx.beginPath();
+      let axisDrawn = false;
+      if (minX <= 0 && maxX >= 0){
+        const x = leftBound + (0 - minX) * scaleX;
+        if (x >= leftBound && x <= rightBound){
+          const lineX = Math.round(x) + 0.5;
+          ctx.moveTo(lineX, topBound);
+          ctx.lineTo(lineX, bottomBound);
+          axisDrawn = true;
+        }
+      }
+      if (minY <= 0 && maxY >= 0){
+        const y = bottomBound - (0 - minY) * scaleY;
+        if (y >= topBound && y <= bottomBound){
+          const lineY = Math.round(y) + 0.5;
+          ctx.moveTo(leftBound, lineY);
+          ctx.lineTo(rightBound, lineY);
+          axisDrawn = true;
+        }
+      }
+      if (axisDrawn) ctx.stroke();
+
+      ctx.fillStyle = '#1db954';
+      const clampX = value => {
+        if (innerWidth <= 2) return leftBound + innerWidth / 2;
+        return Math.max(leftBound + 1, Math.min(rightBound - 1, value));
+      };
+      const clampY = value => {
+        if (innerHeight <= 2) return topBound + innerHeight / 2;
+        return Math.max(topBound + 1, Math.min(bottomBound - 1, value));
+      };
+      for (const p of points){
+        const rawX = leftBound + (p.x - minX) * scaleX;
+        const rawY = bottomBound - (p.y - minY) * scaleY;
+        const x = clampX(rawX);
+        const y = clampY(rawY);
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#7b8690';
+      ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
+      const labelPad = 4;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(maxX.toFixed(3), rightBound - labelPad, topBound + labelPad);
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(minX.toFixed(3), rightBound - labelPad, bottomBound - labelPad);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(maxY.toFixed(3), leftBound + labelPad, topBound + labelPad);
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(minY.toFixed(3), leftBound + labelPad, bottomBound - labelPad);
+      ctx.restore();
+    }
+  }
+
+  function setStatus(text){
+    statusEl.textContent = text;
+  }
+
+  function resetIndicators(){
+    wallStart = null;
+    lastArrivalWall = null;
+    lagMsEMA = null;
+    rateEMA = null;
+    lastSimTime = null;
+    if (rtDot) rtDot.className = 'dot';
+    if (rtLagEl) rtLagEl.textContent = '- ms';
+    if (rateHzEl) rateHzEl.textContent = '- Hz';
+    if (simTEl) simTEl.textContent = '- s';
+  }
+
+  function updateRealtime(t){
+    lastSimTime = t;
+    const nowSec = performance.now() / 1000;
+    if (wallStart === null){
+      wallStart = nowSec - t;
+      lastArrivalWall = nowSec;
+      if (simTEl) simTEl.textContent = t.toFixed(3) + ' s';
+      return;
+    }
+    const lagMs = ((nowSec - wallStart) - t) * 1000;
+    const aLag = 0.2;
+    lagMsEMA = (lagMsEMA == null) ? lagMs : (1 - aLag) * lagMsEMA + aLag * lagMs;
+
+    const dtWall = Math.max(1e-6, nowSec - lastArrivalWall);
+    const instHz = 1.0 / dtWall;
+    const aRate = 0.2;
+    rateEMA = (rateEMA == null) ? instHz : (1 - aRate) * rateEMA + aRate * instHz;
+    lastArrivalWall = nowSec;
+
+    if (simTEl) simTEl.textContent = t.toFixed(3) + ' s';
+    if (rtLagEl) rtLagEl.textContent = (lagMsEMA >= 0 ? '+' : '') + lagMsEMA.toFixed(0) + ' ms';
+    if (rateHzEl) rateHzEl.textContent = rateEMA.toFixed(1) + ' Hz';
+    if (rtDot){
+      const lag = Math.abs(lagMsEMA);
+      const cls = lag < 50 ? 'ok' : (lag < 200 ? 'warn' : 'bad');
+      rtDot.className = 'dot ' + cls;
+    }
+  }
+
+  function addAvailable(name){
+    if (available.has(name) || seriesSignals.has(name)) return;
+    const chip = document.createElement('div');
+    chip.className = 'signal-chip';
+    chip.textContent = name;
+    chip.draggable = true;
+    chip.dataset.name = name;
+    chip.addEventListener('dragstart', ev=>{
+      ev.dataTransfer.setData('text/plain', name);
+      ev.dataTransfer.effectAllowed = 'copyMove';
+      chip.classList.add('dragging');
+    });
+    chip.addEventListener('dragend', ()=>chip.classList.remove('dragging'));
+    chip.addEventListener('dblclick', ()=>{
+      const targetGroupId = ensureTimeseriesGroup();
+      addSignalToTimeseries(name, targetGroupId);
+    });
+    listEl.appendChild(chip);
+    available.set(name, chip);
+    updateSignalsEmptyState();
+  }
+
+  function removeAvailable(name){
+    const chip = available.get(name);
+    if (chip){
+      chip.remove();
+      available.delete(name);
+      updateSignalsEmptyState();
+    }
+  }
+
+  function updateSignalsEmptyState(){
+    const hint = listEl.querySelector('.signals-hint');
+    if (available.size === 0){
+      const message = known.size ? 'All signals are assigned to groups' : 'Waiting for meta data...';
+      if (hint){
+        hint.textContent = message;
+      } else {
+        const div = document.createElement('div');
+        div.className = 'signals-hint';
+        div.textContent = message;
+        listEl.appendChild(div);
+      }
+    } else if (hint){
+      hint.remove();
+    }
+  }
+
+  function updateWorkspaceState(){
+    if (!workspace) return;
+    workspace.classList.toggle('empty', groups.size === 0);
+    if (workspaceHint){
+      workspaceHint.style.display = groups.size === 0 ? 'block' : 'none';
+    }
+  }
+
+  function ensureTimeseriesGroup(options){
+    for (const group of groups.values()){
+      if (group.type === 'timeseries') return group.id;
+    }
+    return createGroup(Object.assign({}, options, { type:'timeseries' }));
+  }
+
+  function createGroup(options = {}){
+    if (!workspace) return null;
+    const type = options.type || 'timeseries';
+    const id = `group-${nextGroupId++}`;
+    const groupEl = document.createElement('div');
+    groupEl.className = 'plot-group';
+    groupEl.dataset.id = id;
+    groupEl.dataset.type = type;
+
+    const header = document.createElement('div');
+    header.className = 'group-header';
+    const title = document.createElement('span');
+    title.className = 'group-title';
+    title.textContent = options.title || `${type === 'scatter' ? 'Scatter' : 'Group'} ${groups.size + 1}`;
+    header.appendChild(title);
+    groupEl.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'group-body';
+    groupEl.appendChild(body);
+
+    const handle = document.createElement('div');
+    handle.className = 'resize-handle';
+    groupEl.appendChild(handle);
+
+    workspace.appendChild(groupEl);
+
+    const group = { id, type, el:groupEl, body, titleEl:title, signals:new Set(), hint:null, scatter:null };
+    groups.set(id, group);
+
+    if (type === 'scatter'){
+      buildScatterGroup(group);
+    } else {
+      buildTimeseriesGroup(group);
+      attachGroupDrop(group);
+    }
+
+    positionGroup(group, options);
+    attachGroupDragResize(group);
+    updateGroupEmptyState(group);
+    updateWorkspaceState();
+    scheduleChartResize();
+    return id;
+  }
+
+  function buildTimeseriesGroup(group){
+    const hint = document.createElement('div');
+    hint.className = 'group-drop-hint';
+    hint.textContent = 'Drag signals here';
+    group.body.classList.add('empty');
+    group.body.appendChild(hint);
+    group.hint = hint;
+  }
+
+  function buildScatterGroup(group){
+    group.body.classList.remove('empty');
+    const container = document.createElement('div');
+    container.className = 'scatter-container';
+
+    const axisRow = document.createElement('div');
+    axisRow.className = 'scatter-axis-row';
+
+    const xSlot = createScatterSlot('X Axis', 'x');
+    const ySlot = createScatterSlot('Y Axis', 'y');
+    axisRow.appendChild(xSlot.slot);
+    axisRow.appendChild(ySlot.slot);
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'scatter-canvas';
+    container.appendChild(axisRow);
+    container.appendChild(canvas);
+    group.body.appendChild(container);
+
+    const scatter = {
+      axisRow,
+      xSlot: xSlot.slot,
+      ySlot: ySlot.slot,
+      xValue: xSlot.value,
+      yValue: ySlot.value,
+      xClear: xSlot.clear,
+      yClear: ySlot.clear,
+      xSignal: null,
+      ySignal: null,
+      canvas,
+      chart: new ScatterChart(canvas),
+      data: []
+    };
+    group.scatter = scatter;
+
+    attachScatterSlot(group, xSlot, 'x');
+    attachScatterSlot(group, ySlot, 'y');
+  }
+
+  function createScatterSlot(labelText, axis){
+    const slot = document.createElement('div');
+    slot.className = 'scatter-slot';
+    slot.dataset.axis = axis;
+    const label = document.createElement('strong');
+    label.textContent = labelText;
+    const value = document.createElement('span');
+    value.textContent = 'Drop signal';
+    const clear = document.createElement('span');
+    clear.className = 'scatter-clear';
+    clear.textContent = 'Clear';
+    clear.style.display = 'none';
+    slot.append(label, value, clear);
+    return { slot, value, clear };
+  }
+
+  function positionGroup(group, options = {}){
+    if (!workspace) return;
+    const wsWidth = workspace.clientWidth;
+    const wsHeight = workspace.clientHeight;
+    const maxWidth = Math.max(160, wsWidth - 12);
+    const maxHeight = Math.max(160, wsHeight - 12);
+    const defaultWidth = Math.min(Math.max(wsWidth * 0.45, 280), maxWidth);
+    const defaultHeight = Math.min(Math.max(wsHeight * 0.45, 240), maxHeight);
+    const minWidth = Math.min(260, maxWidth);
+    const minHeight = Math.min(200, maxHeight);
+
+    let width = options.width || defaultWidth;
+    let height = options.height || defaultHeight;
+    width = Math.max(minWidth, Math.min(width, maxWidth));
+    height = Math.max(minHeight, Math.min(height, maxHeight));
+
+    let left = options.x != null ? options.x : (wsWidth - width) / 2;
+    let top = options.y != null ? options.y : (wsHeight - height) / 2;
+
+    left = Math.max(0, Math.min(left, wsWidth - width));
+    top = Math.max(0, Math.min(top, wsHeight - height));
+
+    group.el.style.width = `${width}px`;
+    group.el.style.height = `${height}px`;
+    group.el.style.left = `${left}px`;
+    group.el.style.top = `${top}px`;
+  }
+
+  function attachGroupDragResize(group){
+    if (!workspace) return;
+    const header = group.el.querySelector('.group-header');
+    const handle = group.el.querySelector('.resize-handle');
+
+    if (header){
+      header.addEventListener('pointerdown', ev=>{
+        if (ev.button !== 0) return;
+        ev.preventDefault();
+        const wsRect = workspace.getBoundingClientRect();
+        const offsetLeft = workspace.clientLeft;
+        const offsetTop = workspace.clientTop;
+        const wsWidth = workspace.clientWidth;
+        const wsHeight = workspace.clientHeight;
+        const rect = group.el.getBoundingClientRect();
+        const offsetX = ev.clientX - rect.left;
+        const offsetY = ev.clientY - rect.top;
+        group.el.classList.add('dragging');
+
+        const onMove = moveEv=>{
+          const x = moveEv.clientX - wsRect.left - offsetLeft - offsetX;
+          const y = moveEv.clientY - wsRect.top - offsetTop - offsetY;
+          const maxX = wsWidth - group.el.offsetWidth;
+          const maxY = wsHeight - group.el.offsetHeight;
+          const boundedX = Math.max(0, Math.min(x, maxX));
+          const boundedY = Math.max(0, Math.min(y, maxY));
+          const snapped = snapGroupPosition(group, boundedX, boundedY);
+          group.el.style.left = `${snapped.left}px`;
+          group.el.style.top = `${snapped.top}px`;
+        };
+        const onUp = ()=>{
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+          group.el.classList.remove('dragging');
+        };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+      });
+    }
+
+    if (handle){
+      handle.addEventListener('pointerdown', ev=>{
+        if (ev.button !== 0) return;
+        ev.preventDefault();
+        const wsRect = workspace.getBoundingClientRect();
+        const offsetLeft = workspace.clientLeft;
+        const offsetTop = workspace.clientTop;
+        const wsWidth = workspace.clientWidth;
+        const wsHeight = workspace.clientHeight;
+        const rect = group.el.getBoundingClientRect();
+        const startX = ev.clientX;
+        const startY = ev.clientY;
+        const startWidth = rect.width;
+        const startHeight = rect.height;
+        const startLeft = rect.left - wsRect.left - offsetLeft;
+        const startTop = rect.top - wsRect.top - offsetTop;
+        const minWidth = 260;
+        const minHeight = 200;
+        const snapThreshold = 12;
+
+        const onMove = moveEv=>{
+          let newW = startWidth + (moveEv.clientX - startX);
+          let newH = startHeight + (moveEv.clientY - startY);
+          newW = Math.max(minWidth, Math.min(newW, wsWidth - startLeft));
+          newH = Math.max(minHeight, Math.min(newH, wsHeight - startTop));
+
+          const rightEdge = startLeft + newW;
+          const bottomEdge = startTop + newH;
+
+          const horizontalTargets = [0, wsWidth];
+          const verticalTargets = [0, wsHeight];
+          groups.forEach(other=>{
+            if (other.id === group.id) return;
+            const rect = getGroupRect(other);
+            horizontalTargets.push(rect.left, rect.left + rect.width);
+            verticalTargets.push(rect.top, rect.top + rect.height);
+          });
+
+          let bestRight = rightEdge;
+          let bestDiff = snapThreshold + 1;
+          horizontalTargets.forEach(target=>{
+            const diff = Math.abs(rightEdge - target);
+            if (diff < bestDiff){
+              bestDiff = diff;
+              bestRight = target;
+            }
+          });
+          let snappedWidth = bestRight - startLeft;
+          snappedWidth = Math.max(minWidth, Math.min(snappedWidth, wsWidth - startLeft));
+          newW = snappedWidth;
+
+          let bestBottom = bottomEdge;
+          bestDiff = snapThreshold + 1;
+          verticalTargets.forEach(target=>{
+            const diff = Math.abs(bottomEdge - target);
+            if (diff < bestDiff){
+              bestDiff = diff;
+              bestBottom = target;
+            }
+          });
+          let snappedHeight = bestBottom - startTop;
+          snappedHeight = Math.max(minHeight, Math.min(snappedHeight, wsHeight - startTop));
+          newH = snappedHeight;
+
+          group.el.style.width = `${newW}px`;
+          group.el.style.height = `${newH}px`;
+          const snapped = snapGroupPosition(group, parseFloat(group.el.style.left) || 0, parseFloat(group.el.style.top) || 0);
+          group.el.style.left = `${snapped.left}px`;
+          group.el.style.top = `${snapped.top}px`;
+          scheduleChartResize();
+        };
+        const onUp = ()=>{
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+          scheduleChartResize();
+        };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+      });
+    }
+  }
+
+  function getGroupRect(group){
+    if (!workspace) return { left:0, top:0, width:0, height:0 };
+    const wsRect = workspace.getBoundingClientRect();
+    const offsetLeft = workspace.clientLeft;
+    const offsetTop = workspace.clientTop;
+    const rect = group.el.getBoundingClientRect();
+    return {
+      left: Math.round(rect.left - wsRect.left - offsetLeft),
+      top: Math.round(rect.top - wsRect.top - offsetTop),
+      width: Math.round(group.el.offsetWidth),
+      height: Math.round(group.el.offsetHeight)
+    };
+  }
+
+  function snapGroupPosition(group, left, top){
+    if (!workspace) return { left, top };
+    const wsWidth = workspace.clientWidth;
+    const wsHeight = workspace.clientHeight;
+    const width = Math.round(group.el.offsetWidth);
+    const height = Math.round(group.el.offsetHeight);
+    const threshold = 12;
+
+    const clampLeft = value => Math.max(0, Math.min(value, wsWidth - width));
+    const clampTop = value => Math.max(0, Math.min(value, wsHeight - height));
+
+    const clampedLeft = clampLeft(left);
+    const clampedTop = clampTop(top);
+
+    const horizontalTargets = [0, wsWidth];
+    const verticalTargets = [0, wsHeight];
+
+    groups.forEach(other=>{
+      if (other.id === group.id) return;
+      const rect = getGroupRect(other);
+      horizontalTargets.push(rect.left, rect.left + rect.width);
+      verticalTargets.push(rect.top, rect.top + rect.height);
+    });
+
+    let bestLeft = clampedLeft;
+    let bestDiff = threshold + 1;
+    horizontalTargets.forEach(target=>{
+      const candidateLeft = target;
+      const candidateRight = target - width;
+      const diffLeft = Math.abs(clampedLeft - candidateLeft);
+      if (diffLeft < bestDiff){
+        bestDiff = diffLeft;
+        bestLeft = candidateLeft;
+      }
+      const diffRight = Math.abs(clampedLeft - candidateRight);
+      if (diffRight < bestDiff){
+        bestDiff = diffRight;
+        bestLeft = candidateRight;
+      }
+    });
+    bestLeft = Math.round(clampLeft(bestLeft));
+
+    let bestTop = clampedTop;
+    bestDiff = threshold + 1;
+    verticalTargets.forEach(target=>{
+      const candidateTop = target;
+      const candidateBottom = target - height;
+      const diffTop = Math.abs(clampedTop - candidateTop);
+      if (diffTop < bestDiff){
+        bestDiff = diffTop;
+        bestTop = candidateTop;
+      }
+      const diffBottom = Math.abs(clampedTop - candidateBottom);
+      if (diffBottom < bestDiff){
+        bestDiff = diffBottom;
+        bestTop = candidateBottom;
+      }
+    });
+    bestTop = Math.round(clampTop(bestTop));
+
+    return { left:bestLeft, top:bestTop };
+  }
+
+  function attachGroupDrop(group){
+    if (group.type !== 'timeseries') return;
+    const body = group.body;
+    body.addEventListener('dragover', ev=>{
+      ev.preventDefault();
+      if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
+      group.el.classList.add('drop-hover');
+    });
+    body.addEventListener('dragleave', ev=>{
+      if (!body.contains(ev.relatedTarget)){
+        group.el.classList.remove('drop-hover');
+      }
+    });
+    body.addEventListener('drop', ev=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      group.el.classList.remove('drop-hover');
+      const name = (ev.dataTransfer.getData('text/plain') || '').trim();
+      if (name){
+        addSignalToTimeseries(name, group.id);
+      }
+    });
+  }
+
+  function attachScatterSlot(group, slotObj, axis){
+    const { slot, clear } = slotObj;
+    slot.addEventListener('dragover', ev=>{
+      ev.preventDefault();
+      if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
+      slot.classList.add('drop-hover');
+    });
+    slot.addEventListener('dragleave', ()=>{
+      slot.classList.remove('drop-hover');
+    });
+    slot.addEventListener('drop', ev=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      slot.classList.remove('drop-hover');
+      const name = (ev.dataTransfer.getData('text/plain') || '').trim();
+      if (name){
+        assignScatterAxis(group, axis, name);
+      }
+    });
+    slot.addEventListener('dblclick', ()=>{
+      clearScatterAxis(group, axis);
+    });
+    clear.addEventListener('click', ev=>{
+      ev.stopPropagation();
+      clearScatterAxis(group, axis);
+    });
+  }
+
+  function updateGroupEmptyState(group){
+    if (group.type === 'scatter'){
+      updateScatterGroupState(group);
+    } else {
+      updateTimeseriesGroupState(group);
+    }
+  }
+
+  function updateTimeseriesGroupState(group){
+    const isEmpty = group.signals.size === 0;
+    group.body.classList.toggle('empty', isEmpty);
+    if (isEmpty){
+      if (group.hint && !group.hint.isConnected){
+        group.body.appendChild(group.hint);
+      }
+    } else if (group.hint && group.hint.parentElement){
+      group.hint.remove();
+    }
+  }
+
+  function addSignalToTimeseries(name, groupId){
+    const group = groups.get(groupId);
+    if (!group || group.type !== 'timeseries') return;
+
+    let entry = seriesSignals.get(name);
+    let data = entry ? entry.data : [];
+    if (entry){
+      const previousGroup = groups.get(entry.groupId);
+      if (entry.wrapper.parentElement){
+        entry.wrapper.remove();
+      }
+      seriesSignals.delete(name);
+      if (previousGroup && previousGroup.signals){
+        previousGroup.signals.delete(name);
+        updateTimeseriesGroupState(previousGroup);
+      }
+    } else {
+      removeAvailable(name);
+      data = [];
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'chart-wrapper';
+    const label = document.createElement('div');
+    label.className = 'chart-label';
+    label.textContent = name;
+    label.title = 'Double-click to remove';
+    label.addEventListener('dblclick', ()=>{
+      removeSignalFromTimeseries(name, true);
+    });
+    const canvas = document.createElement('canvas');
+    wrapper.appendChild(label);
+    wrapper.appendChild(canvas);
+    group.body.appendChild(wrapper);
+
+    const chart = new MiniChart(canvas);
+    seriesSignals.set(name, { data, chart, wrapper, groupId });
+    group.signals.add(name);
+    updateTimeseriesGroupState(group);
+    scheduleChartResize();
+    updateSignalsEmptyState();
+  }
+
+  function removeSignalFromTimeseries(name, returnToAvailable = true){
+    const entry = seriesSignals.get(name);
+    if (!entry) return;
+    if (entry.wrapper.parentElement){
+      entry.wrapper.remove();
+    }
+    seriesSignals.delete(name);
+    const group = groups.get(entry.groupId);
+    if (group && group.signals){
+      group.signals.delete(name);
+      updateTimeseriesGroupState(group);
+    }
+    if (returnToAvailable && known.has(name)){
+      addAvailable(name);
+    }
+    scheduleChartResize();
+    updateSignalsEmptyState();
+    updateWorkspaceState();
+  }
+
+  function syncScatterSignals(group){
+    if (!group.signals || !group.scatter) return;
+    group.signals.clear();
+    if (group.scatter.xSignal) group.signals.add(group.scatter.xSignal);
+    if (group.scatter.ySignal) group.signals.add(group.scatter.ySignal);
+  }
+
+  function updateScatterGroupState(group){
+    const scatter = group.scatter;
+    if (!scatter) return;
+    const hasX = !!scatter.xSignal;
+    const hasY = !!scatter.ySignal;
+
+    scatter.xSlot.classList.toggle('assigned', hasX);
+    scatter.ySlot.classList.toggle('assigned', hasY);
+    scatter.xValue.textContent = hasX ? scatter.xSignal : 'Drop signal';
+    scatter.yValue.textContent = hasY ? scatter.ySignal : 'Drop signal';
+    scatter.xClear.style.display = hasX ? 'inline' : 'none';
+    scatter.yClear.style.display = hasY ? 'inline' : 'none';
+
+    const both = hasX && hasY;
+    if (!both){
+      scatter.data.length = 0;
+    }
+    scatter.chart.draw(scatter.data);
+  }
+
+  function assignScatterAxis(group, axis, signal){
+    const scatter = group.scatter;
+    if (!scatter) return;
+    if (axis === 'x'){
+      if (scatter.xSignal === signal) return;
+      scatter.xSignal = signal;
+    } else {
+      if (scatter.ySignal === signal) return;
+      scatter.ySignal = signal;
+    }
+    scatter.data.length = 0;
+    syncScatterSignals(group);
+    updateScatterGroupState(group);
+    scheduleChartResize();
+  }
+
+  function clearScatterAxis(group, axis){
+    const scatter = group.scatter;
+    if (!scatter) return;
+    if (axis === 'x' && scatter.xSignal){
+      scatter.xSignal = null;
+    }
+    if (axis === 'y' && scatter.ySignal){
+      scatter.ySignal = null;
+    }
+    scatter.data.length = 0;
+    syncScatterSignals(group);
+    updateScatterGroupState(group);
+    scheduleChartResize();
+  }
+
+  function clearCharts(){
+    seriesSignals.forEach(entry=>{ entry.data.length = 0; });
+    groups.forEach(group=>{
+      if (group.type === 'scatter' && group.scatter){
+        group.scatter.data.length = 0;
+        group.scatter.chart.draw(group.scatter.data);
+      }
+    });
+    scheduleChartResize();
+  }
+
+  function cleanup(){
+    if (es){
+      try { es.close(); } catch(_){}
+      es = null;
+    }
+  }
+
+  function cancelReconnect(){
+    if (reconnectTimer){
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    reconnectAttempt = 0;
+  }
+
+  function scheduleReconnect(){
+    if (!chkAuto.checked) return;
+    const delay = Math.min(15000, 1000 * Math.pow(2, reconnectAttempt++));
+    reconnectTimer = setTimeout(()=>connect(), delay);
+  }
+
+  function disconnect(updateStatus = true){
+    cancelReconnect();
+    cleanup();
+    resetIndicators();
+    if (updateStatus) setStatus('Disconnected');
+  }
+
+  function connect(){
+    disconnect(false);
+    const url = urlEl.value.trim();
+    if (!/^https?:\/\//i.test(url)){
+      setStatus('Invalid URL');
+      return;
+    }
+    setStatus('Connecting...');
+    resetIndicators();
+    try {
+      es = new EventSource(url);
+      es.addEventListener('meta', ev=>{
+        try {
+          const meta = JSON.parse(ev.data || '{}');
+          const names = Array.isArray(meta.names) ? meta.names : [];
+          known.clear();
+          for (const n of names){
+            if (typeof n === 'string' && n){
+              known.add(n);
+            }
+          }
+          const currentActive = new Set(seriesSignals.keys());
+          known.forEach(n=>{
+            if (!currentActive.has(n)){
+              addAvailable(n);
+            }
+          });
+          // Remove chips for signals no longer provided
+          for (const name of Array.from(available.keys())){
+            if (!known.has(name)){
+              removeAvailable(name);
+            }
+          }
+          for (const name of Array.from(seriesSignals.keys())){
+            if (!known.has(name)){
+              removeSignalFromTimeseries(name, false);
+            }
+          }
+          groups.forEach(group=>{
+            if (group.type === 'scatter' && group.scatter){
+              if (group.scatter.xSignal && !known.has(group.scatter.xSignal)){
+                clearScatterAxis(group, 'x');
+              }
+              if (group.scatter.ySignal && !known.has(group.scatter.ySignal)){
+                clearScatterAxis(group, 'y');
+              }
+            }
+          });
+          updateSignalsEmptyState();
+        } catch (_){}
+      });
+      es.onopen = ()=>{
+        setStatus('Connected');
+        cancelReconnect();
+      };
+      es.onerror = ()=>{
+        setStatus('Disconnected');
+        cleanup();
+        resetIndicators();
+        scheduleReconnect();
+      };
+      es.onmessage = ev=>{
+        if (paused) return;
+        try {
+          const msg = JSON.parse(ev.data || '{}');
+          const t = (typeof msg.t === 'number' && isFinite(msg.t)) ? msg.t : 0;
+          const sig = msg.signals || {};
+          const windowVal = windowEl ? Number(windowEl.value) : 0;
+          const windowSec = Number.isFinite(windowVal) ? Math.max(0, windowVal) : 0;
+          const cutoff = windowSec > 0 ? t - windowSec : -Infinity;
+          updateRealtime(t);
+          seriesSignals.forEach((entry, name)=>{
+            const v = sig[name];
+            if (typeof v === 'number' && isFinite(v)){
+              entry.data.push({ x:t, y:v });
+              if (windowSec > 0){
+                while (entry.data.length && entry.data[0].x < cutoff){
+                  entry.data.shift();
+                }
+              } else if (entry.data.length > 5000){
+                entry.data.splice(0, entry.data.length - 5000);
+              }
+            }
+          });
+          groups.forEach(group=>{
+            if (group.type !== 'scatter' || !group.scatter) return;
+            const scatter = group.scatter;
+            const xName = scatter.xSignal;
+            const yName = scatter.ySignal;
+            if (!xName || !yName) return;
+            const vx = sig[xName];
+            const vy = sig[yName];
+            if (typeof vx === 'number' && isFinite(vx) && typeof vy === 'number' && isFinite(vy)){
+              scatter.data.push({ x:vx, y:vy, t });
+              if (windowSec > 0){
+                const cutoffScatter = t - windowSec;
+                while (scatter.data.length && scatter.data[0].t < cutoffScatter){
+                  scatter.data.shift();
+                }
+              } else if (scatter.data.length > 5000){
+                scatter.data.splice(0, scatter.data.length - 5000);
+              }
+            }
+          });
+        } catch(_){}
+      };
+    } catch (err){
+      setStatus('Failed to connect');
+      scheduleReconnect();
+    }
+  }
+
+  btnConnect.addEventListener('click', connect);
+  btnDisconnect.addEventListener('click', ()=>disconnect(true));
+  btnPause.addEventListener('click', ()=>{
+    paused = !paused;
+    btnPause.textContent = paused ? 'Resume' : 'Pause';
+    setStatus(paused ? 'Paused' : (es ? 'Connected' : 'Idle'));
+  });
+  btnClear.addEventListener('click', clearCharts);
+
+  function hideWorkspaceMenu(){
+    if (!workspaceMenu) return;
+    workspaceMenu.hidden = true;
+    contextMenuPos = null;
+  }
+
+  if (workspace){
+    workspace.addEventListener('dragover', ev=>{
+      ev.preventDefault();
+      if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
+    });
+    workspace.addEventListener('drop', ev=>{
+      ev.preventDefault();
+      hideWorkspaceMenu();
+      const name = (ev.dataTransfer.getData('text/plain') || '').trim();
+      if (!name) return;
+      const wsRect = workspace.getBoundingClientRect();
+      const pos = {
+        x: ev.clientX - wsRect.left,
+        y: ev.clientY - wsRect.top
+      };
+      const groupId = createGroup({ x: pos.x - 180, y: pos.y - 140, type:'timeseries' });
+      if (groupId){
+        addSignalToTimeseries(name, groupId);
+      }
+    });
+    workspace.addEventListener('contextmenu', ev=>{
+      ev.preventDefault();
+      hideWorkspaceMenu();
+      if (!workspaceMenu || !workspacePanel) return;
+      contextMenuPos = { x: ev.clientX, y: ev.clientY };
+      workspaceMenu.hidden = false;
+      workspaceMenu.style.left = '0px';
+      workspaceMenu.style.top = '0px';
+      const panelRect = workspacePanel.getBoundingClientRect();
+      const menuRect = workspaceMenu.getBoundingClientRect();
+      let left = ev.clientX - panelRect.left;
+      let top = ev.clientY - panelRect.top;
+      left = Math.max(8, Math.min(left, panelRect.width - menuRect.width - 8));
+      top = Math.max(8, Math.min(top, panelRect.height - menuRect.height - 8));
+      workspaceMenu.style.left = `${left}px`;
+      workspaceMenu.style.top = `${top}px`;
+    });
+  }
+
+  if (workspaceMenu){
+    workspaceMenu.addEventListener('click', ev=>{
+      const btn = ev.target.closest('button[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      let type = null;
+      if (action === 'add-timeseries') type = 'timeseries';
+      else if (action === 'add-scatter') type = 'scatter';
+      if (!type || !workspace) {
+        hideWorkspaceMenu();
+        return;
+      }
+      const wsRect = workspace.getBoundingClientRect();
+      const posClient = contextMenuPos || { x: wsRect.left + wsRect.width / 2, y: wsRect.top + wsRect.height / 2 };
+      const pos = {
+        x: posClient.x - wsRect.left,
+        y: posClient.y - wsRect.top
+      };
+      createGroup({ x: pos.x - 180, y: pos.y - 140, type });
+      hideWorkspaceMenu();
+    });
+  }
+
+  document.addEventListener('pointerdown', ev=>{
+    if (!workspaceMenu || workspaceMenu.hidden) return;
+    if (workspaceMenu.contains(ev.target)) return;
+    hideWorkspaceMenu();
+  });
+
+  document.addEventListener('keydown', ev=>{
+    if (ev.key === 'Escape'){
+      hideWorkspaceMenu();
+    }
+  });
+
+  if (sidebarResizer){
+    sidebarResizer.addEventListener('pointerdown', ev=>{
+      ev.preventDefault();
+      const isVertical = window.matchMedia('(max-width: 900px)').matches;
+      const startPos = isVertical ? ev.clientY : ev.clientX;
+      const computed = getComputedStyle(document.documentElement);
+      const currentSize = parseFloat(computed.getPropertyValue('--sidebar-size')) || 300;
+      const mainRect = mainEl ? mainEl.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
+      const minSize = 200;
+      const maxSize = isVertical
+        ? Math.max(minSize, Math.min(720, mainRect.height - 220))
+        : Math.max(minSize, Math.min(720, mainRect.width - 320));
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = isVertical ? 'row-resize' : 'col-resize';
+      const onMove = moveEv=>{
+        const delta = (isVertical ? moveEv.clientY : moveEv.clientX) - startPos;
+        let newSize = currentSize + delta;
+        newSize = Math.max(minSize, Math.min(newSize, maxSize));
+        rootStyle.setProperty('--sidebar-size', `${newSize}px`);
+        scheduleChartResize();
+      };
+      const onUp = ()=>{
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+  }
+
+  if (windowEl){
+    const enforceWindow = (ev)=>{
+      if (windowEl.value.trim() === ''){
+        if (ev && ev.type === 'input') return;
+        windowEl.value = '0';
+      }
+      applyWindowSetting();
+    };
+    windowEl.addEventListener('change', enforceWindow);
+    windowEl.addEventListener('input', enforceWindow);
+  }
+
+  window.addEventListener('resize', ()=>{
+    hideWorkspaceMenu();
+    if (workspace){
+      const wsWidth = workspace.clientWidth;
+      const wsHeight = workspace.clientHeight;
+      groups.forEach(group=>{
+        const width = group.el.offsetWidth;
+        const height = group.el.offsetHeight;
+        let left = parseFloat(group.el.style.left) || 0;
+        let top = parseFloat(group.el.style.top) || 0;
+        const maxLeft = Math.max(0, wsWidth - width);
+        const maxTop = Math.max(0, wsHeight - height);
+        if (left > maxLeft) group.el.style.left = `${maxLeft}px`;
+        if (top > maxTop) group.el.style.top = `${maxTop}px`;
+      });
+    }
+    if (mainEl){
+      const isVertical = window.matchMedia('(max-width: 900px)').matches;
+      const mainRect = mainEl.getBoundingClientRect();
+      const minSize = 200;
+      const maxSize = isVertical
+        ? Math.max(minSize, Math.min(720, mainRect.height - 220))
+        : Math.max(minSize, Math.min(720, mainRect.width - 320));
+      const currentSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-size')) || 300;
+      if (currentSize > maxSize){
+        rootStyle.setProperty('--sidebar-size', `${maxSize}px`);
+      }
+    }
+    scheduleChartResize();
+  });
+
+  function raf(){
+    const dpr = window.devicePixelRatio || 1;
+    const span = getWindowSpan();
+    if (Math.abs(dpr - lastDPR) > 1e-3){
+      lastDPR = dpr;
+      seriesSignals.forEach(entry=>{
+        entry.chart.ratio = Math.max(1, Math.floor(dpr));
+        entry.chart.resize();
+        entry.chart.draw(entry.data, span, lastSimTime);
+      });
+      groups.forEach(group=>{
+        if (group.type === 'scatter' && group.scatter){
+          group.scatter.chart.ratio = Math.max(1, Math.floor(dpr));
+          group.scatter.chart.resize();
+          group.scatter.chart.draw(group.scatter.data);
+        }
+      });
+    }
+    const now = performance.now();
+    const refreshInterval = getRefreshIntervalMs();
+    if (!refreshInterval || now - lastDraw >= refreshInterval){
+      seriesSignals.forEach(entry=>{
+        entry.chart.draw(entry.data, span, lastSimTime);
+      });
+      groups.forEach(group=>{
+        if (group.type === 'scatter' && group.scatter){
+          group.scatter.chart.draw(group.scatter.data);
+        }
+      });
+      lastDraw = now;
+    }
+    requestAnimationFrame(raf);
+  }
+  requestAnimationFrame(raf);
+
+  setStatus('Idle');
+  resetIndicators();
+  applyWindowSetting();
+  if (workspace){
+    createGroup({ title: 'Group 1', type: 'timeseries' });
+  }
+  updateWorkspaceState();
+  updateSignalsEmptyState();
+})();
+</script>
+</body>
+</html>
+
+
+
