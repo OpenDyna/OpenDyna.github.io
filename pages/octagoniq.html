@@ -963,36 +963,35 @@
 
     <div id="myModal" class="modal">
         <div class="modal-content">
+            <p>Select a Bout (UFC 324: Gaethje vs. Pimblett):</p>
+            <button id="fight1">Justin Gaethje vs. Paddy Pimblett</button>
+            <button id="fight2">Kayla Harrison vs. Amanda Nunes</button>
+            <button id="fight3">Sean O'Malley vs. Song Yadong</button>
+            <button id="fight4">Waldo Cortes Acosta vs. Derrick Lewis</button>
+            <button id="fight5">Arnold Allen vs. Jean Silva</button>
+            <button id="fight6">Natalia Silva vs. Rose Namajunas</button>
+            <button id="fight7">Umar Nurmagomedov vs. Deiveson Figueiredo</button>
+            <button id="fight8">Ateba Gautier vs. Andrey Pulyaev</button>
+            <button id="fight9">Michael Johnson vs. Alexander Hernandez</button>
+            <button id="fight10">Nikita Krylov vs. Modestas Bukauskas</button>
+            <button id="fight11">Alex Perez vs. Charles Johnson</button>
+            <button id="fight12">Josh Hokit vs. Denzel Freeman</button>
+            <button id="fight13">Ricky Turcios vs. Cameron Smotherman</button>
             <p>Select a Bout (UFC 323: Dvalishvili vs. Yan 2):</p>
-            <button id="fight1">Merab Dvalishvili vs. Petr Yan</button>
-            <button id="fight2">Alexandre Pantoja vs. Joshua Van</button>
-            <button id="fight3">Brandon Moreno vs. Tatsuro Taira</button>
-            <button id="fight4">Henry Cejudo vs. Payton Talbott</button>
-            <button id="fight5">Jan Blachowicz vs. Bogdan Guskov</button>
-            <button id="fight6">Grant Dawson vs. Manuel Torres</button>
-            <button id="fight7">Terrance McKinney vs. Chris Duncan</button>
-            <button id="fight8">Maycee Barber vs. Karine Silva</button>
-            <button id="fight9">Nazim Sadykhov vs. Fares Ziam</button>
-            <button id="fight10">Marvin Vettori vs. Brunno Ferreira</button>
-            <button id="fight11">Edson Barboza vs. Jalin Turner</button>
-            <button id="fight12">Iwo Baraniewski vs. Ibo Aslan</button>
-            <button id="fight13">Mansur Abdul-Malik vs. Antonio Trocoli</button>
-            <button id="fight14">Muhammad Naimov vs. Mairon Santos</button>
-            <p>Select a Bout (UFC Fight Night: Tsarukyan vs. Hooker):</p>
-            <button id="fight1">Arman Tsarukyan vs. Dan Hooker</button>
-            <button id="fight2">Belal Muhammad vs. Ian Machado Garry</button>
-            <button id="fight3">Volkan Oezdemir vs. Alonzo Menifield</button>
-            <button id="fight4">Jack Hermansson vs. Myktybek Orolbai</button>
-            <button id="fight5">Waldo Cortes-Acosta vs. Shamil Gaziev</button>
-            <button id="fight6">Tagir Ulanbekov vs. Kyoji Horiguchi</button>
-            <button id="fight7">Bogdan Grad vs. Luke Riley</button>
-            <button id="fight8">Nicolas Dalby vs. Saygid Izagakhmaev</button>
-            <button id="fight9">Alex Perez vs. Asu Almabayev</button>
-            <button id="fight10">Abdul Rakhman Yakhyaev vs. Rafael Cerquiera</button>
-            <button id="fight11">Bekzat Almakhan vs. Aleksandre Topuria</button>
-            <button id="fight12">Ismail Naurdiev vs. Ryan Loder</button>
-            <button id="fight13">Nurullo Aliev vs. Shem Rock</button>
-            <button id="fight14">Marek Bujlo vs. Denzel Freeman</button>
+            <button id="fight14">Merab Dvalishvili vs. Petr Yan</button>
+            <button id="fight15">Alexandre Pantoja vs. Joshua Van</button>
+            <button id="fight16">Brandon Moreno vs. Tatsuro Taira</button>
+            <button id="fight17">Henry Cejudo vs. Payton Talbott</button>
+            <button id="fight18">Jan Blachowicz vs. Bogdan Guskov</button>
+            <button id="fight19">Grant Dawson vs. Manuel Torres</button>
+            <button id="fight20">Terrance McKinney vs. Chris Duncan</button>
+            <button id="fight21">Maycee Barber vs. Karine Silva</button>
+            <button id="fight22">Nazim Sadykhov vs. Fares Ziam</button>
+            <button id="fight23">Marvin Vettori vs. Brunno Ferreira</button>
+            <button id="fight24">Edson Barboza vs. Jalin Turner</button>
+            <button id="fight25">Iwo Baraniewski vs. Ibo Aslan</button>
+            <button id="fight26">Mansur Abdul-Malik vs. Antonio Trocoli</button>
+            <button id="fight27">Muhammad Naimov vs. Mairon Santos</button>
             <span class="close">&times;</span>
         </div>
     </div>
@@ -2099,15 +2098,19 @@
             const openModalBtn = document.getElementById("nextEventBtn");
             const closeModalSpan = document.querySelector(".close");
             const cancelButton = document.getElementById("cancelButton");
+            const closeModal = () => {
+                modal.style.display = "none";
+            };
             openModalBtn.addEventListener("click", () => {
                 modal.style.display = "block";
             });
-            closeModalSpan.onclick = cancelButton.onclick = () => {
-                modal.style.display = "none";
-            };
+            closeModalSpan.onclick = closeModal;
+            if (cancelButton) {
+                cancelButton.onclick = closeModal;
+            }
             window.onclick = (event) => {
                 if (event.target === modal) {
-                    modal.style.display = "none";
+                    closeModal();
                 }
             };
             const fightButtons = document.querySelectorAll('#myModal button[id^="fight"]');
