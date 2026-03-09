@@ -99,6 +99,38 @@
         value="2"
       />
 
+      <input
+        type="number"
+        id="startTimeInput"
+        placeholder="Start Time (s)"
+        step="0.01"
+        min="0"
+      />
+      <input
+        type="number"
+        id="endTimeInput"
+        placeholder="End Time (s)"
+        step="0.01"
+        min="0"
+      />
+      <div style="margin: 6px 0; font-size: 12px;">
+        Current Time: <span id="currentTimeDisplay">0.000 s</span>
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <input
+          type="number"
+          id="jumpToInput"
+          placeholder="Jump To (s)"
+          step="0.01"
+          min="0"
+          style="flex: 1; margin: 0;"
+        />
+        <button id="jumpToBtn" style="flex: 0 0 80px; margin: 0;">Jump</button>
+      </div>
+
+      <button id="importConfigBtn">Import Config</button>
+      <input type="file" id="importConfigInput" accept=".txt,application/json" style="display: none;" />
+
       <button id="addRect">Add Rectangle</button>
 
       <!-- Automatic processing -->
@@ -146,6 +178,13 @@
 
     const videoUpload = document.getElementById('videoUpload');
     const frameRateInput = document.getElementById('frameRateInput');
+    const startTimeInput = document.getElementById('startTimeInput');
+    const endTimeInput = document.getElementById('endTimeInput');
+    const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+    const jumpToInput = document.getElementById('jumpToInput');
+    const jumpToBtn = document.getElementById('jumpToBtn');
+    const importConfigBtn = document.getElementById('importConfigBtn');
+    const importConfigInput = document.getElementById('importConfigInput');
     const addRectBtn = document.getElementById('addRect');
     const stepBackBtn = document.getElementById('stepBack');
     const stepForwardBtn = document.getElementById('stepForward');
@@ -163,6 +202,7 @@
     let data = []; // for CSV
     let videoNaturalWidth = 0;
     let videoNaturalHeight = 0;
+    let currentVideoName = 'unknown_video';
 
     // Sample rate defaults to 2 Hz
     let frameRate = 2;
@@ -171,6 +211,10 @@
     let stopProcessFlag = false;
     let pauseProcessFlag = false;
     let isProcessing = false;
+
+    // Processing bounds
+    let processStartSec = 0;
+    let processEndSec = null;
 
     // Color palette for rectangles
     const colorPalette = [
@@ -187,11 +231,31 @@
     ];
     let colorIndex = 0;
 
+    // Speed/acceleration helpers
+    const MPH_TO_MS = 0.44704;
+    const MPH_TO_FTS = 1.4666666667;
+    const GRAVITY_MS2 = 9.80665;
+    const MAX_ACCEL_MS2 = 7 * GRAVITY_MS2;
+    const MAX_REVERSAL_MS2 = 0.75 * GRAVITY_MS2;
+
+    // OCR tuning
+    const OCR_SCALE = 2;
+    const OCR_CONTRAST = 1.2;
+    const OCR_CONFIDENCE_MIN = 60; // discard very low-confidence reads
+    const OCR_THRESHOLD_SCALE = 0.95;
+    const OCR_FALLBACK_THRESHOLD_SCALE = 0.85;
+    const OCR_FALLBACK_SHIFT = 0.4;
+    const OCR_AGGRESSIVE_THRESHOLD_SCALE = 1.05;
+    const OCR_AGGRESSIVE_SHIFT = -0.4;
+
     // ============================
     // Load & Analyze Video
     // ============================
     videoUpload.addEventListener('change', (e) => {
       const file = e.target.files[0];
+      if (file && file.name) {
+        currentVideoName = file.name;
+      }
       video.src = URL.createObjectURL(file);
 
       // Once video loads, set up canvas size
@@ -200,6 +264,7 @@
         videoNaturalHeight = video.videoHeight;
         console.log(`Video size: ${videoNaturalWidth} x ${videoNaturalHeight}`);
         adjustCanvasSize();
+        updateCurrentTimeDisplay();
         // We do NOT override sample rate from video data
       };
     });
@@ -211,6 +276,8 @@
         console.log(`Sample Rate updated to: ${frameRate} Hz`);
       }
     });
+
+    video.addEventListener('timeupdate', updateCurrentTimeDisplay);
 
     // ============================
     // Resize / Canvas Sync
@@ -226,34 +293,68 @@
     // Add Rectangle (Text only)
     // ============================
     addRectBtn.addEventListener('click', () => {
-      const signalName = prompt('Enter signal name:') || 'Unnamed';
-
-      // Cycle to next color
-      const color = colorPalette[colorIndex % colorPalette.length];
-      colorIndex++;
-
-      // Create rectangle object
-      const rectObj = {
+      const isFirst = rectangles.length === 0;
+      const signalName = isFirst ? 'Speed' : (prompt('Enter signal name:') || 'Unnamed');
+      createRectangle({
         signalName,
-        lastValue: 'N/A',
-        valueCell: null,
         xNorm: 0.1,
         yNorm: 0.1,
         wNorm: 0.2,
         hNorm: 0.1,
+      });
+    });
+
+    // Convert a named color into an RGBA with a given alpha
+    function convertColorToRGBA(color, alpha) {
+      // Quick approach: If the user uses named colors, we can rely on the browser's color parser:
+      const tempEl = document.createElement('div');
+      tempEl.style.color = color;
+      document.body.appendChild(tempEl);
+
+      // getComputedStyle will return 'rgba(r, g, b, 1)' for named color
+      const computedColor = getComputedStyle(tempEl).color;
+      document.body.removeChild(tempEl);
+
+      // computedColor might be 'rgb(...)' or 'rgba(...)'
+      // We can parse out r,g,b if it's something like "rgb(255, 0, 0)"
+      const match = computedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+      if (!match) {
+        // fallback
+        return color; // best effort
+      }
+
+      const r = match[1], g = match[2], b = match[3];
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    function createRectangle(config) {
+      const signalName = config.signalName || 'Unnamed';
+      const xNorm = Number.isFinite(config.xNorm) ? config.xNorm : 0.1;
+      const yNorm = Number.isFinite(config.yNorm) ? config.yNorm : 0.1;
+      const wNorm = Number.isFinite(config.wNorm) ? config.wNorm : 0.2;
+      const hNorm = Number.isFinite(config.hNorm) ? config.hNorm : 0.1;
+
+      const color = colorPalette[colorIndex % colorPalette.length];
+      colorIndex++;
+
+      const rectObj = {
+        signalName,
+        lastValue: 'N/A',
+        valueCell: null,
+        xNorm,
+        yNorm,
+        wNorm,
+        hNorm,
         color: color,
         element: document.createElement('div'),
       };
       rectObj.element.className = 'rectangle';
 
-      // Style the rectangle with 1px border, low alpha fill
       rectObj.element.style.border = `1px solid ${color}`;
       rectObj.element.style.backgroundColor = convertColorToRGBA(color, 0.2);
 
-      // Add to DOM
       videoContainer.appendChild(rectObj.element);
 
-      // Draggable & resizable
       interact(rectObj.element)
         .draggable({
           listeners: {
@@ -324,29 +425,6 @@
       addRectangleToTable(rectObj);
       updateRectanglePosition(rectangles.length - 1);
       console.log(`Added rectangle for "${signalName}" with color ${color}`);
-    });
-
-    // Convert a named color into an RGBA with a given alpha
-    function convertColorToRGBA(color, alpha) {
-      // Quick approach: If the user uses named colors, we can rely on the browser's color parser:
-      const tempEl = document.createElement('div');
-      tempEl.style.color = color;
-      document.body.appendChild(tempEl);
-
-      // getComputedStyle will return 'rgba(r, g, b, 1)' for named color
-      const computedColor = getComputedStyle(tempEl).color;
-      document.body.removeChild(tempEl);
-
-      // computedColor might be 'rgb(...)' or 'rgba(...)'
-      // We can parse out r,g,b if it's something like "rgb(255, 0, 0)"
-      const match = computedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
-      if (!match) {
-        // fallback
-        return color; // best effort
-      }
-
-      const r = match[1], g = match[2], b = match[3];
-      return `rgba(${r},${g},${b},${alpha})`;
     }
 
     function addRectangleToTable(rectObj) {
@@ -388,6 +466,17 @@
       }
     }
 
+    function clearRectangles() {
+      rectangles.forEach((rect) => {
+        if (rect.element && rect.element.parentNode) {
+          rect.element.parentNode.removeChild(rect.element);
+        }
+      });
+      rectangles = [];
+      rectangleTableBody.innerHTML = '';
+      colorIndex = 0;
+    }
+
     // ============================
     // Manual Stepping
     // ============================
@@ -411,9 +500,50 @@
         adjustCanvasSize();
         updateAllRectangles();
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        updateCurrentTimeDisplay();
         handleFrame();
       }
     }
+
+    function seekToTime(targetTime) {
+      const clamped = Math.max(0, Math.min(video.duration || 0, targetTime));
+      video.currentTime = clamped;
+      video.addEventListener('seeked', function onSeeked() {
+        video.removeEventListener('seeked', onSeeked);
+        adjustCanvasSize();
+        updateAllRectangles();
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        updateCurrentTimeDisplay();
+        handleFrame();
+      });
+    }
+
+    jumpToBtn.addEventListener('click', () => {
+      const val = parseFloat(jumpToInput.value);
+      if (!Number.isFinite(val)) return;
+      seekToTime(val);
+    });
+
+    importConfigBtn.addEventListener('click', () => {
+      importConfigInput.value = '';
+      importConfigInput.click();
+    });
+
+    importConfigInput.addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          applyImportedConfig(parsed);
+        } catch (err) {
+          console.error('Failed to import config:', err);
+          alert('Failed to import config file. Please ensure it is a valid JSON text file.');
+        }
+      };
+      reader.readAsText(file);
+    });
 
     async function handleFrame() {
       console.log(`Frame at ${video.currentTime.toFixed(2)}s`);
@@ -438,6 +568,71 @@
     // ============================
     // OCR (Text only)
     // ============================
+    function preprocessForOCR(sourceCanvas, opts = {}) {
+      const { thresholdScale = OCR_THRESHOLD_SCALE, shiftX = 0, shiftY = 0 } = opts;
+      const scaledCanvas = document.createElement('canvas');
+      scaledCanvas.width = Math.max(1, Math.round(sourceCanvas.width * OCR_SCALE));
+      scaledCanvas.height = Math.max(1, Math.round(sourceCanvas.height * OCR_SCALE));
+      const scaledCtx = scaledCanvas.getContext('2d');
+      scaledCtx.imageSmoothingEnabled = false;
+      if (shiftX || shiftY) {
+        scaledCtx.translate(shiftX, shiftY);
+      }
+      scaledCtx.drawImage(sourceCanvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
+      if (shiftX || shiftY) {
+        scaledCtx.setTransform(1, 0, 0, 1, 0, 0);
+      }
+
+      const imgData = scaledCtx.getImageData(0, 0, scaledCanvas.width, scaledCanvas.height);
+      const dataArr = imgData.data;
+
+      let graySum = 0;
+      for (let i = 0; i < dataArr.length; i += 4) {
+        const r = dataArr[i];
+        const g = dataArr[i + 1];
+        const b = dataArr[i + 2];
+        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        gray = (gray - 128) * OCR_CONTRAST + 128;
+        gray = Math.min(255, Math.max(0, gray));
+        dataArr[i] = dataArr[i + 1] = dataArr[i + 2] = gray;
+        graySum += gray;
+      }
+
+      const pixelCount = dataArr.length / 4;
+      const adaptiveThreshold = Math.min(245, Math.max(10, graySum / pixelCount * thresholdScale));
+
+      for (let i = 0; i < dataArr.length; i += 4) {
+        const bin = dataArr[i] > adaptiveThreshold ? 255 : 0;
+        dataArr[i] = dataArr[i + 1] = dataArr[i + 2] = bin;
+      }
+
+      const cleaned = majorityFilterBinary(imgData);
+      scaledCtx.putImageData(cleaned, 0, 0);
+      return scaledCanvas;
+    }
+
+    function majorityFilterBinary(imgData) {
+      const { width, height, data } = imgData;
+      const output = new Uint8ClampedArray(data.length);
+      output.set(data);
+
+      const idx = (x, y) => (y * width + x) * 4;
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          let sum = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              sum += data[idx(x + dx, y + dy)];
+            }
+          }
+          const center = idx(x, y);
+          const newVal = sum >= 5 * 255 ? 255 : 0;
+          output[center] = output[center + 1] = output[center + 2] = newVal;
+        }
+      }
+      return new ImageData(output, width, height);
+    }
+
     async function extractText(x, y, width, height) {
       if (x < 0 || y < 0 || x + width > canvas.width || y + height > canvas.height) {
         throw new Error(`Invalid coords for OCR region: ${x},${y},${width},${height}`);
@@ -451,21 +646,58 @@
       const frameData = ctx.getImageData(x, y, width, height);
       tmpCtx.putImageData(frameData, 0, 0);
 
+      const ocrVariants = [
+        { thresholdScale: OCR_THRESHOLD_SCALE, shiftX: 0, shiftY: 0 },
+        { thresholdScale: OCR_FALLBACK_THRESHOLD_SCALE, shiftX: OCR_FALLBACK_SHIFT, shiftY: OCR_FALLBACK_SHIFT },
+        { thresholdScale: OCR_AGGRESSIVE_THRESHOLD_SCALE, shiftX: OCR_AGGRESSIVE_SHIFT, shiftY: OCR_AGGRESSIVE_SHIFT },
+      ];
+
       // Basic numeric Tesseract config
       const options = {
-        tessedit_char_whitelist: '0123456789.:',
+        tessedit_char_whitelist: '0123456789',
         tessedit_char_blacklist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz()[]{}',
         tessedit_pageseg_mode: 7
       };
 
-      const { data: { text } } = await Tesseract.recognize(tmpCanvas, 'eng', options);
+      const candidates = [];
+      for (const variant of ocrVariants) {
+        const ocrCanvas = preprocessForOCR(tmpCanvas, variant);
+        const { data } = await Tesseract.recognize(ocrCanvas, 'eng', options);
+        const cleaned = sanitizeOcrResult(data.text, data.confidence);
+        if (cleaned.text) {
+          candidates.push(cleaned);
+        }
+      }
 
-      let cleaned = text.trim();
-      // If there's any unwanted char, discard entire string
-      if (/[^\d.:]/.test(cleaned)) {
+      if (!candidates.length) {
+        return '';
+      }
+
+      candidates.sort((a, b) => b.confidence - a.confidence);
+      const best = candidates[0];
+      const second = candidates[1];
+
+      if (
+        best.text === '1' &&
+        second &&
+        second.text === '7' &&
+        Math.abs(best.confidence - second.confidence) <= 5
+      ) {
+        return second.text;
+      }
+
+      return best.text;
+    }
+
+    function sanitizeOcrResult(rawText, confidence) {
+      let cleaned = rawText ? rawText.trim() : '';
+      if (/[^\d]/.test(cleaned)) {
         cleaned = '';
       }
-      return cleaned;
+      if (confidence !== undefined && confidence < OCR_CONFIDENCE_MIN) {
+        cleaned = '';
+      }
+      return { text: cleaned, confidence: confidence ?? 0 };
     }
 
     // ============================
@@ -484,8 +716,31 @@
       // Clear old data
       data = [];
 
-      // Start at time=0
-      video.currentTime = 0;
+      const stepSec = 1 / frameRate;
+      const roundToStep = (val) =>
+        Math.max(0, Math.min(video.duration || 0, Math.round(val / stepSec) * stepSec));
+
+      const startVal = Number.parseFloat(startTimeInput.value);
+      const endVal = Number.parseFloat(endTimeInput.value);
+
+      const requestedStart = Number.isFinite(startVal) ? startVal : 0;
+      const requestedEnd = Number.isFinite(endVal) ? endVal : (video.duration || 0);
+
+      processStartSec = roundToStep(requestedStart);
+      processEndSec = roundToStep(requestedEnd);
+
+      if (processEndSec < processStartSec) {
+        // Swap to ensure we have a valid window
+        [processStartSec, processEndSec] = [processEndSec, processStartSec];
+      }
+
+      // Clamp end to duration
+      if (video.duration && processEndSec > video.duration) {
+        processEndSec = video.duration;
+      }
+
+      video.currentTime = processStartSec;
+      updateCurrentTimeDisplay();
 
       await processFrames();
 
@@ -524,9 +779,16 @@
       }
     });
 
+    function updateCurrentTimeDisplay() {
+      if (!currentTimeDisplay) return;
+      const t = Number.isFinite(video.currentTime) ? video.currentTime : 0;
+      currentTimeDisplay.textContent = `${t.toFixed(3)} s`;
+    }
+
     async function processFrames() {
       const stepSec = 1 / frameRate;
-      while (video.currentTime < video.duration) {
+      let current = video.currentTime;
+      while (current <= processEndSec + 1e-6) {
         if (stopProcessFlag) {
           console.log("Stopping early, exporting partial data...");
           exportToCSV();
@@ -537,9 +799,10 @@
           return;
         }
 
-        await seekAndAnalyze(video.currentTime);
+        await seekAndAnalyze(current);
 
-        video.currentTime += stepSec;
+        current += stepSec;
+        video.currentTime = current;
         await new Promise((r) => setTimeout(r, 50));
       }
     }
@@ -554,7 +817,9 @@
           updateAllRectangles();
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-          const frameData = {};
+          const frameData = {
+            Time: Number(video.currentTime.toFixed(3)),
+          };
           for (const rect of rectangles) {
             const xCanvas = Math.round(rect.xNorm * canvas.width);
             const yCanvas = Math.round(rect.yNorm * canvas.height);
@@ -577,16 +842,281 @@
       });
     }
 
+    function parseSpeedValue(raw) {
+      if (raw === undefined || raw === null) return null;
+      const cleaned = String(raw).trim();
+      if (!cleaned || cleaned.toLowerCase() === 'error') return null;
+      const numericPattern = /^[-+]?(?:\d+\.?\d*|\d*\.?\d+)$/;
+      if (!numericPattern.test(cleaned)) return null;
+      const parsed = Number.parseFloat(cleaned);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function findNeighborIndex(values, startIndex, step) {
+      let index = startIndex;
+      while (index >= 0 && index < values.length) {
+        if (values[index] !== null) {
+          return index;
+        }
+        index += step;
+      }
+      return -1;
+    }
+
+    function removeShortReversalSpikes(times, speeds) {
+      const indicesToNull = new Set();
+      const maxSpan = 3;
+
+      for (let start = 0; start < speeds.length; start++) {
+        if (speeds[start] === null || indicesToNull.has(start)) continue;
+
+        for (let span = 1; span <= maxSpan && start + span - 1 < speeds.length; span++) {
+          const end = start + span - 1;
+
+          let contiguous = true;
+          for (let i = start; i <= end; i++) {
+            if (speeds[i] === null) {
+              contiguous = false;
+              break;
+            }
+          }
+          if (!contiguous) break;
+
+          const prevIdx = findNeighborIndex(speeds, start - 1, -1);
+          const nextIdx = findNeighborIndex(speeds, end + 1, 1);
+          if (prevIdx === -1 || nextIdx === -1) continue;
+
+          const deltaTimeIn = times[start] - times[prevIdx];
+          const deltaTimeOut = times[nextIdx] - times[end];
+          if (deltaTimeIn <= 0 || deltaTimeOut <= 0) continue;
+
+          const accelIn = ((speeds[start] - speeds[prevIdx]) * MPH_TO_MS) / deltaTimeIn;
+          const accelOut = ((speeds[nextIdx] - speeds[end]) * MPH_TO_MS) / deltaTimeOut;
+
+          if (accelIn === 0 || accelOut === 0) continue;
+          if (Math.sign(accelIn) === Math.sign(accelOut)) continue;
+          const meetsThreshold =
+            Math.abs(accelIn) >= MAX_REVERSAL_MS2 || Math.abs(accelOut) >= MAX_REVERSAL_MS2;
+          if (!meetsThreshold) continue;
+
+          for (let i = start; i <= end; i++) {
+            indicesToNull.add(i);
+          }
+          break;
+        }
+      }
+
+      indicesToNull.forEach((idx) => {
+        speeds[idx] = null;
+      });
+    }
+
+    function postProcessData(rawRows) {
+      const processed = rawRows.map((row) => ({ ...row }));
+
+      processed.forEach((row, idx) => {
+        const parsedTime = Number.parseFloat(row.Time);
+        const fallbackTime = idx / frameRate;
+        row.Time = Number.isFinite(parsedTime)
+          ? Number(parsedTime.toFixed(3))
+          : Number(fallbackTime.toFixed(3));
+      });
+
+      const times = processed.map((row) => row.Time);
+      const firstTime = times.length ? times[0] : 0;
+      const adjustedTimes = times.map((t) => Number((t - firstTime).toFixed(3)));
+      adjustedTimes.forEach((t, i) => {
+        processed[i].Time = t;
+      });
+
+      const hasSpeed = processed.some((row) => Object.prototype.hasOwnProperty.call(row, 'Speed'));
+      if (!hasSpeed) {
+        processed.forEach((row, idx) => {
+          row.Time = adjustedTimes[idx];
+          row.Distance = 0;
+        });
+        return processed;
+      }
+
+      const speeds = processed.map((row) => parseSpeedValue(row.Speed));
+
+      // Flag unrealistically high accelerations (> 7g) as missing
+      for (let i = 0; i < speeds.length; i++) {
+        if (speeds[i] === null) continue;
+        const prevIndex = findNeighborIndex(speeds, i - 1, -1);
+        if (prevIndex === -1) continue;
+        const deltaTime = adjustedTimes[i] - adjustedTimes[prevIndex];
+        if (deltaTime <= 0) continue;
+        const accel = ((speeds[i] - speeds[prevIndex]) * MPH_TO_MS) / deltaTime;
+        if (Math.abs(accel) > MAX_ACCEL_MS2) {
+          speeds[i] = null;
+        }
+      }
+
+      // Drop short-lived sign-flip spikes (>0.75g) likely caused by OCR noise.
+      removeShortReversalSpikes(adjustedTimes, speeds);
+
+      // Interpolate any missing/flagged speed values using surrounding points
+      for (let i = 0; i < speeds.length; i++) {
+        if (speeds[i] !== null) continue;
+        const prevIndex = findNeighborIndex(speeds, i - 1, -1);
+        const nextIndex = findNeighborIndex(speeds, i + 1, 1);
+        if (prevIndex === -1 || nextIndex === -1) continue;
+        const span = adjustedTimes[nextIndex] - adjustedTimes[prevIndex];
+        if (span <= 0) continue;
+        const ratio = (adjustedTimes[i] - adjustedTimes[prevIndex]) / span;
+        speeds[i] = speeds[prevIndex] + (speeds[nextIndex] - speeds[prevIndex]) * ratio;
+      }
+
+      // Flat-line extrapolate leading/trailing gaps
+      const firstValid = findNeighborIndex(speeds, 0, 1);
+      if (firstValid !== -1) {
+        for (let i = 0; i < firstValid; i++) {
+          speeds[i] = speeds[firstValid];
+        }
+      }
+      const lastValid = findNeighborIndex(speeds, speeds.length - 1, -1);
+      if (lastValid !== -1) {
+        for (let i = lastValid + 1; i < speeds.length; i++) {
+          speeds[i] = speeds[lastValid];
+        }
+      }
+
+      const distances = [0];
+      for (let i = 1; i < adjustedTimes.length; i++) {
+        const dt = adjustedTimes[i] - adjustedTimes[i - 1];
+        if (dt <= 0) {
+          distances[i] = distances[i - 1];
+          continue;
+        }
+        const vPrev = speeds[i - 1];
+        const vCurr = speeds[i];
+        if (vPrev === null || vCurr === null) {
+          distances[i] = distances[i - 1];
+          continue;
+        }
+        const avgMph = (vPrev + vCurr) / 2;
+        const avgFts = avgMph * MPH_TO_FTS;
+        distances[i] = distances[i - 1] + avgFts * dt;
+      }
+
+      processed.forEach((row, idx) => {
+        row.Time = adjustedTimes[idx];
+        row.Speed = speeds[idx] === null ? '' : Number(speeds[idx].toFixed(3));
+        row.Distance = Number(distances[idx].toFixed(3));
+      });
+
+      return processed;
+    }
+
+    function formatCsvCell(header, value) {
+      if (value === null || value === undefined || value === '') {
+        return '';
+      }
+      if ((header === 'Time' || header === 'Speed' || header === 'Distance') && typeof value === 'number') {
+        return value.toFixed(3);
+      }
+      return value;
+    }
+
+    function getExportBaseName() {
+      if (currentVideoName && currentVideoName !== 'unknown_video') {
+        return currentVideoName.replace(/\.[^/.]+$/, '') || currentVideoName;
+      }
+      return 'race_data';
+    }
+
     function exportToCSV() {
       if (!data.length) {
         alert('No data to export');
         return;
       }
-      const headers = Object.keys(data[0]).join(',');
-      const rows = data.map(row => Object.values(row).join(',')).join('\n');
-      const csv = `${headers}\n${rows}`;
+
+      const baseName = getExportBaseName();
+      const processedData = postProcessData(data);
+      const headers = [
+        'Time',
+        'Distance',
+        ...Object.keys(processedData[0]).filter((key) => key !== 'Time' && key !== 'Distance'),
+      ];
+
+      const unitsMap = {
+        Time: 's',
+        Distance: 'ft',
+        Speed: 'mph',
+      };
+      const unitsRow = headers.map((h) => unitsMap[h] || '').join(',');
+
+      const dataRows = processedData
+        .map((row) => headers.map((header) => formatCsvCell(header, row[header])).join(','))
+        .join('\n');
+
+      const csv = `${headers.join(',')}\n${unitsRow}\n${dataRows}`;
       const blob = new Blob([csv], { type: 'text/csv' });
-      saveAs(blob, 'race_data.csv');
+      saveAs(blob, `${baseName}.csv`);
+
+      exportMetadata(baseName);
+    }
+
+    function exportMetadata(baseName) {
+      const metadata = {
+        videoFileName: currentVideoName,
+        sampleRateHz: frameRate,
+        startTimeSec: Number((processStartSec ?? 0).toFixed(3)),
+        endTimeSec: Number(((processEndSec ?? video.duration ?? 0)).toFixed(3)),
+        rectangles: rectangles.map((r) => ({
+          signal: r.signalName,
+          xNorm: Number((r.xNorm ?? 0).toFixed(6)),
+          yNorm: Number((r.yNorm ?? 0).toFixed(6)),
+          wNorm: Number((r.wNorm ?? 0).toFixed(6)),
+          hNorm: Number((r.hNorm ?? 0).toFixed(6)),
+        })),
+      };
+
+      const txt = JSON.stringify(metadata, null, 2);
+      const blob = new Blob([txt], { type: 'text/plain' });
+      saveAs(blob, `${baseName || 'race_data'}.txt`);
+    }
+
+    function applyImportedConfig(meta) {
+      try {
+        // Update high-level settings
+        if (Number.isFinite(meta.sampleRateHz)) {
+          frameRate = Number(meta.sampleRateHz);
+          frameRateInput.value = meta.sampleRateHz;
+        }
+        if (Number.isFinite(meta.startTimeSec)) {
+          startTimeInput.value = meta.startTimeSec;
+          processStartSec = Number(meta.startTimeSec);
+        }
+        if (Number.isFinite(meta.endTimeSec)) {
+          endTimeInput.value = meta.endTimeSec;
+          processEndSec = Number(meta.endTimeSec);
+        }
+        if (meta.videoFileName) {
+          currentVideoName = meta.videoFileName;
+        }
+
+        // Rebuild rectangles
+        clearRectangles();
+        if (Array.isArray(meta.rectangles)) {
+          meta.rectangles.forEach((r) => {
+            createRectangle({
+              signalName: r.signal || 'Unnamed',
+              xNorm: Number.isFinite(r.xNorm) ? r.xNorm : 0.1,
+              yNorm: Number.isFinite(r.yNorm) ? r.yNorm : 0.1,
+              wNorm: Number.isFinite(r.wNorm) ? r.wNorm : 0.2,
+              hNorm: Number.isFinite(r.hNorm) ? r.hNorm : 0.1,
+            });
+          });
+          updateAllRectangles();
+        }
+
+        alert('Config imported. Load the referenced video file, then process.');
+      } catch (err) {
+        console.error('Error applying imported config:', err);
+        alert('Failed to apply imported config.');
+      }
     }
   </script>
 </body>
