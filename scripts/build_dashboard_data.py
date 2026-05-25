@@ -33,6 +33,7 @@ IDENTITY_COLUMNS = {
 
 COLUMN_ALIASES = {
     "Overall Place": "overall_place",
+    "Overall Percentile": "overall_percentile",
     "Total Score Raw": "total_score",
     "Total Penalty": "penalty",
     "Total Score": "total_score_clean",
@@ -61,6 +62,7 @@ INTEGER_KEYS = {
 }
 
 FIXED_RANGES = {
+    "overall_percentile": (0, 100),
     "total_score": (-100, 1000),
     "total_score_clean": (-100, 1000),
     "design_score": (0, 150),
@@ -133,7 +135,7 @@ def normalized_team(value):
 
 def direction_for(label, key):
     text = f"{label} {key}".lower()
-    if "score" in text or "points" in text:
+    if "score" in text or "points" in text or "percentile" in text:
         return "descending"
     return "ascending"
 
@@ -191,6 +193,18 @@ def build_metric(label, key):
     return metric
 
 
+def add_overall_percentile(df):
+    place = pd.to_numeric(df["overall_place"], errors="coerce")
+    event_cols = ["competition", "year", "vehicle_type"]
+    max_place = place.groupby([df[col] for col in event_cols]).transform("max")
+    percentile = np.where(
+        place.notna() & max_place.notna(),
+        np.where(max_place > 1, (max_place - place) / (max_place - 1) * 100, 100),
+        np.nan,
+    )
+    df["overall_percentile"] = np.round(percentile, 2)
+
+
 def main():
     if not SOURCE.exists():
         raise SystemExit(f"Missing source CSV: {SOURCE}")
@@ -227,9 +241,12 @@ def main():
         + "_"
         + df["team_normalized"].astype(str)
     )
+    add_overall_percentile(df)
 
     metric_start = list(raw.columns).index("Overall Place")
     metric_headers = list(raw.columns)[metric_start:]
+    metric_headers.insert(metric_headers.index("Overall Place") + 1, "Overall Percentile")
+    key_by_header["Overall Percentile"] = "overall_percentile"
     metric_keys = [key_by_header[h] for h in metric_headers]
 
     numeric_metric_keys = []

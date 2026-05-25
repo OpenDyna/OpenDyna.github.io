@@ -1,6 +1,7 @@
 key,label,group,direction,fixed_min,fixed_max,integer
 rank_by_y,Y-Metric Rank,Special,ascending,,,
 overall_place,Overall Place,Overall,ascending,,,True
+overall_percentile,Overall Percentile,Overall,descending,0.0,100.0,
 total_score,Total Score Raw,Overall,descending,-100.0,1000.0,
 penalty,Total Penalty,Overall,ascending,,,
 total_score_clean,Total Score,Overall,descending,-100.0,1000.0,
