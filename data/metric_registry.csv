@@ -1,0 +1,63 @@
+key,label,group,direction,fixed_min,fixed_max,integer
+rank_by_y,Y-Metric Rank,Special,ascending,,,
+overall_place,Overall Place,Overall,ascending,,,True
+total_score,Total Score Raw,Overall,descending,-100.0,1000.0,
+penalty,Total Penalty,Overall,ascending,,,
+total_score_clean,Total Score,Overall,descending,-100.0,1000.0,
+engine_cylinders,Number of Cylinders,Vehicle,ascending,,,True
+num_motors,Number of Motors,Vehicle,ascending,,,True
+engine_displacement_cc,Engine Displacement (cc),Vehicle,ascending,,,True
+tractive_system_voltage_v,Tractive System Voltage (V),Vehicle,ascending,,,
+weight_reported_kg,Weight (kg),Vehicle,ascending,,,
+weight_reported_lbs,Weight (lbs),Vehicle,ascending,,,
+design_status_final_or_blank,Design Status (Final or Blank),Design,ascending,,,
+design_raw_score,Design Raw Score,Design,descending,,,
+design_document_penalty,Design Document Penalty,Design,ascending,,,
+design_late_penalty,Design Late Penalty,Design,ascending,,,
+design_score,Design Score,Design,descending,0.0,150.0,
+presentation_status_final_or_blank_or_rfp,Presentation Status (Final or Blank or RFP),Presentation,ascending,,,
+presentation_raw_score,Presentation Raw Score,Presentation,descending,,,
+presentation_score,Presentation Score,Presentation,descending,0.0,75.0,
+cost_adjusted_cost,Cost Adjusted Cost,Cost,ascending,,,
+cost_price_score,Cost Price Score,Cost,descending,,,
+cost_accuracy_score,Cost Accuracy Score,Cost,descending,,,
+cost_engineering_drawings_score,Cost Engineering Drawings Score,Cost,descending,,,
+cost_scenario_score,Cost Scenario Score,Cost,descending,,,
+cost_penalty,Cost Penalty,Cost,ascending,,,
+cost_score,Cost Score,Cost,descending,0.0,100.0,
+acceleration_number_of_runs,Acceleration Number of Runs,Acceleration,ascending,,,True
+acceleration_best_time_raw,Acceleration Best Time Raw,Acceleration,ascending,,,
+acceleration_best_time_cones,Acceleration Best Time Cones,Acceleration,ascending,,,True
+acceleration_best_adjusted_time,Acceleration Best Adjusted Time,Acceleration,ascending,,,
+acceleration_score,Acceleration Score,Acceleration,descending,0.0,100.0,
+skidpad_number_of_runs,Skidpad Number of Runs,Skidpad,ascending,,,True
+skidpad_best_time_raw_left,Skidpad Best Time Raw Left,Skidpad,ascending,,,
+skidpad_best_time_raw_right,Skidpad Best Time Raw Right,Skidpad,ascending,,,
+skidpad_best_time_raw_average,Skidpad Best Time Raw Average,Skidpad,ascending,,,
+skidpad_best_time_cones,Skidpad Best Time Cones,Skidpad,ascending,,,True
+skidpad_best_adjusted_time,Skidpad Best Adjusted Time,Skidpad,ascending,,,
+skidpad_score,Skidpad Score,Skidpad,descending,0.0,75.0,
+autocross_number_of_runs,Autocross Number of Runs,Autocross,ascending,,,True
+autocross_best_time_raw,Autocross Best Time Raw,Autocross,ascending,,,
+autocross_best_time_cones,Autocross Best Time Cones,Autocross,ascending,,,True
+autocross_best_time_off_course,Autocross Best Time Off Course,Autocross,ascending,,,True
+autocross_best_adjusted_time,Autocross Best Adjusted Time,Autocross,ascending,,,
+autocross_score,Autocross Score,Autocross,descending,0.0,150.0,
+endurance_number_of_laps,Endurance Number of Laps,Endurance,ascending,,,True
+endurance_time_raw,Endurance Time Raw,Endurance,ascending,,,
+endurance_cones,Endurance Cones,Endurance,ascending,,,True
+endurance_off_course,Endurance Off Course,Endurance,ascending,,,True
+endurance_other_penalty,Endurance Other Penalty,Endurance,ascending,,,
+endurance_time_adjusted,Endurance Time Adjusted,Endurance,ascending,,,
+endurance_time_score,Endurance Time Score,Endurance,descending,,,
+endurance_lap_score,Endurance Lap Score,Endurance,descending,,,
+endurance_score,Endurance Score,Endurance,descending,0.0,350.0,
+efficiency_time_average_adjusted,Efficiency Time Average Adjusted,Efficiency,ascending,,,
+efficiency_laps_completed,Efficiency Laps Completed,Efficiency,ascending,,,True
+efficiency_fuel_used_ltr,Efficiency Fuel Used (ltr),Efficiency,ascending,,,
+efficiency_energy_used_kwh,Efficiency Energy Used (kWh),Efficiency,ascending,,,
+efficiency_adjusted_co2_kg,Efficiency Adjusted CO2 (kg),Efficiency,ascending,,,
+efficiency_average_adjusted_co2_per_lap_kg,Efficiency Average Adjusted CO2 per Lap (kg),Efficiency,ascending,,,
+efficiency_fuel_efficiency_factor,Efficiency Fuel Efficiency Factor,Efficiency,ascending,,,
+efficiency_score,Efficiency Score,Efficiency,descending,0.0,100.0,
+endurance_efficiency_score,Endurance+Efficiency Score,Endurance,descending,0.0,400.0,
