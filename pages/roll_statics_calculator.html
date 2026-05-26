@@ -1,0 +1,1849 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Roll Statics Calculator</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #101010;
+      color: #e8e8e8;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .app {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #101010;
+    }
+
+    .inputs {
+      flex: 0 0 380px;
+      width: 380px;
+      height: 100vh;
+      overflow-y: auto;
+      background: #111111;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .results {
+      flex: 1 1 auto;
+      height: 100vh;
+      min-width: 0;
+      overflow: hidden;
+      background: #111111;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      gap: 8px;
+    }
+
+    header {
+      padding: 10px 12px;
+      border: 1px solid #2f2f2f;
+      border-radius: 12px;
+      background: #181818;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    fieldset {
+      margin: 0;
+      padding: 10px 12px 12px;
+      border: 1px solid #2f2f2f;
+      border-radius: 12px;
+      background: #181818;
+    }
+
+    legend {
+      width: 100%;
+      margin: 0 0 8px;
+      padding: 0;
+      color: #f0f0f0;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    label {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 110px;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 6px;
+      color: #c9c9c9;
+    }
+
+    label span:first-child {
+      min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .unit {
+      display: block;
+      color: #858585;
+      font-size: 10px;
+      margin-top: 1px;
+    }
+
+    input, select, button {
+      font: inherit;
+      color: #eee;
+      background: #0f0f0f;
+      border: 1px solid #434343;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    input, select {
+      width: 100%;
+      height: 24px;
+      padding: 3px 5px;
+    }
+
+    input:focus, select:focus {
+      border-color: #bdbdbd;
+      background: #141414;
+    }
+
+    button {
+      height: 26px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    button:hover { background: #1e1e1e; }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 10px 12px;
+      border: 1px solid #2f2f2f;
+      border-radius: 12px;
+      background: #181818;
+    }
+
+    .wide { grid-column: 1 / -1; }
+
+    .result-top {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(110px, 1fr));
+      gap: 8px;
+    }
+
+    .metric {
+      min-height: 56px;
+      padding: 7px 8px;
+      border: 1px solid #2f2f2f;
+      border-radius: 10px;
+      background: #181818;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .metric .name {
+      color: #aaa;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .metric .value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f4f4f4;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.1;
+    }
+
+    .metric .small {
+      margin-top: 2px;
+      color: #888;
+      font-size: 10px;
+      line-height: 1.15;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tab-btn {
+      min-width: 130px;
+      height: 30px;
+      border: 1px solid #2f2f2f;
+      border-radius: 999px;
+      background: #181818;
+      color: #bdbdbd;
+      text-align: center;
+      padding: 0 12px;
+    }
+
+    .tab-btn.active {
+      background: #232323;
+      border-color: #5a5a5a;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .tab-panel {
+      display: none;
+      min-height: 0;
+    }
+
+    .tab-panel.active {
+      display: flex;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    #summaryTab {
+      flex-direction: column;
+      overflow: hidden;
+      gap: 8px;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: minmax(0, 1fr);
+      flex: 1 1 auto;
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #2f2f2f;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #181818;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .panel h2 {
+      margin: 0;
+      padding: 6px 8px;
+      border-bottom: 1px solid #2a2a2a;
+      background: #202020;
+      font-size: 11px;
+      font-weight: 700;
+      color: #f0f0f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 10.5px;
+    }
+
+    th, td {
+      padding: 4px 6px;
+      border-bottom: 1px solid #2b2b2b;
+      text-align: right;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      line-height: 1.15;
+    }
+
+    th:first-child, td:first-child { text-align: left; }
+
+    th {
+      color: #aaa;
+      background: #1c1c1c;
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .messages {
+      padding: 6px 8px;
+      border: 1px solid #2f2f2f;
+      border-radius: 12px;
+      background: #161616;
+      flex: 0 0 auto;
+    }
+
+    .message {
+      padding: 4px 6px;
+      margin-bottom: 4px;
+      border-left: 3px solid #777;
+      border-radius: 8px;
+      background: #1d1d1d;
+      color: #d0d0d0;
+      font-size: 10.5px;
+    }
+
+    .message:last-child { margin-bottom: 0; }
+    .message.bad { border-left-color: #ccc; color: #fff; }
+    .message.warn { border-left-color: #999; color: #ddd; }
+    .message.good { border-left-color: #666; color: #cfcfcf; }
+
+    .cross-grid {
+      display: grid;
+      grid-template-columns: 420px minmax(0, 1fr);
+      flex: 1 1 auto;
+      min-height: 0;
+      height: 100%;
+      gap: 8px;
+    }
+
+    .cross-grid.controls-collapsed {
+      grid-template-columns: 0 minmax(0, 1fr);
+    }
+
+    .cross-controls {
+      background: transparent;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 0;
+      min-width: 0;
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+
+    .cross-controls label {
+      grid-template-columns: 112px minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .cross-controls fieldset:last-child { margin-bottom: 0; }
+
+    .cross-controls label select,
+    .cross-controls label input {
+      min-width: 0;
+    }
+
+    .cross-grid.controls-collapsed .cross-controls {
+      opacity: 0;
+      overflow: hidden;
+      padding-right: 0;
+      transform: translateX(-10px);
+      pointer-events: none;
+    }
+
+    .cross-plot-area {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #2f2f2f;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #141414;
+    }
+
+    .plot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid #2a2a2a;
+      background: #1a1a1a;
+    }
+
+    .plot-title {
+      min-width: 0;
+    }
+
+    .plot-title b {
+      display: block;
+      color: #f2f2f2;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .plot-title span {
+      display: block;
+      margin-top: 2px;
+      color: #9d9d9d;
+      font-size: 10px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .plot-actions {
+      display: flex;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
+    .plot-action-btn {
+      min-width: 110px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #202020;
+      border-color: #4a4a4a;
+    }
+
+    .plot-toolbar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-bottom: 1px solid #2a2a2a;
+      background: #1c1c1c;
+    }
+
+    .plot-stat {
+      padding: 5px 7px;
+      border-right: 1px solid #2a2a2a;
+      color: #bbb;
+      min-height: 42px;
+      font-size: 10px;
+    }
+
+    .plot-stat:nth-child(4n) { border-right: 0; }
+
+    .plot-stat b {
+      display: block;
+      color: #eee;
+      font-size: 12px;
+      margin-top: 2px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.15;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+      background: #101010;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #crossCanvas {
+      background: #101010;
+      z-index: 0;
+    }
+
+    #crossOverlay {
+      background: transparent;
+      z-index: 1;
+      cursor: crosshair;
+    }
+
+    .plot-note {
+      padding: 6px 8px;
+      border-top: 1px solid #2a2a2a;
+      color: #aaa;
+      background: #1c1c1c;
+      font-size: 10.5px;
+    }
+
+    details {
+      border: 1px solid #2f2f2f;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 8px 10px;
+      cursor: pointer;
+      background: #202020;
+      color: #eee;
+      font-weight: 700;
+    }
+
+    .formulae {
+      padding: 8px;
+      color: #cfcfcf;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 11px;
+      background: #181818;
+      overflow: hidden;
+      line-height: 1.15;
+    }
+
+    .formulae div {
+      white-space: normal;
+      margin-bottom: 4px;
+    }
+
+    .notes {
+      padding: 8px;
+      color: #bbb;
+      background: #181818;
+      font-size: 10.5px;
+    }
+
+    .notes p { margin: 0 0 7px; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 1000px) {
+      html, body { overflow: auto; }
+      .app {
+        display: block;
+        height: auto;
+        overflow: visible;
+      }
+      .inputs, .results {
+        width: 100%;
+        height: auto;
+        overflow: visible;
+      }
+      .inputs {
+        width: 100%;
+        padding: 8px;
+      }
+      .result-top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tab-panel.active { display: block; }
+      .panels { grid-template-columns: 1fr; }
+      .cross-grid,
+      .cross-grid.controls-collapsed { grid-template-columns: 1fr; }
+      .cross-controls { padding-right: 0; }
+      .plot-header { padding: 8px; }
+      .plot-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .plot-stat:nth-child(4n) { border-right: 1px solid #333; }
+      .plot-stat:nth-child(2n) { border-right: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="inputs">
+      <header>
+        <h1>Roll Statics Calculator</h1>
+      </header>
+
+      <div id="messages" class="messages"></div>
+
+      <fieldset>
+        <legend>Setup</legend>
+        <label>
+          <span>Units<span class="unit">labels only; keep inputs consistent</span></span>
+          <select id="unitMode">
+            <option value="si" selected>SI</option>
+            <option value="imperial">Imperial</option>
+          </select>
+        </label>
+        <label>
+          <span>Roll stiffness source<span class="unit">computed or manual</span></span>
+          <select id="rollMode">
+            <option value="computed" selected>Computed</option>
+            <option value="manual">Manual</option>
+          </select>
+        </label>
+        <label>
+          <span>Corner stiffness input<span class="unit">symmetric or asymmetric</span></span>
+          <select id="stiffnessSymmetry">
+            <option value="symmetric" selected>Symmetric</option>
+            <option value="asymmetric">Asymmetric</option>
+          </select>
+        </label>
+        <label>
+          <span>Longitudinal mass input<span class="unit">CG station or total weight distribution</span></span>
+          <select id="cgMode">
+            <option value="cgLocation" selected>CG location</option>
+            <option value="distribution">Total weight distribution</option>
+          </select>
+        </label>
+        <label>
+          <span>Unsprung height input<span class="unit">direct CG height or tire unloaded radius</span></span>
+          <select id="unsprungHeightMode">
+            <option value="cgHeight" selected>Unsprung CG height</option>
+            <option value="wheelCenter">Tire unloaded radius</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Weights</legend>
+        <label><span>W total vehicle weight<span class="unit force-unit">N</span></span><input id="WTotal" type="number" step="any" value="13345"></label>
+        <label><span>W<sub>uF</sub> front unsprung weight<span class="unit force-unit">N</span></span><input id="WuF" type="number" step="any" value="1335"></label>
+        <label><span>W<sub>uR</sub> rear unsprung weight<span class="unit force-unit">N</span></span><input id="WuR" type="number" step="any" value="1335"></label>
+        <label><span>A<sub>Y</sub> lateral acceleration<span class="unit">g</span></span><input id="Ay" type="number" step="any" value="1.0"></label>
+        <label><span>μ tire-road coefficient<span class="unit">for SSF / μ</span></span><input id="mu" type="number" step="any" value="1.20"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Geometry</legend>
+        <label><span>t<sub>F</sub> front track<span class="unit length-unit">m</span></span><input id="tF" type="number" step="any" value="1.524"></label>
+        <label><span>t<sub>R</sub> rear track<span class="unit length-unit">m</span></span><input id="tR" type="number" step="any" value="1.524"></label>
+        <label><span>ℓ wheelbase<span class="unit length-unit">m</span></span><input id="ell" type="number" step="any" value="2.53"></label>
+        <label id="asWrap"><span>a<sub>s</sub> sprung CG from front axle<span class="unit length-unit">m</span></span><input id="as" type="number" step="any" value="1.25"></label>
+        <label id="frontWtDistWrap" class="hidden"><span>Front total weight distribution<span class="unit">percent, 0 to 100</span></span><input id="frontWtDistPct" type="number" step="any" value="50.6"></label>
+        <label><span>z<sub>RF</sub> front roll center height<span class="unit length-unit">m</span></span><input id="zRF" type="number" step="any" value="0.060"></label>
+        <label><span>z<sub>RR</sub> rear roll center height<span class="unit length-unit">m</span></span><input id="zRR" type="number" step="any" value="0.135"></label>
+        <label id="zWFWrap"><span>z<sub>WF</sub> front unsprung CG height<span class="unit length-unit">m</span></span><input id="zWF" type="number" step="any" value="0.305"></label>
+        <label id="zWRWrap"><span>z<sub>WR</sub> rear unsprung CG height<span class="unit length-unit">m</span></span><input id="zWR" type="number" step="any" value="0.305"></label>
+        <label id="rUFWrap" class="hidden"><span>r<sub>uF</sub> front tire unloaded radius<span class="unit length-unit">m</span></span><input id="rUF" type="number" step="any" value="0.320"></label>
+        <label id="rURWrap" class="hidden"><span>r<sub>uR</sub> rear tire unloaded radius<span class="unit length-unit">m</span></span><input id="rUR" type="number" step="any" value="0.320"></label>
+        <label><span>h total vehicle CG height<span class="unit length-unit">m</span></span><input id="hCG" type="number" step="any" value="0.500"></label>
+      </fieldset>
+
+      <fieldset id="manualRollInputs" class="hidden">
+        <legend>Manual Roll Stiffness</legend>
+        <label><span>K<sub>F</sub> front roll stiffness<span class="unit stiffness-unit">N·m/rad</span></span><input id="KFManual" type="number" step="any" value="30000"></label>
+        <label><span>K<sub>R</sub> rear roll stiffness<span class="unit stiffness-unit">N·m/rad</span></span><input id="KRManual" type="number" step="any" value="25000"></label>
+      </fieldset>
+
+      <fieldset id="computedRollInputs">
+        <legend>Computed Roll Stiffness</legend>
+        <label><span>K<sub>spring,LF</sub><span class="unit rate-unit">N/m</span></span><input id="KspringLF" type="number" step="any" value="60000"></label>
+        <label><span>MR<sub>LF</sub><span class="unit">spring/wheel</span></span><input id="MRLF" type="number" step="any" value="1.00"></label>
+        <label><span>K<sub>parasitic,LF</sub><span class="unit rate-unit">N/m</span></span><input id="KparLF" type="number" step="any" value="0"></label>
+        <label id="KspringRFWrap"><span>K<sub>spring,RF</sub><span class="unit rate-unit">N/m</span></span><input id="KspringRF" type="number" step="any" value="60000"></label>
+        <label id="MRRFWrap"><span>MR<sub>RF</sub><span class="unit">spring/wheel</span></span><input id="MRRF" type="number" step="any" value="1.00"></label>
+        <label id="KparRFWrap"><span>K<sub>parasitic,RF</sub><span class="unit rate-unit">N/m</span></span><input id="KparRF" type="number" step="any" value="0"></label>
+        <label><span>K<sub>spring,LR</sub><span class="unit rate-unit">N/m</span></span><input id="KspringLR" type="number" step="any" value="55000"></label>
+        <label><span>MR<sub>LR</sub><span class="unit">spring/wheel</span></span><input id="MRLR" type="number" step="any" value="1.00"></label>
+        <label><span>K<sub>parasitic,LR</sub><span class="unit rate-unit">N/m</span></span><input id="KparLR" type="number" step="any" value="0"></label>
+        <label id="KspringRRWrap"><span>K<sub>spring,RR</sub><span class="unit rate-unit">N/m</span></span><input id="KspringRR" type="number" step="any" value="55000"></label>
+        <label id="MRRRWrap"><span>MR<sub>RR</sub><span class="unit">spring/wheel</span></span><input id="MRRR" type="number" step="any" value="1.00"></label>
+        <label id="KparRRWrap"><span>K<sub>parasitic,RR</sub><span class="unit rate-unit">N/m</span></span><input id="KparRR" type="number" step="any" value="0"></label>
+        <label><span>K<sub>tire,LF</sub><span class="unit rate-unit">N/m</span></span><input id="KtireLF" type="number" step="any" value="220000"></label>
+        <label id="KtireRFWrap"><span>K<sub>tire,RF</sub><span class="unit rate-unit">N/m</span></span><input id="KtireRF" type="number" step="any" value="220000"></label>
+        <label><span>K<sub>tire,LR</sub><span class="unit rate-unit">N/m</span></span><input id="KtireLR" type="number" step="any" value="220000"></label>
+        <label id="KtireRRWrap"><span>K<sub>tire,RR</sub><span class="unit rate-unit">N/m</span></span><input id="KtireRR" type="number" step="any" value="220000"></label>
+        <label><span>K<sub>ARB,F</sub> front anti-roll bar<span class="unit roll-deg-unit">N·m/deg</span></span><input id="KarbF" type="number" step="any" value="0"></label>
+        <label><span>K<sub>ARB,R</sub> rear anti-roll bar<span class="unit roll-deg-unit">N·m/deg</span></span><input id="KarbR" type="number" step="any" value="0"></label>
+      </fieldset>
+
+      <div class="button-row">
+        <button id="copyBtn" type="button">Copy results</button>
+        <button id="copyInputsBtn" type="button">Copy inputs</button>
+        <button id="resetBtn" type="button" class="wide">Reset defaults</button>
+      </div>
+    </aside>
+
+    <section class="results">
+      <div class="result-top">
+        <div class="metric"><div class="name">Roll Gradient</div><div class="value" id="rollDeg">—</div><div class="small">deg/g <span id="rollRad"></span></div></div>
+        <div class="metric"><div class="name">Front Weight Distribution</div><div class="value" id="frontWeightDistTop">—</div><div class="small">total vehicle weight bias</div></div>
+        <div class="metric"><div class="name">Front LLTD</div><div class="value" id="frontDist">—</div><div class="small">of calculated total</div></div>
+        <div class="metric"><div class="name">LLTD Balance Delta</div><div class="value" id="frontLltdMinusBiasTop">—</div><div class="small">%</div></div>
+        <div class="metric"><div class="name">LLTD Balance Ratio</div><div class="value" id="frontLltdVsRearBiasTop">—</div><div class="small">%</div></div>
+        <div class="metric"><div class="name">SSF</div><div class="value" id="ssfAvgTop">—</div><div class="small">t<sub>avg</sub> / 2h</div></div>
+        <div class="metric"><div class="name">SSF / μ</div><div class="value" id="ssfOverGripTop">—</div><div class="small">rollover threshold / grip</div></div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" type="button" data-tab="summaryTab">Summary</button>
+        <button class="tab-btn" type="button" data-tab="crossPlotTab">Cross Plot</button>
+      </div>
+
+      <div id="summaryTab" class="tab-panel active">
+        <div class="panels">
+          <div class="panel">
+            <h2>Load Transfer Breakdown</h2>
+            <table>
+              <thead><tr><th>Term</th><th>Front</th><th>Rear</th></tr></thead>
+              <tbody>
+                <tr><td>Elastic sprung transfer</td><td id="frontElastic">—</td><td id="rearElastic">—</td></tr>
+                <tr><td>Geometric sprung transfer</td><td id="frontGeom">—</td><td id="rearGeom">—</td></tr>
+                <tr><td>Unsprung transfer</td><td id="frontUnsprung">—</td><td id="rearUnsprung">—</td></tr>
+                <tr><td><b>Total ΔW/A<sub>Y</sub></b></td><td id="frontTotalTable">—</td><td id="rearTotalTable">—</td></tr>
+                <tr><td>ΔW at selected A<sub>Y</sub></td><td id="frontAtAy">—</td><td id="rearAtAy">—</td></tr>
+                <tr><td>Total ΔW at selected A<sub>Y</sub></td><td colspan="2" id="totalAtAy">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="panel">
+            <h2>Roll Stiffness Calculation</h2>
+            <table>
+              <thead><tr><th>Term</th><th>Front</th><th>Rear</th></tr></thead>
+              <tbody>
+                <tr><td>Left wheel rate</td><td id="frontLeftWheelRate">—</td><td id="rearLeftWheelRate">—</td></tr>
+                <tr><td>Right wheel rate</td><td id="frontRightWheelRate">—</td><td id="rearRightWheelRate">—</td></tr>
+                <tr><td>Spring/parasitic roll stiffness</td><td id="frontSpringRoll">—</td><td id="rearSpringRoll">—</td></tr>
+                <tr><td>Anti-roll bar contribution</td><td id="frontArbRoll">—</td><td id="rearArbRoll">—</td></tr>
+                <tr><td>Suspension roll stiffness</td><td id="frontSuspRoll">—</td><td id="rearSuspRoll">—</td></tr>
+                <tr><td>Tire roll stiffness</td><td id="frontTireRoll">—</td><td id="rearTireRoll">—</td></tr>
+                <tr><td><b>Effective series roll stiffness</b></td><td id="frontEffRoll">—</td><td id="rearEffRoll">—</td></tr>
+                <tr><td>Effective series roll stiffness</td><td id="frontEffRollRad">—</td><td id="rearEffRollRad">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="panel">
+            <h2>Static Stability</h2>
+            <table>
+              <thead><tr><th>Term</th><th>Value</th></tr></thead>
+              <tbody>
+                <tr><td>Front SSF = t<sub>F</sub> / 2h</td><td id="frontSSF">—</td></tr>
+                <tr><td>Rear SSF = t<sub>R</sub> / 2h</td><td id="rearSSF">—</td></tr>
+                <tr><td>Average-track SSF</td><td id="avgSSF">—</td></tr>
+                <tr><td>Minimum-track SSF</td><td id="minSSF">—</td></tr>
+                <tr><td>Average-track SSF / μ</td><td id="avgSSFOverGrip">—</td></tr>
+                <tr><td>Minimum-track SSF / μ</td><td id="minSSFOverGrip">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="panel">
+            <h2>Intermediate Values</h2>
+            <table>
+              <tbody>
+                <tr><td>K′<sub>F</sub></td><td id="KFp">—</td></tr>
+                <tr><td>K′<sub>R</sub></td><td id="KRp">—</td></tr>
+                <tr><td>K<sub>F</sub> + K<sub>R</sub> − W<sub>s</sub>h<sub>2</sub></td><td id="denom">—</td></tr>
+                <tr><td>Derived W<sub>s</sub> sprung weight</td><td id="sprungWeight">—</td></tr>
+                <tr><td>Front total weight fraction</td><td id="frontTotalFrac">—</td></tr>
+                <tr><td>Rear total weight fraction</td><td id="rearTotalFrac">—</td></tr>
+                <tr><td>Front sprung weight fraction used</td><td id="frontFrac">—</td></tr>
+                <tr><td>Rear sprung weight fraction used</td><td id="rearFrac">—</td></tr>
+                <tr><td>a<sub>s</sub> used</td><td id="asUsed">—</td></tr>
+                <tr><td>Front unsprung height used</td><td id="zWFUsed">—</td></tr>
+                <tr><td>Rear unsprung height used</td><td id="zWRUsed">—</td></tr>
+                <tr><td>NRA angle θ</td><td id="theta">—</td></tr>
+                <tr><td>NRA height at sprung CG station</td><td id="zNraAtCg">—</td></tr>
+                <tr><td>Front wheel center height calculated</td><td id="frontWheelCenterHeight">—</td></tr>
+                <tr><td>Rear wheel center height calculated</td><td id="rearWheelCenterHeight">—</td></tr>
+                <tr><td>h<sub>s</sub> sprung CG height calculated</td><td id="hsCalc">—</td></tr>
+                <tr><td>h<sub>2</sub> perpendicular distance calculated</td><td id="h2Used">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      <div id="crossPlotTab" class="tab-panel">
+        <div class="cross-grid">
+          <div class="cross-controls">
+            <fieldset>
+              <legend>Cross Plot Variables</legend>
+              <label><span>X parameter<span class="unit">horizontal axis</span></span><select id="crossXParam"></select></label>
+              <label><span>X min<span class="unit" id="crossXUnitMin">units</span></span><input id="crossXMin" type="number" step="any" value="0"></label>
+              <label><span>X max<span class="unit" id="crossXUnitMax">units</span></span><input id="crossXMax" type="number" step="any" value="300"></label>
+              <label><span>Y parameter<span class="unit">vertical axis</span></span><select id="crossYParam"></select></label>
+              <label><span>Y min<span class="unit" id="crossYUnitMin">units</span></span><input id="crossYMin" type="number" step="any" value="0"></label>
+              <label><span>Y max<span class="unit" id="crossYUnitMax">units</span></span><input id="crossYMax" type="number" step="any" value="300"></label>
+              <label><span>Grid resolution<span class="unit">cells per axis</span></span><input id="crossN" type="number" step="1" value="90"></label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Outputs</legend>
+              <label><span>Background output<span class="unit">color surface</span></span><select id="crossColorOutput"></select></label>
+              <label><span>Solid isolines<span class="unit">primary contour output</span></span><select id="crossIsoAOutput"></select></label>
+              <label><span>Dashed isolines<span class="unit">secondary contour output</span></span><select id="crossIsoBOutput"></select></label>
+              <label><span>Number of isolines<span class="unit">per output</span></span><input id="crossLevels" type="number" step="1" value="8"></label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Current Point</legend>
+              <label><span>Show current input point<span class="unit">from left panel</span></span><select id="crossShowCurrent"><option value="yes" selected>Yes</option><option value="no">No</option></select></label>
+              <button id="crossApplyCurrent" type="button" class="wide">Center ranges around current values</button>
+            </fieldset>
+          </div>
+
+          <div class="cross-plot-area">
+            <div class="plot-header">
+              <div class="plot-title">
+                <b id="crossPlotTitle">DOE Surface Plot</b>
+                <span id="crossPlotSubtitle">Axes, surface output, and contour definitions move outside the canvas so the plot can use more of the tab.</span>
+              </div>
+              <div class="plot-actions">
+                <button id="crossToggleControls" type="button" class="plot-action-btn">Hide controls</button>
+              </div>
+            </div>
+            <div class="plot-toolbar">
+              <div class="plot-stat">X current<b id="crossXCurrent">—</b></div>
+              <div class="plot-stat">Y current<b id="crossYCurrent">—</b></div>
+              <div class="plot-stat">Solid at current<b id="crossIsoACurrent">—</b></div>
+              <div class="plot-stat">Dashed at current<b id="crossIsoBCurrent">—</b></div>
+              <div class="plot-stat">X cursor<b id="crossXHover">—</b></div>
+              <div class="plot-stat">Y cursor<b id="crossYHover">—</b></div>
+              <div class="plot-stat">Solid at cursor<b id="crossIsoAHover">—</b></div>
+              <div class="plot-stat">Dashed at cursor<b id="crossIsoBHover">—</b></div>
+            </div>
+            <div class="canvas-wrap"><canvas id="crossCanvas"></canvas><canvas id="crossOverlay"></canvas></div>
+            <div class="plot-note" id="crossNote">Surface output, solid isoline output, and dashed isoline output are defined in the left column. Hover snaps to the nearest sampled point.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DEG_PER_RAD = 180 / Math.PI;
+    const RAD_PER_DEG = Math.PI / 180;
+
+    const defaults = {
+      WTotal: 13345, WuF: 1335, WuR: 1335, Ay: 1.0, mu: 1.20,
+      tF: 1.524, tR: 1.524, ell: 2.53, as: 1.25,
+      zRF: 0.060, zRR: 0.135, zWF: 0.305, zWR: 0.305, rUF: 0.320, rUR: 0.320, hCG: 0.500,
+      cgMode: "cgLocation", frontWtDistPct: 50.6, unsprungHeightMode: "cgHeight",
+      stiffnessSymmetry: "symmetric",
+      rollMode: "computed", KFManual: 30000, KRManual: 25000,
+      KspringLF: 60000, KspringRF: 60000, KspringLR: 55000, KspringRR: 55000,
+      MRLF: 1.00, MRRF: 1.00, MRLR: 1.00, MRRR: 1.00,
+      KparLF: 0, KparRF: 0, KparLR: 0, KparRR: 0,
+      KtireLF: 220000, KtireRF: 220000, KtireLR: 220000, KtireRR: 220000,
+      KarbF: 0, KarbR: 0,
+      unitMode: "si"
+    };
+
+    const ids = Object.keys(defaults);
+    const numericIds = ids.filter(id => typeof defaults[id] === "number");
+    const $ = (id) => document.getElementById(id);
+
+    const crossParams = [
+      { id: "tF", label: "Front track width", unitKind: "length" },
+      { id: "tR", label: "Rear track width", unitKind: "length" },
+      { id: "KarbF", label: "Front ARB roll stiffness", unitKind: "rollDeg" },
+      { id: "KarbR", label: "Rear ARB roll stiffness", unitKind: "rollDeg" },
+      { id: "KspringLF", label: "Front spring rate", unitKind: "rate" },
+      { id: "KspringLR", label: "Rear spring rate", unitKind: "rate" },
+      { id: "MRLF", label: "Front motion ratio", unitKind: "none" },
+      { id: "MRLR", label: "Rear motion ratio", unitKind: "none" },
+      { id: "KparLF", label: "Front parasitic wheel rate", unitKind: "rate" },
+      { id: "KparLR", label: "Rear parasitic wheel rate", unitKind: "rate" },
+      { id: "KtireLF", label: "Front tire vertical stiffness", unitKind: "rate" },
+      { id: "KtireLR", label: "Rear tire vertical stiffness", unitKind: "rate" },
+      { id: "zRF", label: "Front roll center height", unitKind: "length" },
+      { id: "zRR", label: "Rear roll center height", unitKind: "length" },
+      { id: "hCG", label: "Total CG height", unitKind: "length" },
+      { id: "frontWtDistPct", label: "Front total weight distribution", unitKind: "percent" },
+      { id: "as", label: "Sprung CG from front axle", unitKind: "length" }
+    ];
+
+    const crossOutputs = [
+      { id: "frontLLTD", label: "Front LLTD", unit: "%", getter: r => 100 * r.frontDistribution },
+      { id: "rollGradient", label: "Roll gradient", unit: "deg/g", getter: r => r.intermediates.rollGradDeg },
+      { id: "rollGradientAbs", label: "Roll gradient magnitude", unit: "deg/g", getter: r => Math.abs(r.intermediates.rollGradDeg) },
+      { id: "frontLLT", label: "Front ΔW/Ay", unitKind: "forcePerG", getter: r => r.front.totalPerG },
+      { id: "rearLLT", label: "Rear ΔW/Ay", unitKind: "forcePerG", getter: r => r.rear.totalPerG },
+      { id: "totalLLT", label: "Total ΔW/Ay", unitKind: "forcePerG", getter: r => r.totalPerG },
+      { id: "frontKeff", label: "Front effective Kφ", unitKind: "rollDeg", getter: r => r.rollStiffness.KFUsedDeg },
+      { id: "rearKeff", label: "Rear effective Kφ", unitKind: "rollDeg", getter: r => r.rollStiffness.KRUsedDeg },
+      { id: "h2", label: "h₂", unitKind: "length", getter: r => r.intermediates.h2 },
+      { id: "hs", label: "Sprung CG height", unitKind: "length", getter: r => r.intermediates.hsCalc },
+      { id: "avgSSF", label: "Average SSF", unit: "", getter: r => r.stability.avgSSF },
+      { id: "avgSSFOverGrip", label: "Average SSF / μ", unit: "", getter: r => r.stability.avgSSFOverGrip }
+    ];
+
+    function num(id) {
+      const value = parseFloat($(id).value);
+      return Number.isFinite(value) ? value : NaN;
+    }
+
+    function fmt(x, digits = 3) {
+      if (!Number.isFinite(x)) return "—";
+      const ax = Math.abs(x);
+      if (ax !== 0 && (ax >= 1e7 || ax < 1e-4)) return x.toExponential(3);
+      return x.toLocaleString(undefined, { maximumFractionDigits: digits });
+    }
+
+    function pct(x) {
+      return Number.isFinite(x) ? `${fmt(100 * x, 2)}%` : "—";
+    }
+
+    function setText(id, value) {
+      const el = $(id);
+      if (el) el.innerHTML = value;
+    }
+
+    function units() {
+      const si = $("unitMode").value === "si";
+      return {
+        force: si ? "N" : "lbf",
+        length: si ? "m" : "ft",
+        rate: si ? "N/m" : "lbf/ft",
+        rollDeg: si ? "N·m/deg" : "lbf·ft/deg",
+        rollRad: si ? "N·m/rad" : "lbf·ft/rad",
+        forcePerG: si ? "N/g" : "lbf/g"
+      };
+    }
+
+    function unitForKind(kind) {
+      const u = units();
+      if (kind === "force") return u.force;
+      if (kind === "length") return u.length;
+      if (kind === "rate") return u.rate;
+      if (kind === "rollDeg") return u.rollDeg;
+      if (kind === "rollRad") return u.rollRad;
+      if (kind === "forcePerG") return u.forcePerG;
+      if (kind === "percent") return "%";
+      return "";
+    }
+
+    function outputUnit(out) {
+      return out.unit !== undefined ? out.unit : unitForKind(out.unitKind);
+    }
+
+    function shortUnit(kind) {
+      const u = unitForKind(kind);
+      return u || "unitless";
+    }
+
+    function updateUnitLabels() {
+      const u = units();
+      document.querySelectorAll(".force-unit").forEach(el => el.textContent = u.force);
+      document.querySelectorAll(".length-unit").forEach(el => el.textContent = u.length);
+      document.querySelectorAll(".rate-unit").forEach(el => el.textContent = u.rate);
+      document.querySelectorAll(".roll-deg-unit").forEach(el => el.textContent = u.rollDeg);
+      document.querySelectorAll(".stiffness-unit").forEach(el => el.textContent = u.rollRad);
+      document.querySelectorAll(".force-unit-per-g").forEach(el => el.textContent = u.forcePerG);
+      updateCrossUnitLabels();
+    }
+
+    function getInputs() {
+      const out = {};
+      numericIds.forEach(id => out[id] = num(id));
+      out.rollMode = $("rollMode").value;
+      out.cgMode = $("cgMode").value;
+      out.unsprungHeightMode = $("unsprungHeightMode").value;
+      out.stiffnessSymmetry = $("stiffnessSymmetry").value;
+      out.unitMode = $("unitMode").value;
+      return out;
+    }
+
+    function wheelRate(kSpring, motionRatio) {
+      return kSpring * motionRatio * motionRatio;
+    }
+
+    function axleRollStiffnessPerDeg(track, leftRate, rightRate) {
+      return Math.PI * track * track * leftRate * rightRate / (180 * (leftRate + rightRate));
+    }
+
+    function seriesStiffness(k1, k2) {
+      return (k1 * k2) / (k1 + k2);
+    }
+
+    function calculateRollStiffness(v) {
+      const symmetric = v.stiffnessSymmetry === "symmetric";
+      const frontLeftWheelRate = wheelRate(v.KspringLF, v.MRLF) + v.KparLF;
+      const frontRightWheelRate = symmetric ? frontLeftWheelRate : wheelRate(v.KspringRF, v.MRRF) + v.KparRF;
+      const rearLeftWheelRate = wheelRate(v.KspringLR, v.MRLR) + v.KparLR;
+      const rearRightWheelRate = symmetric ? rearLeftWheelRate : wheelRate(v.KspringRR, v.MRRR) + v.KparRR;
+
+      const frontTireLeftRate = v.KtireLF;
+      const frontTireRightRate = symmetric ? v.KtireLF : v.KtireRF;
+      const rearTireLeftRate = v.KtireLR;
+      const rearTireRightRate = symmetric ? v.KtireLR : v.KtireRR;
+
+      const frontSpringRollDeg = axleRollStiffnessPerDeg(v.tF, frontLeftWheelRate, frontRightWheelRate);
+      const rearSpringRollDeg = axleRollStiffnessPerDeg(v.tR, rearLeftWheelRate, rearRightWheelRate);
+      const frontSuspRollDeg = frontSpringRollDeg + v.KarbF;
+      const rearSuspRollDeg = rearSpringRollDeg + v.KarbR;
+      const frontTireRollDeg = axleRollStiffnessPerDeg(v.tF, frontTireLeftRate, frontTireRightRate);
+      const rearTireRollDeg = axleRollStiffnessPerDeg(v.tR, rearTireLeftRate, rearTireRightRate);
+      const frontEffRollDeg = seriesStiffness(frontSuspRollDeg, frontTireRollDeg);
+      const rearEffRollDeg = seriesStiffness(rearSuspRollDeg, rearTireRollDeg);
+      const frontEffRollRad = frontEffRollDeg * DEG_PER_RAD;
+      const rearEffRollRad = rearEffRollDeg * DEG_PER_RAD;
+
+      const KF = v.rollMode === "computed" ? frontEffRollRad : v.KFManual;
+      const KR = v.rollMode === "computed" ? rearEffRollRad : v.KRManual;
+
+      return {
+        frontLeftWheelRate, frontRightWheelRate, rearLeftWheelRate, rearRightWheelRate,
+        frontTireLeftRate, frontTireRightRate, rearTireLeftRate, rearTireRightRate,
+        frontSpringRollDeg, rearSpringRollDeg, frontSuspRollDeg, rearSuspRollDeg, frontTireRollDeg, rearTireRollDeg,
+        frontEffRollDeg, rearEffRollDeg, frontEffRollRad, rearEffRollRad,
+        KF, KR, KFUsedDeg: KF * RAD_PER_DEG, KRUsedDeg: KR * RAD_PER_DEG
+      };
+    }
+
+    function runModel(v) {
+      const roll = calculateRollStiffness(v);
+
+      let asUsed = v.as;
+      let frontFrac = (v.ell - v.as) / v.ell;
+      let rearFrac = v.as / v.ell;
+      let totalFrontWeight;
+      let totalRearWeight;
+      let totalFrontFrac;
+      let totalRearFrac;
+      const totalWeight = v.WTotal;
+      const sprungWeight = totalWeight - v.WuF - v.WuR;
+      if (v.cgMode === "distribution") {
+        totalFrontFrac = v.frontWtDistPct / 100;
+        totalRearFrac = 1 - totalFrontFrac;
+        totalFrontWeight = totalFrontFrac * totalWeight;
+        totalRearWeight = totalWeight - totalFrontWeight;
+        frontFrac = sprungWeight !== 0 ? (totalFrontWeight - v.WuF) / sprungWeight : NaN;
+        rearFrac = sprungWeight !== 0 ? (totalRearWeight - v.WuR) / sprungWeight : NaN;
+        asUsed = rearFrac * v.ell;
+      } else {
+        totalFrontWeight = frontFrac * sprungWeight + v.WuF;
+        totalRearWeight = rearFrac * sprungWeight + v.WuR;
+        totalFrontFrac = totalWeight !== 0 ? totalFrontWeight / totalWeight : NaN;
+        totalRearFrac = totalWeight !== 0 ? totalRearWeight / totalWeight : NaN;
+      }
+
+      const theta = Math.atan2(v.zRR - v.zRF, v.ell);
+      const zNraAtCg = v.zRF + rearFrac * (v.zRR - v.zRF);
+      const frontStaticWheelLoad = totalFrontWeight / 2;
+      const rearStaticWheelLoad = totalRearWeight / 2;
+      const frontWheelCenterHeight = 0.5 * (
+        (v.rUF - frontStaticWheelLoad / roll.frontTireLeftRate) +
+        (v.rUF - frontStaticWheelLoad / roll.frontTireRightRate)
+      );
+      const rearWheelCenterHeight = 0.5 * (
+        (v.rUR - rearStaticWheelLoad / roll.rearTireLeftRate) +
+        (v.rUR - rearStaticWheelLoad / roll.rearTireRightRate)
+      );
+      const zWFUsed = v.unsprungHeightMode === "wheelCenter" ? frontWheelCenterHeight : v.zWF;
+      const zWRUsed = v.unsprungHeightMode === "wheelCenter" ? rearWheelCenterHeight : v.zWR;
+      const hsCalc = sprungWeight > 0
+        ? (v.hCG * totalWeight - v.WuF * zWFUsed - v.WuR * zWRUsed) / sprungWeight
+        : NaN;
+      const h2 = (hsCalc - zNraAtCg) * Math.cos(theta);
+
+      const denom = roll.KF + roll.KR - sprungWeight * h2;
+      const KFp = roll.KF - frontFrac * sprungWeight * h2;
+      const KRp = roll.KR - rearFrac * sprungWeight * h2;
+      const rollGradRad = Math.abs(-sprungWeight * h2 / denom);
+      const rollGradDeg = rollGradRad * DEG_PER_RAD;
+
+      const frontElastic = (sprungWeight / v.tF) * (h2 * KFp / denom);
+      const frontGeom = (sprungWeight / v.tF) * (frontFrac * v.zRF);
+      const frontUnsprung = (v.WuF / v.tF) * zWFUsed;
+      const frontTotal = frontElastic + frontGeom + frontUnsprung;
+
+      const rearElastic = (sprungWeight / v.tR) * (h2 * KRp / denom);
+      const rearGeom = (sprungWeight / v.tR) * (rearFrac * v.zRR);
+      const rearUnsprung = (v.WuR / v.tR) * zWRUsed;
+      const rearTotal = rearElastic + rearGeom + rearUnsprung;
+
+      const total = frontTotal + rearTotal;
+      const frontDistribution = total !== 0 ? frontTotal / total : NaN;
+
+      const avgTrack = 0.5 * (v.tF + v.tR);
+      const minTrack = Math.min(v.tF, v.tR);
+      const frontSSFValue = v.tF / (2 * v.hCG);
+      const rearSSFValue = v.tR / (2 * v.hCG);
+      const avgSSFValue = avgTrack / (2 * v.hCG);
+      const minSSFValue = minTrack / (2 * v.hCG);
+      const avgSSFOverGripValue = avgSSFValue / v.mu;
+      const minSSFOverGripValue = minSSFValue / v.mu;
+
+      return {
+        inputs: v,
+        rollStiffness: roll,
+        intermediates: {
+          totalWeight, totalFrontWeight, totalRearWeight, totalFrontFrac, totalRearFrac,
+          sprungWeight, frontFrac, rearFrac, asUsed, theta_rad: theta, zNraAtCg, hsCalc, h2, denom, KFp, KRp,
+          rollGradRad, rollGradDeg, frontStaticWheelLoad, rearStaticWheelLoad, frontWheelCenterHeight, rearWheelCenterHeight,
+          zWFUsed, zWRUsed
+        },
+        front: { elastic: frontElastic, geometric: frontGeom, unsprung: frontUnsprung, totalPerG: frontTotal, totalAtAy: frontTotal * v.Ay },
+        rear: { elastic: rearElastic, geometric: rearGeom, unsprung: rearUnsprung, totalPerG: rearTotal, totalAtAy: rearTotal * v.Ay },
+        totalPerG: total,
+        totalAtAy: total * v.Ay,
+        frontDistribution,
+        stability: { frontSSF: frontSSFValue, rearSSF: rearSSFValue, avgSSF: avgSSFValue, minSSF: minSSFValue, avgSSFOverGrip: avgSSFOverGripValue, minSSFOverGrip: minSSFOverGripValue },
+        units: units()
+      };
+    }
+
+    function calculate() {
+      updateUnitLabels();
+      const u = units();
+      const v = getInputs();
+      const r = runModel(v);
+      const roll = r.rollStiffness;
+      const messages = [];
+
+      const badInputs = [];
+      ["WTotal","WuF","WuR","Ay","mu","tF","tR","ell","zRF","zRR","hCG"].forEach(id => {
+        if (!Number.isFinite(v[id])) badInputs.push(id);
+      });
+      if (v.unsprungHeightMode === "cgHeight") {
+        ["zWF","zWR"].forEach(id => { if (!Number.isFinite(v[id])) badInputs.push(id); });
+      } else {
+        ["rUF","rUR"].forEach(id => { if (!Number.isFinite(v[id])) badInputs.push(id); });
+      }
+      if (v.rollMode === "manual") {
+        ["KFManual","KRManual"].forEach(id => { if (!Number.isFinite(v[id])) badInputs.push(id); });
+      } else {
+        const computedIds = v.stiffnessSymmetry === "symmetric"
+          ? ["KspringLF","KspringLR","MRLF","MRLR","KparLF","KparLR","KtireLF","KtireLR","KarbF","KarbR"]
+          : ["KspringLF","KspringRF","KspringLR","KspringRR","MRLF","MRRF","MRLR","MRRR","KparLF","KparRF","KparLR","KparRR","KtireLF","KtireRF","KtireLR","KtireRR","KarbF","KarbR"];
+        computedIds.forEach(id => {
+          if (!Number.isFinite(v[id])) badInputs.push(id);
+        });
+      }
+      if (v.cgMode === "cgLocation" && !Number.isFinite(v.as)) badInputs.push("as");
+      if (v.cgMode === "distribution" && !Number.isFinite(v.frontWtDistPct)) badInputs.push("frontWtDistPct");
+      if (v.unsprungHeightMode === "wheelCenter") {
+        const tireIds = v.stiffnessSymmetry === "symmetric"
+          ? ["KtireLF", "KtireLR"]
+          : ["KtireLF", "KtireRF", "KtireLR", "KtireRR"];
+        tireIds.forEach(id => {
+          if (!Number.isFinite(v[id])) badInputs.push(id);
+        });
+      }
+
+      if (badInputs.length) messages.push({ type: "bad", text: `Invalid inputs: ${badInputs.join(", ")}.` });
+      if (v.WTotal <= 0) messages.push({ type: "bad", text: "Total vehicle weight must be greater than zero." });
+      if (r.intermediates.sprungWeight <= 0) messages.push({ type: "bad", text: "Derived sprung weight must be greater than zero. Total vehicle weight must exceed front plus rear unsprung weight." });
+      if (v.ell <= 0) messages.push({ type: "bad", text: "Wheelbase must be greater than zero." });
+      if (v.tF <= 0 || v.tR <= 0) messages.push({ type: "bad", text: "Track widths must be greater than zero." });
+      if (v.hCG <= 0) messages.push({ type: "bad", text: "CG height h must be greater than zero for SSF." });
+      if (v.mu <= 0) messages.push({ type: "bad", text: "Coefficient of friction μ must be greater than zero." });
+      if (v.cgMode === "cgLocation" && (v.as < 0 || v.as > v.ell)) messages.push({ type: "warn", text: "a_s is outside the wheelbase." });
+      if (v.cgMode === "distribution" && (v.frontWtDistPct < 0 || v.frontWtDistPct > 100)) messages.push({ type: "warn", text: "Front total weight distribution is outside 0 to 100%." });
+      if (r.intermediates.totalFrontWeight <= v.WuF) messages.push({ type: "bad", text: "Front total weight must exceed front unsprung weight so the derived front sprung weight stays positive." });
+      if (r.intermediates.totalRearWeight <= v.WuR) messages.push({ type: "bad", text: "Rear total weight must exceed rear unsprung weight so the derived rear sprung weight stays positive." });
+      if (v.rollMode === "computed") {
+        const mrIds = v.stiffnessSymmetry === "symmetric" ? ["MRLF","MRLR"] : ["MRLF","MRRF","MRLR","MRRR"];
+        const rateIds = v.stiffnessSymmetry === "symmetric" ? ["KspringLF","KspringLR","KtireLF","KtireLR"] : ["KspringLF","KspringRF","KspringLR","KspringRR","KtireLF","KtireRF","KtireLR","KtireRR"];
+        mrIds.forEach(id => { if (v[id] === 0) messages.push({ type: "warn", text: `${id} is zero, giving zero wheel rate.` }); });
+        rateIds.forEach(id => { if (v[id] <= 0) messages.push({ type: "bad", text: `${id} must be greater than zero.` }); });
+      }
+      if (v.unsprungHeightMode === "wheelCenter") {
+        if (v.rUF <= 0 || v.rUR <= 0) messages.push({ type: "bad", text: "Unloaded tire radii must be greater than zero." });
+        const tireIds = v.stiffnessSymmetry === "symmetric"
+          ? ["KtireLF", "KtireLR"]
+          : ["KtireLF", "KtireRF", "KtireLR", "KtireRR"];
+        tireIds.forEach(id => { if (v[id] <= 0) messages.push({ type: "bad", text: `${id} must be greater than zero for wheel center height calculation.` }); });
+        if (r.intermediates.frontWheelCenterHeight <= 0 || r.intermediates.rearWheelCenterHeight <= 0) messages.push({ type: "bad", text: "Derived wheel center height is less than or equal to zero. Increase unloaded radius or reduce static tire deflection." });
+      }
+      if (roll.KF <= 0 || roll.KR <= 0) messages.push({ type: "bad", text: "K_F and K_R must be greater than zero." });
+      if (r.intermediates.denom <= 0) messages.push({ type: "bad", text: "K_F + K_R − W_s h_2 is less than or equal to zero." });
+      if (r.intermediates.KFp <= 0) messages.push({ type: "warn", text: "K′F is less than or equal to zero." });
+      if (r.intermediates.KRp <= 0) messages.push({ type: "warn", text: "K′R is less than or equal to zero." });
+      if (!messages.length) messages.push({ type: "good", text: "Inputs are numerically valid." });
+
+      setText("rollDeg", fmt(r.intermediates.rollGradDeg, 3));
+      setText("rollRad", `(${fmt(r.intermediates.rollGradRad, 5)} rad/g)`);
+      setText("frontWeightDistTop", pct(r.intermediates.totalFrontFrac));
+      setText("frontDist", pct(r.frontDistribution));
+      setText("frontLltdMinusBiasTop", `${fmt((r.frontDistribution - r.intermediates.totalFrontFrac) * 100, 2)}%`);
+      setText("frontLltdVsRearBiasTop", `${fmt(r.intermediates.totalRearFrac !== 0 ? ((r.frontDistribution / r.intermediates.totalRearFrac) - 1) * 100 : NaN, 2)}%`);
+      setText("ssfAvgTop", fmt(r.stability.avgSSF, 3));
+      setText("ssfOverGripTop", fmt(r.stability.avgSSFOverGrip, 3));
+
+      setText("frontElastic", `${fmt(r.front.elastic, 3)} ${u.forcePerG}`);
+      setText("rearElastic", `${fmt(r.rear.elastic, 3)} ${u.forcePerG}`);
+      setText("frontGeom", `${fmt(r.front.geometric, 3)} ${u.forcePerG}`);
+      setText("rearGeom", `${fmt(r.rear.geometric, 3)} ${u.forcePerG}`);
+      setText("frontUnsprung", `${fmt(r.front.unsprung, 3)} ${u.forcePerG}`);
+      setText("rearUnsprung", `${fmt(r.rear.unsprung, 3)} ${u.forcePerG}`);
+      setText("frontTotalTable", `<b>${fmt(r.front.totalPerG, 3)} ${u.forcePerG}</b>`);
+      setText("rearTotalTable", `<b>${fmt(r.rear.totalPerG, 3)} ${u.forcePerG}</b>`);
+      setText("frontAtAy", `${fmt(r.front.totalAtAy, 2)} ${u.force}`);
+      setText("rearAtAy", `${fmt(r.rear.totalAtAy, 2)} ${u.force}`);
+      setText("totalAtAy", `${fmt(r.totalAtAy, 2)} ${u.force}`);
+
+      setText("frontLeftWheelRate", `${fmt(roll.frontLeftWheelRate, 2)} ${u.rate}`);
+      setText("frontRightWheelRate", `${fmt(roll.frontRightWheelRate, 2)} ${u.rate}`);
+      setText("rearLeftWheelRate", `${fmt(roll.rearLeftWheelRate, 2)} ${u.rate}`);
+      setText("rearRightWheelRate", `${fmt(roll.rearRightWheelRate, 2)} ${u.rate}`);
+      setText("frontSpringRoll", `${fmt(roll.frontSpringRollDeg, 3)} ${u.rollDeg}`);
+      setText("rearSpringRoll", `${fmt(roll.rearSpringRollDeg, 3)} ${u.rollDeg}`);
+      setText("frontArbRoll", `${fmt(v.KarbF, 3)} ${u.rollDeg}`);
+      setText("rearArbRoll", `${fmt(v.KarbR, 3)} ${u.rollDeg}`);
+      setText("frontSuspRoll", `${fmt(roll.frontSuspRollDeg, 3)} ${u.rollDeg}`);
+      setText("rearSuspRoll", `${fmt(roll.rearSuspRollDeg, 3)} ${u.rollDeg}`);
+      setText("frontTireRoll", `${fmt(roll.frontTireRollDeg, 3)} ${u.rollDeg}`);
+      setText("rearTireRoll", `${fmt(roll.rearTireRollDeg, 3)} ${u.rollDeg}`);
+      setText("frontEffRoll", `<b>${fmt(roll.frontEffRollDeg, 3)} ${u.rollDeg}</b>`);
+      setText("rearEffRoll", `<b>${fmt(roll.rearEffRollDeg, 3)} ${u.rollDeg}</b>`);
+      setText("frontEffRollRad", `${fmt(roll.KF, 3)} ${u.rollRad}`);
+      setText("rearEffRollRad", `${fmt(roll.KR, 3)} ${u.rollRad}`);
+
+      setText("frontSSF", fmt(r.stability.frontSSF, 4));
+      setText("rearSSF", fmt(r.stability.rearSSF, 4));
+      setText("avgSSF", fmt(r.stability.avgSSF, 4));
+      setText("minSSF", fmt(r.stability.minSSF, 4));
+      setText("avgSSFOverGrip", fmt(r.stability.avgSSFOverGrip, 4));
+      setText("minSSFOverGrip", fmt(r.stability.minSSFOverGrip, 4));
+
+      setText("KFp", `${fmt(r.intermediates.KFp, 3)} ${u.rollRad}`);
+      setText("KRp", `${fmt(r.intermediates.KRp, 3)} ${u.rollRad}`);
+      setText("denom", `${fmt(r.intermediates.denom, 3)} ${u.rollRad}`);
+      setText("sprungWeight", `${fmt(r.intermediates.sprungWeight, 3)} ${u.force}`);
+      setText("frontTotalFrac", `${fmt(r.intermediates.totalFrontFrac, 5)} (${pct(r.intermediates.totalFrontFrac)})`);
+      setText("rearTotalFrac", `${fmt(r.intermediates.totalRearFrac, 5)} (${pct(r.intermediates.totalRearFrac)})`);
+      setText("frontFrac", `${fmt(r.intermediates.frontFrac, 5)} (${pct(r.intermediates.frontFrac)})`);
+      setText("rearFrac", `${fmt(r.intermediates.rearFrac, 5)} (${pct(r.intermediates.rearFrac)})`);
+      setText("asUsed", `${fmt(r.intermediates.asUsed, 5)} ${u.length}`);
+      setText("zWFUsed", `${fmt(r.intermediates.zWFUsed, 5)} ${u.length}`);
+      setText("zWRUsed", `${fmt(r.intermediates.zWRUsed, 5)} ${u.length}`);
+      setText("theta", `${fmt(r.intermediates.theta_rad, 6)} rad (${fmt(r.intermediates.theta_rad * DEG_PER_RAD, 4)} deg)`);
+      setText("zNraAtCg", `${fmt(r.intermediates.zNraAtCg, 5)} ${u.length}`);
+      setText("frontWheelCenterHeight", `${fmt(r.intermediates.frontWheelCenterHeight, 5)} ${u.length}`);
+      setText("rearWheelCenterHeight", `${fmt(r.intermediates.rearWheelCenterHeight, 5)} ${u.length}`);
+      setText("hsCalc", `${fmt(r.intermediates.hsCalc, 5)} ${u.length}`);
+      setText("h2Used", `${fmt(r.intermediates.h2, 5)} ${u.length}`);
+
+      $("messages").innerHTML = messages.map(m => `<div class="message ${m.type}">${m.text}</div>`).join("");
+
+      $("computedRollInputs").classList.toggle("hidden", v.rollMode !== "computed");
+      $("manualRollInputs").classList.toggle("hidden", v.rollMode !== "manual");
+      $("asWrap").classList.toggle("hidden", v.cgMode !== "cgLocation");
+      $("frontWtDistWrap").classList.toggle("hidden", v.cgMode !== "distribution");
+      $("zWFWrap").classList.toggle("hidden", v.unsprungHeightMode !== "cgHeight");
+      $("zWRWrap").classList.toggle("hidden", v.unsprungHeightMode !== "cgHeight");
+      $("rUFWrap").classList.toggle("hidden", v.unsprungHeightMode !== "wheelCenter");
+      $("rURWrap").classList.toggle("hidden", v.unsprungHeightMode !== "wheelCenter");
+      const hideRight = v.stiffnessSymmetry === "symmetric";
+      ["KspringRFWrap","MRRFWrap","KparRFWrap","KspringRRWrap","MRRRWrap","KparRRWrap","KtireRFWrap","KtireRRWrap"].forEach(id => {
+        const el = $(id);
+        if (el) el.classList.toggle("hidden", hideRight);
+      });
+
+      window.latestResults = r;
+      drawCrossPlot();
+    }
+
+    function populateCrossControls() {
+      const x = $("crossXParam");
+      const y = $("crossYParam");
+      const outs = [$("crossColorOutput"), $("crossIsoAOutput"), $("crossIsoBOutput")];
+
+      crossParams.forEach(p => {
+        const optX = document.createElement("option");
+        optX.value = p.id;
+        optX.textContent = p.label;
+        x.appendChild(optX);
+        const optY = document.createElement("option");
+        optY.value = p.id;
+        optY.textContent = p.label;
+        y.appendChild(optY);
+      });
+
+      crossOutputs.forEach(o => {
+        outs.forEach(sel => {
+          const opt = document.createElement("option");
+          opt.value = o.id;
+          opt.textContent = o.label;
+          sel.appendChild(opt);
+        });
+      });
+
+      x.value = "KarbF";
+      y.value = "KarbR";
+      $("crossColorOutput").value = "rollGradientAbs";
+      $("crossIsoAOutput").value = "frontLLTD";
+      $("crossIsoBOutput").value = "rollGradientAbs";
+      updateCrossUnitLabels();
+    }
+
+    function crossParam(id) {
+      return crossParams.find(p => p.id === id);
+    }
+
+    function crossOutput(id) {
+      return crossOutputs.find(o => o.id === id);
+    }
+
+    function updateCrossUnitLabels() {
+      if (!$('crossXParam')) return;
+      const xp = crossParam($("crossXParam").value) || crossParams[0];
+      const yp = crossParam($("crossYParam").value) || crossParams[1];
+      setText("crossXUnitMin", unitForKind(xp.unitKind) || "unitless");
+      setText("crossXUnitMax", unitForKind(xp.unitKind) || "unitless");
+      setText("crossYUnitMin", unitForKind(yp.unitKind) || "unitless");
+      setText("crossYUnitMax", unitForKind(yp.unitKind) || "unitless");
+    }
+
+    function setParam(v, id, value) {
+      v[id] = value;
+      if (v.stiffnessSymmetry === "symmetric") {
+        if (id === "KspringLF") v.KspringRF = value;
+        if (id === "MRLF") v.MRRF = value;
+        if (id === "KparLF") v.KparRF = value;
+        if (id === "KtireLF") v.KtireRF = value;
+        if (id === "KspringLR") v.KspringRR = value;
+        if (id === "MRLR") v.MRRR = value;
+        if (id === "KparLR") v.KparRR = value;
+        if (id === "KtireLR") v.KtireRR = value;
+      }
+      if (id === "frontWtDistPct") v.cgMode = "distribution";
+      if (id === "as") v.cgMode = "cgLocation";
+      if (id === "zWF" || id === "zWR") v.unsprungHeightMode = "cgHeight";
+      if (id === "rUF" || id === "rUR") v.unsprungHeightMode = "wheelCenter";
+    }
+
+    function makeLevels(min, max, n) {
+      const levels = [];
+      if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return levels;
+      const count = Math.max(2, Math.min(20, Math.round(n)));
+      const step = (max - min) / (count + 1);
+      for (let i = 1; i <= count; i++) levels.push(min + step * i);
+      return levels;
+    }
+
+    function includeLevel(levels, value, min, max) {
+      if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max)) return levels;
+      if (value < Math.min(min, max) || value > Math.max(min, max)) return levels;
+      const tol = Math.max(Math.abs(max - min) * 0.004, 1e-9);
+      if (levels.some(level => Math.abs(level - value) <= tol)) return levels;
+      return [...levels, value].sort((a, b) => a - b);
+    }
+
+    function clamp01(z) {
+      return Math.max(0, Math.min(1, z));
+    }
+
+    function colorRamp(z) {
+      const t = clamp01(z);
+      const hue = 228 - 223 * t;
+      const sat = 58;
+      const light = 34 + 23 * t;
+      return `hsl(${hue}, ${sat}%, ${light}%)`;
+    }
+
+    function syncCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(300, Math.floor(rect.width * dpr));
+      const h = Math.max(300, Math.floor(rect.height * dpr));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      return { dpr, w: w / dpr, h: h / dpr };
+    }
+
+    function clearHoverReadout() {
+      setText("crossXHover", "—");
+      setText("crossYHover", "—");
+      setText("crossIsoAHover", "—");
+      setText("crossIsoBHover", "—");
+    }
+
+    function updateCrossLegend(state, aCur, bCur) {
+      const xUnit = shortUnit(state.xp.unitKind);
+      const yUnit = shortUnit(state.yp.unitKind);
+
+      setText("crossPlotTitle", `${state.xp.label} vs ${state.yp.label}`);
+      setText("crossPlotSubtitle", `X: ${state.xp.label} [${xUnit}] | Y: ${state.yp.label} [${yUnit}]`);
+      setText("crossNote", `Surface: ${state.colorOut.label}. Solid current: ${fmt(aCur, 4)} ${outputUnit(state.isoAOut)}. Dashed current: ${fmt(bCur, 4)} ${outputUnit(state.isoBOut)}.`);
+    }
+
+    function drawContour(ctx, vals, xs, ys, nx, ny, level, plot, style) {
+      ctx.save();
+      ctx.strokeStyle = style.color;
+      ctx.lineWidth = style.width || 1;
+      ctx.setLineDash(style.dash || []);
+      ctx.globalAlpha = style.alpha || 1;
+      ctx.beginPath();
+
+      function interp(p1, p2, v1, v2) {
+        const den = v2 - v1;
+        const t = Math.abs(den) < 1e-12 ? 0.5 : (level - v1) / den;
+        return { x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) };
+      }
+
+      for (let j = 0; j < ny - 1; j++) {
+        for (let i = 0; i < nx - 1; i++) {
+          const v0 = vals[j][i];
+          const v1 = vals[j][i + 1];
+          const v2 = vals[j + 1][i + 1];
+          const v3 = vals[j + 1][i];
+          if (![v0, v1, v2, v3].every(Number.isFinite)) continue;
+
+          const p0 = toPx(xs[i], ys[j], plot);
+          const p1 = toPx(xs[i + 1], ys[j], plot);
+          const p2 = toPx(xs[i + 1], ys[j + 1], plot);
+          const p3 = toPx(xs[i], ys[j + 1], plot);
+          const pts = [];
+
+          if ((v0 - level) * (v1 - level) <= 0 && v0 !== v1) pts.push(interp(p0, p1, v0, v1));
+          if ((v1 - level) * (v2 - level) <= 0 && v1 !== v2) pts.push(interp(p1, p2, v1, v2));
+          if ((v2 - level) * (v3 - level) <= 0 && v2 !== v3) pts.push(interp(p2, p3, v2, v3));
+          if ((v3 - level) * (v0 - level) <= 0 && v3 !== v0) pts.push(interp(p3, p0, v3, v0));
+
+          if (pts.length === 2) {
+            ctx.moveTo(pts[0].x, pts[0].y);
+            ctx.lineTo(pts[1].x, pts[1].y);
+          } else if (pts.length === 4) {
+            ctx.moveTo(pts[0].x, pts[0].y);
+            ctx.lineTo(pts[1].x, pts[1].y);
+            ctx.moveTo(pts[2].x, pts[2].y);
+            ctx.lineTo(pts[3].x, pts[3].y);
+          }
+        }
+      }
+
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function toPx(x, y, plot) {
+      const px = plot.left + (x - plot.xMin) / (plot.xMax - plot.xMin) * plot.w;
+      const py = plot.top + plot.h - (y - plot.yMin) / (plot.yMax - plot.yMin) * plot.h;
+      return { x: px, y: py };
+    }
+
+    function computePlotFrame(ctx, xMin, xMax, yMin, yMax, cw, ch) {
+      ctx.save();
+      ctx.font = "11px Arial";
+      let maxYWidth = 0;
+      for (let i = 0; i <= 5; i++) {
+        const yVal = yMin + (yMax - yMin) * i / 5;
+        maxYWidth = Math.max(maxYWidth, ctx.measureText(fmt(yVal, 4)).width);
+      }
+      let edgeXWidth = 0;
+      [xMin, xMax].forEach(xVal => {
+        edgeXWidth = Math.max(edgeXWidth, ctx.measureText(fmt(xVal, 4)).width);
+      });
+      ctx.restore();
+      const left = Math.max(50, Math.ceil(maxYWidth) + 16);
+      const right = Math.max(18, Math.ceil(edgeXWidth * 0.5) + 6);
+      return { left, right, top: 18, bottom: 32 };
+    }
+
+    function paintCrossPlot(state) {
+      const { canvas, cw, ch, dpr, plot, xs, ys, colorVals, isoAVals, isoBVals, cMin, cMax, aLevels, bLevels, xp, yp, colorOut, isoAOut, isoBOut, base } = state;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cw, ch);
+
+      ctx.fillStyle = "#0b0b0b";
+      ctx.fillRect(0, 0, cw, ch);
+
+      for (let j = 0; j < ys.length - 1; j++) {
+        for (let i = 0; i < xs.length - 1; i++) {
+          const val = colorVals[j][i];
+          if (!Number.isFinite(val)) continue;
+          const z = cMax === cMin ? 0.5 : clamp01((val - cMin) / (cMax - cMin));
+          const p0 = toPx(xs[i], ys[j], plot);
+          const p1 = toPx(xs[i + 1], ys[j + 1], plot);
+          ctx.fillStyle = colorRamp(z);
+          ctx.fillRect(p0.x, p1.y, Math.ceil(p1.x - p0.x) + 1, Math.ceil(p0.y - p1.y) + 1);
+        }
+      }
+
+      ctx.strokeStyle = "#777";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(plot.left, plot.top, plot.w, plot.h);
+
+      drawGrid(ctx, plot);
+      aLevels.forEach(level => drawContour(ctx, isoAVals, xs, ys, xs.length, ys.length, level, plot, {
+        color: "#f2f2f2",
+        width: 1.4,
+        alpha: 0.95
+      }));
+      bLevels.forEach(level => drawContour(ctx, isoBVals, xs, ys, xs.length, ys.length, level, plot, { color: "#081119", width: 2.0, dash: [6, 4], alpha: 0.85 }));
+      bLevels.forEach(level => drawContour(ctx, isoBVals, xs, ys, xs.length, ys.length, level, plot, {
+        color: "#e3eef8",
+        width: 1.0,
+        dash: [6, 4],
+        alpha: 0.95
+      }));
+
+      drawAxes(ctx, plot, xp, yp);
+
+      const currentX = base[state.xId];
+      const currentY = base[state.yId];
+      const currentR = runModel(base);
+      const aCur = isoAOut.getter(currentR);
+      const bCur = isoBOut.getter(currentR);
+      setText("crossXCurrent", `${fmt(currentX, 4)} ${unitForKind(xp.unitKind)}`);
+      setText("crossYCurrent", `${fmt(currentY, 4)} ${unitForKind(yp.unitKind)}`);
+      setText("crossIsoACurrent", `${fmt(aCur, 4)} ${outputUnit(isoAOut)}`);
+      setText("crossIsoBCurrent", `${fmt(bCur, 4)} ${outputUnit(isoBOut)}`);
+      updateCrossLegend(state, aCur, bCur);
+    }
+
+    function drawMarker(ctx, point, color, size = 6) {
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(point.x - size, point.y);
+      ctx.lineTo(point.x + size, point.y);
+      ctx.moveTo(point.x, point.y - size);
+      ctx.lineTo(point.x, point.y + size);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(8, 12, 16, 0.95)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawHoverTooltip(ctx, state, hover) {
+      const lines = [
+        `X ${fmt(hover.x, 4)} ${unitForKind(state.xp.unitKind)}`,
+        `Y ${fmt(hover.y, 4)} ${unitForKind(state.yp.unitKind)}`,
+        `Solid ${fmt(hover.aValue, 4)} ${outputUnit(state.isoAOut)}`,
+        `Dashed ${fmt(hover.bValue, 4)} ${outputUnit(state.isoBOut)}`
+      ];
+      ctx.save();
+      ctx.font = "11px Arial";
+      const width = Math.max(...lines.map(line => ctx.measureText(line).width)) + 16;
+      const height = lines.length * 14 + 10;
+      let x = hover.point.x + 12;
+      let y = hover.point.y - height - 10;
+      if (x + width > state.cw - 8) x = hover.point.x - width - 12;
+      if (y < 8) y = hover.point.y + 12;
+      ctx.fillStyle = "rgba(10, 14, 18, 0.88)";
+      ctx.strokeStyle = "rgba(239, 245, 250, 0.32)";
+      ctx.lineWidth = 1;
+      ctx.fillRect(x, y, width, height);
+      ctx.strokeRect(x, y, width, height);
+      ctx.fillStyle = "#f1f4f6";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      lines.forEach((line, idx) => ctx.fillText(line, x + 8, y + 6 + idx * 14));
+      ctx.restore();
+    }
+
+    function drawCrossOverlay() {
+      const canvas = $("crossOverlay");
+      const state = window.crossPlotState;
+      if (!canvas || !state) return;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(state.overlayDpr, 0, 0, state.overlayDpr, 0, 0);
+      ctx.clearRect(0, 0, state.cw, state.ch);
+
+      const currentX = state.base[state.xId];
+      const currentY = state.base[state.yId];
+      if ($("crossShowCurrent").value === "yes" && Number.isFinite(currentX) && Number.isFinite(currentY)) {
+        if (currentX >= state.plot.xMin && currentX <= state.plot.xMax && currentY >= state.plot.yMin && currentY <= state.plot.yMax) {
+          const currentPoint = toPx(currentX, currentY, state.plot);
+          ctx.save();
+          ctx.strokeStyle = "rgba(214, 214, 214, 0.34)";
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([7, 5]);
+          ctx.beginPath();
+          ctx.moveTo(state.plot.left, currentPoint.y);
+          ctx.lineTo(state.plot.left + state.plot.w, currentPoint.y);
+          ctx.moveTo(currentPoint.x, state.plot.top);
+          ctx.lineTo(currentPoint.x, state.plot.top + state.plot.h);
+          ctx.stroke();
+          ctx.restore();
+          drawMarker(ctx, currentPoint, "#e0e0e0", 7);
+        }
+      }
+
+      if (window.crossHover) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(176, 176, 176, 0.48)";
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(state.plot.left, window.crossHover.point.y);
+        ctx.lineTo(state.plot.left + state.plot.w, window.crossHover.point.y);
+        ctx.moveTo(window.crossHover.point.x, state.plot.top);
+        ctx.lineTo(window.crossHover.point.x, state.plot.top + state.plot.h);
+        ctx.stroke();
+        ctx.restore();
+        drawMarker(ctx, window.crossHover.point, "#bdbdbd", 7);
+        drawHoverTooltip(ctx, state, window.crossHover);
+      }
+    }
+
+    function drawCrossPlot() {
+      const canvas = $("crossCanvas");
+      const overlay = $("crossOverlay");
+      if (!canvas || !overlay || !window.latestResults) return;
+      const baseMetrics = syncCanvas(canvas);
+      const overlayMetrics = syncCanvas(overlay);
+      const cw = Math.min(baseMetrics.w, overlayMetrics.w);
+      const ch = Math.min(baseMetrics.h, overlayMetrics.h);
+      const base = getInputs();
+      const xId = $("crossXParam").value;
+      const yId = $("crossYParam").value;
+      const xp = crossParam(xId);
+      const yp = crossParam(yId);
+      const colorOut = crossOutput($("crossColorOutput").value);
+      const isoAOut = crossOutput($("crossIsoAOutput").value);
+      const isoBOut = crossOutput($("crossIsoBOutput").value);
+      const xMin = parseFloat($("crossXMin").value);
+      const xMax = parseFloat($("crossXMax").value);
+      const yMin = parseFloat($("crossYMin").value);
+      const yMax = parseFloat($("crossYMax").value);
+      const n = Math.max(10, Math.min(1000, Math.round(parseFloat($("crossN").value) || 80)));
+      const nLevels = Math.max(2, Math.min(20, Math.round(parseFloat($("crossLevels").value) || 8)));
+
+      if (![xMin, xMax, yMin, yMax].every(Number.isFinite) || xMin === xMax || yMin === yMax) {
+        const ctx = canvas.getContext("2d");
+        const overlayCtx = overlay.getContext("2d");
+        ctx.setTransform(baseMetrics.dpr, 0, 0, baseMetrics.dpr, 0, 0);
+        ctx.clearRect(0, 0, cw, ch);
+        overlayCtx.setTransform(overlayMetrics.dpr, 0, 0, overlayMetrics.dpr, 0, 0);
+        overlayCtx.clearRect(0, 0, cw, ch);
+        ctx.fillStyle = "#ccc";
+        ctx.fillText("Invalid cross plot range.", 20, 30);
+        window.crossPlotState = null;
+        window.crossHover = null;
+        clearHoverReadout();
+        return;
+      }
+
+      const plot = computePlotFrame(canvas.getContext("2d"), Math.min(xMin, xMax), Math.max(xMin, xMax), Math.min(yMin, yMax), Math.max(yMin, yMax), cw, ch);
+      plot.w = cw - plot.left - plot.right;
+      plot.h = ch - plot.top - plot.bottom;
+      plot.xMin = Math.min(xMin, xMax);
+      plot.xMax = Math.max(xMin, xMax);
+      plot.yMin = Math.min(yMin, yMax);
+      plot.yMax = Math.max(yMin, yMax);
+
+      const xs = Array.from({ length: n }, (_, i) => plot.xMin + (plot.xMax - plot.xMin) * i / (n - 1));
+      const ys = Array.from({ length: n }, (_, j) => plot.yMin + (plot.yMax - plot.yMin) * j / (n - 1));
+      const colorVals = [];
+      const isoAVals = [];
+      const isoBVals = [];
+      let cMin = Infinity, cMax = -Infinity, aMin = Infinity, aMax = -Infinity, bMin = Infinity, bMax = -Infinity;
+
+      for (let j = 0; j < n; j++) {
+        colorVals[j] = [];
+        isoAVals[j] = [];
+        isoBVals[j] = [];
+        for (let i = 0; i < n; i++) {
+          const v = { ...base };
+          setParam(v, xId, xs[i]);
+          setParam(v, yId, ys[j]);
+          const r = runModel(v);
+          const cv = colorOut.getter(r);
+          const av = isoAOut.getter(r);
+          const bv = isoBOut.getter(r);
+          colorVals[j][i] = cv;
+          isoAVals[j][i] = av;
+          isoBVals[j][i] = bv;
+          if (Number.isFinite(cv)) { cMin = Math.min(cMin, cv); cMax = Math.max(cMax, cv); }
+          if (Number.isFinite(av)) { aMin = Math.min(aMin, av); aMax = Math.max(aMax, av); }
+          if (Number.isFinite(bv)) { bMin = Math.min(bMin, bv); bMax = Math.max(bMax, bv); }
+        }
+      }
+
+      if (!Number.isFinite(cMin) || !Number.isFinite(cMax)) {
+        cMin = 0;
+        cMax = 0;
+      }
+      if (!Number.isFinite(aMin) || !Number.isFinite(aMax)) {
+        aMin = 0;
+        aMax = 0;
+      }
+      if (!Number.isFinite(bMin) || !Number.isFinite(bMax)) {
+        bMin = 0;
+        bMax = 0;
+      }
+
+      const currentResults = runModel(base);
+      const aCurrent = isoAOut.getter(currentResults);
+      const bCurrent = isoBOut.getter(currentResults);
+      let aLevels = makeLevels(aMin, aMax, nLevels);
+      let bLevels = makeLevels(bMin, bMax, nLevels);
+      aLevels = includeLevel(aLevels, aCurrent, aMin, aMax);
+      bLevels = includeLevel(bLevels, bCurrent, bMin, bMax);
+      window.crossPlotState = { canvas, overlay, cw, ch, dpr: baseMetrics.dpr, overlayDpr: overlayMetrics.dpr, plot, xs, ys, colorVals, isoAVals, isoBVals, cMin, cMax, aLevels, bLevels, xp, yp, colorOut, isoAOut, isoBOut, base, xId, yId };
+      window.crossHover = null;
+      clearHoverReadout();
+      paintCrossPlot(window.crossPlotState);
+      drawCrossOverlay();
+    }
+
+    function drawGrid(ctx, plot) {
+      ctx.save();
+      ctx.strokeStyle = "#262626";
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 5; i++) {
+        const x = plot.left + plot.w * i / 5;
+        const y = plot.top + plot.h * i / 5;
+        ctx.beginPath();
+        ctx.moveTo(x, plot.top);
+        ctx.lineTo(x, plot.top + plot.h);
+        ctx.moveTo(plot.left, y);
+        ctx.lineTo(plot.left + plot.w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawAxes(ctx, plot, xp, yp) {
+      ctx.save();
+      ctx.fillStyle = "#d5d5d5";
+      ctx.strokeStyle = "#888";
+      ctx.font = "11px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      for (let i = 0; i <= 5; i++) {
+        const x = plot.left + plot.w * i / 5;
+        const val = plot.xMin + (plot.xMax - plot.xMin) * i / 5;
+        ctx.fillText(fmt(val, 4), x, plot.top + plot.h + 8);
+      }
+
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let i = 0; i <= 5; i++) {
+        const y = plot.top + plot.h - plot.h * i / 5;
+        const val = plot.yMin + (plot.yMax - plot.yMin) * i / 5;
+        ctx.fillText(fmt(val, 4), plot.left - 8, y);
+      }
+      ctx.restore();
+    }
+
+    function centerCrossRanges() {
+      const base = getInputs();
+      const xId = $("crossXParam").value;
+      const yId = $("crossYParam").value;
+      const xv = base[xId];
+      const yv = base[yId];
+      const xSpan = Math.max(Math.abs(xv) * 0.8, 1);
+      const ySpan = Math.max(Math.abs(yv) * 0.8, 1);
+      $("crossXMin").value = fmt(xv - xSpan / 2, 6).replace(/,/g, "");
+      $("crossXMax").value = fmt(xv + xSpan / 2, 6).replace(/,/g, "");
+      $("crossYMin").value = fmt(yv - ySpan / 2, 6).replace(/,/g, "");
+      $("crossYMax").value = fmt(yv + ySpan / 2, 6).replace(/,/g, "");
+      drawCrossPlot();
+    }
+
+    function resetDefaults() {
+      ids.forEach(id => { if ($(id)) $(id).value = defaults[id]; });
+      calculate();
+    }
+
+    function resultsText() {
+      const r = window.latestResults;
+      if (!r) return "No results.";
+      const u = r.units;
+      return [
+        "Roll Statics Calculator Results",
+        `Front dW/Ay: ${r.front.totalPerG} ${u.forcePerG}`,
+        `Rear dW/Ay: ${r.rear.totalPerG} ${u.forcePerG}`,
+        `Total dW/Ay: ${r.totalPerG} ${u.forcePerG}`,
+        `Derived sprung weight: ${r.intermediates.sprungWeight} ${u.force}`,
+        `Front total weight bias: ${r.intermediates.totalFrontFrac}`,
+        `Front LLTD: ${r.frontDistribution}`,
+        `Roll gradient: ${r.intermediates.rollGradDeg} deg/g (${r.intermediates.rollGradRad} rad/g)`,
+        `Front unsprung height used: ${r.intermediates.zWFUsed} ${u.length}`,
+        `Rear unsprung height used: ${r.intermediates.zWRUsed} ${u.length}`,
+        `Front effective roll stiffness: ${r.rollStiffness.KFUsedDeg} ${u.rollDeg}, ${r.rollStiffness.KF} ${u.rollRad}`,
+        `Rear effective roll stiffness: ${r.rollStiffness.KRUsedDeg} ${u.rollDeg}, ${r.rollStiffness.KR} ${u.rollRad}`,
+        `Average SSF: ${r.stability.avgSSF}`,
+        `Average SSF / mu: ${r.stability.avgSSFOverGrip}`,
+        `Minimum SSF: ${r.stability.minSSF}`,
+        `Minimum SSF / mu: ${r.stability.minSSFOverGrip}`,
+        "",
+        "Inputs JSON:",
+        JSON.stringify(r.inputs, null, 2)
+      ].join("\n");
+    }
+
+    async function copyToClipboard(text, button, originalText) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (err) {
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.left = "-9999px";
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        document.body.removeChild(area);
+      }
+      button.textContent = "Copied";
+      setTimeout(() => button.textContent = originalText, 900);
+    }
+
+    function activateTab(id) {
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.tab === id));
+      document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.toggle("active", panel.id === id));
+      if (id === "crossPlotTab") setTimeout(drawCrossPlot, 40);
+    }
+
+    function updateCrossHover(event) {
+      const state = window.crossPlotState;
+      if (!state) return;
+      const rect = state.overlay.getBoundingClientRect();
+      const px = event.clientX - rect.left;
+      const py = event.clientY - rect.top;
+      if (px < state.plot.left || px > state.plot.left + state.plot.w || py < state.plot.top || py > state.plot.top + state.plot.h) {
+        window.crossHover = null;
+        clearHoverReadout();
+        drawCrossOverlay();
+        return;
+      }
+
+      const xFrac = (px - state.plot.left) / state.plot.w;
+      const yFrac = 1 - (py - state.plot.top) / state.plot.h;
+      const i = Math.max(0, Math.min(state.xs.length - 1, Math.round(xFrac * (state.xs.length - 1))));
+      const j = Math.max(0, Math.min(state.ys.length - 1, Math.round(yFrac * (state.ys.length - 1))));
+      const x = state.xs[i];
+      const y = state.ys[j];
+      const point = toPx(x, y, state.plot);
+      const aValue = state.isoAVals[j][i];
+      const bValue = state.isoBVals[j][i];
+      window.crossHover = {
+        i,
+        j,
+        x,
+        y,
+        point,
+        aValue,
+        bValue
+      };
+
+      setText("crossXHover", `${fmt(x, 4)} ${unitForKind(state.xp.unitKind)}`);
+      setText("crossYHover", `${fmt(y, 4)} ${unitForKind(state.yp.unitKind)}`);
+      setText("crossIsoAHover", `${fmt(aValue, 4)} ${outputUnit(state.isoAOut)}`);
+      setText("crossIsoBHover", `${fmt(bValue, 4)} ${outputUnit(state.isoBOut)}`);
+      drawCrossOverlay();
+    }
+
+    function clearCrossHover() {
+      window.crossHover = null;
+      clearHoverReadout();
+      drawCrossOverlay();
+    }
+
+    function toggleCrossControls() {
+      const grid = document.querySelector(".cross-grid");
+      if (!grid) return;
+      grid.classList.toggle("controls-collapsed");
+      $("crossToggleControls").textContent = grid.classList.contains("controls-collapsed") ? "Show controls" : "Hide controls";
+      setTimeout(drawCrossPlot, 150);
+    }
+
+    populateCrossControls();
+    numericIds.forEach(id => { if ($(id)) $(id).addEventListener("input", calculate); });
+    ["rollMode", "cgMode", "unsprungHeightMode", "stiffnessSymmetry", "unitMode"].forEach(id => { if ($(id)) $(id).addEventListener("change", calculate); });
+    ["crossXParam", "crossYParam"].forEach(id => { if ($(id)) $(id).addEventListener("change", () => { updateCrossUnitLabels(); drawCrossPlot(); }); });
+    ["crossColorOutput", "crossIsoAOutput", "crossIsoBOutput", "crossShowCurrent"].forEach(id => { if ($(id)) $(id).addEventListener("change", drawCrossPlot); });
+    ["crossXMin", "crossXMax", "crossYMin", "crossYMax", "crossN", "crossLevels"].forEach(id => { if ($(id)) $(id).addEventListener("input", drawCrossPlot); });
+    document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.tab)));
+    $("crossApplyCurrent").addEventListener("click", centerCrossRanges);
+    $("crossToggleControls").addEventListener("click", toggleCrossControls);
+    $("resetBtn").addEventListener("click", resetDefaults);
+    $("copyBtn").addEventListener("click", e => copyToClipboard(resultsText(), e.currentTarget, "Copy results"));
+    $("copyInputsBtn").addEventListener("click", e => copyToClipboard(JSON.stringify(getInputs(), null, 2), e.currentTarget, "Copy inputs"));
+    $("crossOverlay").addEventListener("mousemove", updateCrossHover);
+    $("crossOverlay").addEventListener("mouseleave", clearCrossHover);
+    window.addEventListener("resize", drawCrossPlot);
+
+    calculate();
+  </script>
+</body>
+</html>
