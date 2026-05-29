@@ -2,6 +2,19 @@ key,label,group,direction,fixed_min,fixed_max,integer
 rank_by_y,Y-Metric Rank,Special,ascending,,,
 overall_place,Overall Place,Overall,ascending,,,True
 overall_percentile,Overall Percentile,Overall,descending,0.0,100.0,
+competition_total_entries,Competition Total Entries,Competition,descending,,,True
+competition_acceleration_entries,Competition Acceleration Entries,Competition,descending,,,True
+competition_skidpad_entries,Competition Skidpad Entries,Competition,descending,,,True
+competition_autocross_entries,Competition Autocross Entries,Competition,descending,,,True
+competition_endurance_entries,Competition Endurance Entries,Competition,descending,,,True
+competition_dynamic_entries,Competition Dynamic Entries,Competition,descending,,,True
+competition_endurance_finishers,Competition Endurance Finishers,Competition,descending,,,True
+competition_acceleration_field_percent,Competition Acceleration Field %,Competition,descending,0.0,100.0,
+competition_skidpad_field_percent,Competition Skidpad Field %,Competition,descending,0.0,100.0,
+competition_autocross_field_percent,Competition Autocross Field %,Competition,descending,0.0,100.0,
+competition_endurance_field_percent,Competition Endurance Field %,Competition,descending,0.0,100.0,
+competition_dynamic_field_percent,Competition Dynamic Field %,Competition,descending,0.0,100.0,
+competition_endurance_completion_percent,Competition Endurance Completion %,Competition,descending,0.0,100.0,
 total_score,Total Score Raw,Overall,descending,-100.0,1000.0,
 penalty,Total Penalty,Overall,ascending,,,
 total_score_clean,Total Score,Overall,descending,-100.0,1000.0,
