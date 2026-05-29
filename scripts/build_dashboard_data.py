@@ -47,6 +47,11 @@ COLUMN_ALIASES = {
     "Competition Endurance Field %": "competition_endurance_field_percent",
     "Competition Dynamic Field %": "competition_dynamic_field_percent",
     "Competition Endurance Completion %": "competition_endurance_completion_percent",
+    "Competition Endurance Finish Rate %": "competition_endurance_finish_rate_percent",
+    "Competition Best Acceleration Adjusted Time": "competition_best_acceleration_adjusted_time",
+    "Competition Best Skidpad Adjusted Time": "competition_best_skidpad_adjusted_time",
+    "Competition Best Autocross Adjusted Time": "competition_best_autocross_adjusted_time",
+    "Competition Best Endurance Adjusted Time": "competition_best_endurance_adjusted_time",
     "Total Score Raw": "total_score",
     "Total Penalty": "penalty",
     "Total Score": "total_score_clean",
@@ -82,6 +87,7 @@ FIXED_RANGES = {
     "competition_endurance_field_percent": (0, 100),
     "competition_dynamic_field_percent": (0, 100),
     "competition_endurance_completion_percent": (0, 100),
+    "competition_endurance_finish_rate_percent": (0, 100),
     "total_score": (-100, 1000),
     "total_score_clean": (-100, 1000),
     "design_score": (0, 150),
@@ -197,7 +203,11 @@ def is_integer_metric(label, key):
     text = f"{label} {key}".lower()
     return (
         key in INTEGER_KEYS
-        or key.startswith("competition_") and "percent" not in key
+        or (
+            key.startswith("competition_")
+            and "percent" not in key
+            and not any(token in key for token in ("time", "cost", "score"))
+        )
         or "number of" in text
         or "number_of" in key
         or "cones" in text
@@ -240,22 +250,24 @@ def num_series(df, key):
     return pd.to_numeric(df[key], errors="coerce")
 
 
-def attempted_event(df, prefix, extra_keys=()):
-    checks = [
-        num_series(df, f"{prefix}_number_of_runs") > 0,
-        num_series(df, f"{prefix}_score") > 0,
-    ]
-    checks.extend(num_series(df, key).notna() for key in extra_keys)
-    return pd.concat(checks, axis=1).any(axis=1)
+def score_event(df, key):
+    return num_series(df, key) > 0
+
+
+def add_competition_best_time(df, source_key, output_key, groups):
+    value = num_series(df, source_key)
+    valid = value.where(value > 0)
+    df[output_key] = valid.groupby(groups).transform("min")
 
 
 def add_competition_metrics(df):
     event_cols = ["competition", "year", "vehicle_type"]
     groups = [df[col] for col in event_cols]
 
-    acceleration = attempted_event(df, "acceleration", ["acceleration_best_adjusted_time", "acceleration_best_time_raw"])
-    skidpad = attempted_event(df, "skidpad", ["skidpad_best_adjusted_time", "skidpad_best_time_raw_average"])
-    autocross = attempted_event(df, "autocross", ["autocross_best_adjusted_time", "autocross_best_time_raw"])
+    acceleration = score_event(df, "acceleration_score")
+    skidpad = score_event(df, "skidpad_score")
+    autocross = score_event(df, "autocross_score")
+    efficiency = score_event(df, "efficiency_score")
     endurance = (
         (num_series(df, "endurance_number_of_laps") > 0)
         | (num_series(df, "endurance_score") > 0)
@@ -275,7 +287,11 @@ def add_competition_metrics(df):
         | num_series(df, "endurance_time_raw").notna(),
     )
     endurance_finished = pd.Series(endurance_finished, index=df.index)
-    dynamic = acceleration | skidpad | autocross | endurance
+    dynamic = acceleration | skidpad | autocross | score_event(df, "endurance_score") | efficiency
+    combined_only = (
+        num_series(df, "endurance_efficiency_score") > 0
+    ) & num_series(df, "endurance_score").isna() & num_series(df, "efficiency_score").isna()
+    dynamic = dynamic | combined_only
 
     total_entries = df.groupby(groups)["entry_id"].transform("count")
     df["competition_total_entries"] = total_entries
@@ -299,6 +315,38 @@ def add_competition_metrics(df):
             "competition_endurance_finishers": "competition_endurance_completion_percent",
         }[key]
         df[percent_key] = np.round(np.where(total_entries > 0, count / total_entries * 100, np.nan), 2)
+    df["competition_endurance_finish_rate_percent"] = np.round(
+        np.where(
+            df["competition_endurance_entries"] > 0,
+            df["competition_endurance_finishers"] / df["competition_endurance_entries"] * 100,
+            np.nan,
+        ),
+        2,
+    )
+    add_competition_best_time(
+        df,
+        "acceleration_best_adjusted_time",
+        "competition_best_acceleration_adjusted_time",
+        groups,
+    )
+    add_competition_best_time(
+        df,
+        "skidpad_best_adjusted_time",
+        "competition_best_skidpad_adjusted_time",
+        groups,
+    )
+    add_competition_best_time(
+        df,
+        "autocross_best_adjusted_time",
+        "competition_best_autocross_adjusted_time",
+        groups,
+    )
+    add_competition_best_time(
+        df,
+        "endurance_time_adjusted",
+        "competition_best_endurance_adjusted_time",
+        groups,
+    )
 
 
 def main():
@@ -357,6 +405,11 @@ def main():
         "Competition Endurance Field %",
         "Competition Dynamic Field %",
         "Competition Endurance Completion %",
+        "Competition Endurance Finish Rate %",
+        "Competition Best Acceleration Adjusted Time",
+        "Competition Best Skidpad Adjusted Time",
+        "Competition Best Autocross Adjusted Time",
+        "Competition Best Endurance Adjusted Time",
     ]
     metric_headers[2:2] = competition_metric_headers
     key_by_header["Overall Percentile"] = "overall_percentile"
