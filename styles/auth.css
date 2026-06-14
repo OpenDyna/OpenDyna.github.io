@@ -1,0 +1,188 @@
+.auth-window {
+  max-width: 560px;
+}
+
+.auth-main {
+  min-height: 260px;
+  padding: 24px;
+}
+
+.auth-main h1 {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+}
+
+.auth-main h2 {
+  font-size: 1.1rem;
+}
+
+.auth-main p {
+  line-height: 1.5;
+}
+
+.auth-disclosure {
+  margin: 18px 0;
+  padding: 12px;
+  border: 2px inset #fff;
+  background: #eee;
+}
+
+.auth-disclosure h2 {
+  margin: 0 0 8px;
+}
+
+.auth-disclosure p:last-child {
+  margin-bottom: 0;
+}
+
+.consent-control {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  line-height: 1.45;
+}
+
+.consent-control input {
+  margin-top: 3px;
+  flex: 0 0 auto;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.auth-button,
+.auth-link {
+  display: inline-block;
+  box-sizing: border-box;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 2px outset #fff;
+  background: #c0c0c0;
+  color: #000;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.auth-button:hover,
+.auth-link:hover {
+  background: #000080;
+  color: #fff;
+}
+
+.auth-button:active,
+.auth-link:active {
+  border-style: inset;
+}
+
+.auth-button:disabled {
+  color: #666;
+  background: #ddd;
+  cursor: not-allowed;
+}
+
+.auth-status {
+  margin-top: 18px;
+  padding: 10px;
+  border: 1px solid #000080;
+  background: #eef;
+  overflow-wrap: anywhere;
+}
+
+.auth-status.warning {
+  border-color: #8a6500;
+  background: #fff4c2;
+}
+
+.auth-status.error {
+  border-color: #8b0000;
+  background: #ffe3e3;
+  color: #650000;
+}
+
+.profile {
+  margin: 18px 0;
+  padding: 12px;
+  border: 2px inset #fff;
+  background: #eee;
+}
+
+.profile dt {
+  margin-top: 8px;
+  font-weight: bold;
+}
+
+.profile dt:first-child {
+  margin-top: 0;
+}
+
+.profile dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.danger-zone {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid #888;
+}
+
+.danger-zone h2 {
+  margin: 0;
+  color: #750000;
+}
+
+.danger-button {
+  color: #750000;
+  font-weight: bold;
+}
+
+.danger-button:hover {
+  background: #750000;
+  color: #fff;
+}
+
+.policy-window {
+  max-width: 760px;
+}
+
+.policy-main {
+  padding: 24px;
+}
+
+.policy-main h1 {
+  margin-top: 0;
+}
+
+.policy-main h2 {
+  margin-top: 28px;
+  font-size: 1.15rem;
+}
+
+.policy-main li {
+  margin-bottom: 8px;
+  line-height: 1.45;
+}
+
+.policy-updated {
+  color: #555;
+}
+
+@media (max-width: 600px) {
+  .auth-window {
+    width: calc(100% - 24px);
+    margin: 12px;
+  }
+
+  .auth-main {
+    padding: 18px;
+  }
+
+  .auth-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

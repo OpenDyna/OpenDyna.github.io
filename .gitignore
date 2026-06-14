@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+
+# Local reference copy; link to LinkedIn's current online terms in public docs.
+docs/LinkedIn_API_Terms_of_Use.txt

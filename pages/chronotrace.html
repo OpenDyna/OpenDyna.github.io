@@ -6,8 +6,10 @@
 
   <!-- (Optional) Plotly if you need it -->
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
     /* RESET */
     * {
       margin: 0;
@@ -16,13 +18,15 @@
     }
     html, body {
       height: 100%;
-      font-family: Arial, sans-serif;
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
     }
     body {
       display: flex;
       flex-direction: column;
-      background-color: #1e1e1e; /* Dark background */
-      color: #cccccc; /* Lighter text color */
+      background-color: #13171b;
+      color: #d5d9df;
+      font-size: 13px;
+      letter-spacing: 0.01em;
     }
 
     /********************************************************
@@ -30,63 +34,248 @@
      ********************************************************/
     #toolbar {
       width: 100%;
-      /* Dark gradient */
-      background: linear-gradient(to bottom, #383838, #2f2f2f);
-      border-bottom: 1px solid #444; 
-      padding: 5px 10px;
+      background: linear-gradient(to bottom, #252a30, #1b1f26);
+      border-bottom: 1px solid #2f3640;
+      padding: 6px 12px;
       display: flex;
       flex-wrap: nowrap;
-      align-items: flex-end; /* align group titles at bottom */
+      align-items: flex-end;
+      gap: 12px;
     }
 
     .ribbon-group {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0 10px;
-      margin-right: 10px;
-      border-right: 1px solid #555; /* separate groups visually */
+      padding: 0 8px;
+      margin-right: 4px;
+      border-right: 1px solid #2b323a;
     }
     .ribbon-group:last-of-type {
       border-right: none;
     }
 
     .ribbon-group-title {
-      font-size: 0.9rem;
+      font-size: 11px;
       font-weight: bold;
-      color: #aaa;
+      letter-spacing: 0.08em;
+      color: #8ea0b5;
       margin-bottom: 3px;
+      text-transform: uppercase;
     }
 
     .ribbon-buttons {
       display: flex;
       flex-wrap: nowrap;
+      gap: 6px;
     }
 
     .ribbon-button {
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 0 5px;
+      margin: 0 0;
       cursor: pointer;
-      border: 1px solid transparent; /* for hover effect */
+      border: 1px solid #2c313a;
       border-radius: 4px;
       padding: 4px 6px;
-      background: #2a2a2a;
-      transition: background 0.2s, border-color 0.2s;
+      background: linear-gradient(180deg, #1f2329 0%, #181c22 100%);
+      box-shadow: inset 0 0 0 1px #20242b;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .ribbon-button img {
-      width: 32px;
-      height: 32px;
+      width: 26px;
+      height: 26px;
       margin-bottom: 4px;
-      opacity: 0.85;
+      opacity: 0.88;
     }
     .ribbon-button span {
-      font-size: 0.75rem;
+      font-size: 11px;
+      color: #c0c7d0;
+      letter-spacing: 0.02em;
     }
     .ribbon-button:hover {
-      background: #3a3a3a;
-      border-color: #777;
+      background: #242b34;
+      border-color: #4da3ff;
+      box-shadow: 0 0 0 1px rgba(77, 163, 255, 0.25);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(9, 12, 16, 0.72);
+      backdrop-filter: blur(3px);
+      z-index: 1000;
+      padding: 24px;
+    }
+    .modal-overlay.is-open {
+      display: flex;
+    }
+    .modal-dialog {
+      width: min(640px, 100%);
+      max-height: min(720px, calc(100vh - 48px));
+      display: flex;
+      flex-direction: column;
+      background: #171d24;
+      border: 1px solid #2f3843;
+      border-radius: 3px;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 16px 13px;
+      border-bottom: 1px solid #2a313b;
+      background: #1b2129;
+    }
+    .modal-title {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e8f0fb;
+    }
+    .modal-subtitle {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: #95a7ba;
+    }
+    .modal-close-btn {
+      border: 1px solid #33404d;
+      background: #1c222a;
+      color: #c6d2df;
+      width: 30px;
+      height: 30px;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      box-shadow: none;
+    }
+    .modal-close-btn:hover {
+      border-color: #4da3ff;
+      background: #202833;
+      color: #ffffff;
+    }
+    .modal-body {
+      padding: 16px 18px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .modal-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .modal-status {
+      font-size: 12px;
+      color: #9fb1c4;
+      letter-spacing: 0.02em;
+    }
+    .event-picker-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .event-picker-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid #2b323c;
+      border-radius: 2px;
+      background: #1b2129;
+      transition: background 0.12s ease, border-color 0.12s ease;
+    }
+    .event-picker-item:hover {
+      border-color: #4da3ff;
+      background: #202a35;
+    }
+    .event-picker-item input[type="checkbox"] {
+      margin-top: 2px;
+      width: 16px;
+      height: 16px;
+      accent-color: #4da3ff;
+      cursor: pointer;
+    }
+    .event-picker-name {
+      font-size: 13px;
+      color: #eef4fb;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .event-picker-meta {
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      font-size: 11px;
+      color: #92a6ba;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .event-picker-empty {
+      padding: 18px;
+      border: 1px dashed #34404d;
+      border-radius: 2px;
+      color: #8fa2b8;
+      font-size: 12px;
+      text-align: center;
+      background: #1a2028;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 13px 16px 14px;
+      border-top: 1px solid #2a313b;
+      background: #181e25;
+    }
+    .modal-btn {
+      border: 1px solid #33404d;
+      background: #1e252d;
+      color: #d7e2ed;
+      padding: 8px 12px;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      box-shadow: none;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    }
+    .modal-btn:hover:not(:disabled) {
+      border-color: #4da3ff;
+      background: #232c36;
+      color: #ffffff;
+    }
+    .modal-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .modal-btn.primary {
+      background: #20486d;
+      border-color: #4da3ff;
+      color: #f4f9ff;
+      box-shadow: none;
+    }
+    .modal-btn.primary:hover:not(:disabled) {
+      background: #26557f;
     }
 
     /********************************************************
@@ -101,24 +290,62 @@
     /* PROJECT TREE */
     #project-tree {
       width: 250px;
-      background-color: #2a2a2a;
-      border-right: 1px solid #444;
+      background-color: #1a1f26;
+      border-right: 1px solid #2c333c;
       overflow-y: auto;
       padding: 10px;
-      color: #cccccc;
+      color: #c6ccd4;
+      font-size: 12px;
+    }
+
+    /* SCROLLBARS */
+    body::-webkit-scrollbar,
+    #project-tree::-webkit-scrollbar,
+    .vehicle-editor-left::-webkit-scrollbar,
+    .vehicle-editor-right-tab::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    body::-webkit-scrollbar-track,
+    #project-tree::-webkit-scrollbar-track,
+    .vehicle-editor-left::-webkit-scrollbar-track,
+    .vehicle-editor-right-tab::-webkit-scrollbar-track {
+      background: #0f1318;
+      border: 1px solid #1c222a;
+    }
+    body::-webkit-scrollbar-thumb,
+    #project-tree::-webkit-scrollbar-thumb,
+    .vehicle-editor-left::-webkit-scrollbar-thumb,
+    .vehicle-editor-right-tab::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #2f3742 0%, #262d36 100%);
+      border-radius: 6px;
+      border: 1px solid #3b4652;
+      box-shadow: inset 0 0 0 1px #1b1f26;
+    }
+    body::-webkit-scrollbar-thumb:hover,
+    #project-tree::-webkit-scrollbar-thumb:hover,
+    .vehicle-editor-left::-webkit-scrollbar-thumb:hover,
+    .vehicle-editor-right-tab::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #3b4654 0%, #303946 100%);
+      border-color: #4da3ff;
+      box-shadow: inset 0 0 0 1px rgba(77, 163, 255, 0.25);
     }
 
     /* COLLAPSIBLE BRANCHES */
     #project-tree ul {
       list-style-type: none;
-      margin-left: 1rem;
+      margin-left: 0.8rem;
       padding-left: 0;
     }
     #project-tree .collapsible-branch {
       font-weight: bold;
-      margin-top: 8px;
+      margin-top: 6px;
       margin-bottom: 4px;
       cursor: default;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: #8fa2b8;
+      letter-spacing: 0.05em;
     }
 
     /* Toggle arrow for collapsing branches */
@@ -127,23 +354,50 @@
       width: 1rem;
       text-align: center;
       cursor: pointer;
-      color: #aaa;
+      color: #6f8096;
+      font-size: 13px;
+      font-weight: 600;
     }
 
     /* Items in each branch */
     #project-tree li[data-id] {
-      padding: 4px 0;
+      padding: 6px 8px;
       cursor: pointer;
+      line-height: 1.3;
+      border-left: 1px solid #252c34;
+      border-bottom: 1px solid #1c222a;
+      margin-left: 0;
+      background-color: rgba(255,255,255,0.01);
     }
     #project-tree li[data-id]:hover {
-      color: #fff;
+      color: #ffffff;
+      background-color: rgba(77, 163, 255, 0.08);
+      border-left-color: #4da3ff;
+    }
+    #project-tree li.tree-selected {
+      background-color: rgba(77, 163, 255, 0.14);
+      border-left-color: #4da3ff;
+      color: #ffffff;
     }
 
     /* RESIZER */
     #resizer {
       width: 5px;
       cursor: col-resize;
-      background-color: #444;
+      background-color: #2c333c;
+      box-shadow: inset 0 0 0 1px #1b1f26;
+      position: relative;
+    }
+    #resizer::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 2px;
+      height: 24px;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(#4da3ff, #7ac7ff);
+      opacity: 0.6;
     }
 
     /* TAB GROUP */
@@ -155,24 +409,29 @@
     }
 
     .tab-headers {
-      background: #333;
+      background: linear-gradient(180deg, #1f242c 0%, #191d23 100%);
       display: flex;
-      border-bottom: 1px solid #444;
+      border-bottom: 1px solid #2f3640;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
     .tab-header {
-      padding: 10px;
+      padding: 8px 12px;
       cursor: pointer;
-      border-right: 1px solid #444;
+      border-right: 1px solid #2c333c;
       display: flex;
       align-items: center;
       justify-content: space-between;
       min-width: 100px;
-      color: #cccccc;
+      color: #9fb1c4;
+      transition: background 0.15s ease, color 0.15s ease;
     }
     .tab-header.active {
-      background: #444;
+      background: #1c222b;
       font-weight: bold;
-      color: #fff;
+      color: #e8f0fb;
+      box-shadow: inset 0 -2px 0 #4da3ff;
     }
     .tab-header .close-btn {
       margin-left: 10px;
@@ -184,7 +443,7 @@
       flex: 1;
       padding: 0; /* Removed padding to allow full usage */
       overflow: auto;
-      background-color: #1e1e1e;
+      background-color: #0f1318;
     }
 
     .tab-panel {
@@ -192,9 +451,9 @@
       height: 100%;
       box-sizing: border-box;
       display: none; /* hidden by default, shown when active */
-      color: #cccccc;
-      background-color: #1e1e1e;
-      padding: 10px; /* For general spacing */
+      color: #d5d9df;
+      background-color: #0f1318;
+      padding: 12px;
     }
 
     /********************************************************
@@ -207,25 +466,40 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      border: 1px solid #444;
-      background-color: #1e1e1e;
-      color: #cccccc;
+      border: 1px solid #2c333c;
+      background-color: #11161c;
+      color: #d5d9df;
+      box-shadow: inset 0 0 0 1px #131820;
     }
 
     .vehicle-editor-left {
       width: 25%;
-      background-color: #2a2a2a;
+      background-color: #161c22;
       overflow-y: auto;
       height: 100%;
       box-sizing: border-box;
       padding: 10px;
+      border-right: 1px solid #232a32;
     }
 
     .vehicle-editor-resizer {
       width: 5px;
       cursor: col-resize;
-      background-color: #444;
+      background-color: #2c333c;
       flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px #1b1f26;
+      position: relative;
+    }
+    .vehicle-editor-resizer::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 2px;
+      height: 24px;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(#4da3ff, #7ac7ff);
+      opacity: 0.6;
     }
 
     .vehicle-editor-right {
@@ -234,31 +508,40 @@
       flex-direction: column;
       height: 100%;
       background-color: #1e1e1e;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .vehicle-editor-tab-headers {
       display: flex;
-      background-color: #333;
-      border-bottom: 1px solid #444;
+      background: linear-gradient(180deg, #1f242c 0%, #191d23 100%);
+      border-bottom: 1px solid #2f3640;
     }
     .vehicle-editor-tab-header {
       padding: 8px 12px;
       cursor: pointer;
-      border-right: 1px solid #444;
-      color: #cccccc;
+      border-right: 1px solid #2c333c;
+      color: #9fb1c4;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-size: 12px;
+      background-color: #181e26;
+      transition: background 0.15s ease, color 0.15s ease;
     }
     .vehicle-editor-tab-header.active {
-      background-color: #444;
+      background-color: #10151b;
       font-weight: bold;
-      color: #fff;
+      color: #e8f0fb;
+      box-shadow: inset 0 -2px 0 #4da3ff;
     }
 
     .vehicle-editor-tab-content {
       flex: 1;
       position: relative;
-      overflow: auto;
+      overflow: hidden;
       background-color: #1e1e1e;
       color: #cccccc;
+      min-width: 0;
     }
 
     .vehicle-editor-right-tab {
@@ -266,8 +549,8 @@
       padding: 10px;
       height: 100%;
       box-sizing: border-box;
-      background-color: #1e1e1e;
-      color: #cccccc;
+      background-color: #0f1318;
+      color: #d5d9df;
     }
     .vehicle-editor-right-tab.active {
       display: block;
@@ -284,29 +567,227 @@
     .form-group select,
     .form-group textarea {
       width: 100%;
-      padding: 5px;
-      font-size: 1rem;
-      color: #fff;
-      background-color: #333;
-      border: 1px solid #555;
+      padding: 5px 6px;
+      font-size: 13px;
+      color: #e6ebf2;
+      background-color: #161b23;
+      border: 1px solid #2c333c;
       border-radius: 3px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #4da3ff;
+      box-shadow: 0 0 0 1px rgba(77, 163, 255, 0.35);
     }
 
     .form-section {
-      border: 1px solid #555;
+      border: 1px solid #2c333c;
       border-radius: 4px;
       padding: 8px;
       margin-bottom: 15px;
-      background-color: #2f2f2f;
+      background-color: #181e26;
+      box-shadow: inset 0 0 0 1px #12171e;
     }
     .form-section h4 {
       margin-bottom: 8px;
-      font-size: 1rem;
-      background-color: #3a3a3a;
-      padding: 4px;
+      font-size: 13px;
+      background-color: #1f252d;
+      padding: 4px 6px;
       border-radius: 2px;
-      border: 1px solid #444;
-      color: #fff;
+      border: 1px solid #2c333c;
+      color: #e6ebf2;
+    }
+
+    /* Powertrain table */
+    .powertrain-table-wrapper {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #2c333c;
+      border-radius: 4px;
+      background: #0f1318;
+      box-shadow: inset 0 0 0 1px #12171e;
+    }
+    .powertrain-table {
+      border-collapse: collapse;
+      width: 100%;
+      background-color: #0f1318;
+      color: #d5d9df;
+    }
+    .powertrain-table th,
+    .powertrain-table td {
+      border: 1px solid #2c333c;
+      padding: 6px;
+      font-size: 12px;
+      text-align: left;
+      background-color: #131821;
+      min-width: 120px;
+    }
+    .powertrain-table th {
+      background-color: #1c222b;
+      color: #e6ebf2;
+      letter-spacing: 0.04em;
+    }
+    .table-actions {
+      display: flex;
+      gap: 6px;
+      margin: 6px 0;
+    }
+    .mini-btn {
+      padding: 4px 8px;
+      background: linear-gradient(180deg, #1f2329 0%, #181c22 100%);
+      border: 1px solid #2c313a;
+      border-radius: 4px;
+      color: #c0c7d0;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .mini-btn:hover {
+      background: #242b34;
+      border-color: #4da3ff;
+      box-shadow: 0 0 0 1px rgba(77, 163, 255, 0.25);
+    }
+    .powertrain-cell {
+      outline: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .powertrain-cell:focus {
+      background-color: #1b222d;
+      box-shadow: inset 0 0 0 1px #4da3ff;
+    }
+    .powertrain-table-wrapper::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    .powertrain-table-wrapper::-webkit-scrollbar-track {
+      background: #0f1318;
+      border: 1px solid #1c222a;
+    }
+    .powertrain-table-wrapper::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #2f3742 0%, #262d36 100%);
+      border-radius: 6px;
+      border: 1px solid #3b4652;
+      box-shadow: inset 0 0 0 1px #1b1f26;
+    }
+    .powertrain-table-wrapper::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #3b4654 0%, #303946 100%);
+      border-color: #4da3ff;
+      box-shadow: inset 0 0 0 1px rgba(77, 163, 255, 0.25);
+    }
+
+    .track-editor-summary {
+      display: grid;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .track-summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 8px;
+      border: 1px solid #2c333c;
+      border-radius: 4px;
+      background: #131821;
+      color: #cbd5df;
+      font-size: 12px;
+    }
+    .track-summary-row strong {
+      color: #e8f0fb;
+      font-weight: 600;
+    }
+    .track-plot-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+    .track-plot-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+    }
+    .track-plot-canvas-wrap {
+      flex: 1;
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      border: 1px solid #2c333c;
+      border-radius: 4px;
+      background: #131821;
+      box-shadow: inset 0 0 0 1px #12171e;
+    }
+    .track-plot-square {
+      position: relative;
+      width: min(100%, calc(100vh - 250px));
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 1 / 1;
+    }
+    .track-plot-square canvas {
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .track-elevation-legend {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid #2c333c;
+      border-radius: 4px;
+      background: #181e26;
+      box-shadow: inset 0 0 0 1px #12171e;
+      color: #c0c7d0;
+      font-size: 12px;
+    }
+    .track-elevation-bar {
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid #2c333c;
+      background: linear-gradient(90deg, #2d7ff9 0%, #3cc7d7 30%, #8fd85a 60%, #ffd166 82%, #ff6b6b 100%);
+      box-shadow: inset 0 0 0 1px rgba(15, 19, 24, 0.6);
+    }
+    .track-elevation-label {
+      color: #e8f0fb;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .track-plot-controls {
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 2px;
+    }
+    .track-view-status {
+      margin-left: auto;
+      color: #9fb1c4;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+    }
+    .track-table-actions {
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .track-table-status {
+      margin-left: auto;
+      color: #9fb1c4;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+    }
+    .track-table-status.compact {
+      margin-left: 0;
+      width: 100%;
     }
   </style>
 </head>
@@ -330,6 +811,10 @@
           <img src="../assets/ChronoTrace/vehicle.png" alt="Export" />
           <span>Export</span>
         </div>
+        <div class="ribbon-button" id="btn-vehicle-delete">
+          <img src="../assets/ChronoTrace/vehicle.png" alt="Delete" />
+          <span>Delete</span>
+        </div>
       </div>
     </div>
 
@@ -349,6 +834,10 @@
           <img src="../assets/ChronoTrace/track.png" alt="Export" />
           <span>Export</span>
         </div>
+        <div class="ribbon-button" id="btn-track-delete">
+          <img src="../assets/ChronoTrace/track.png" alt="Delete" />
+          <span>Delete</span>
+        </div>
       </div>
     </div>
 
@@ -367,6 +856,10 @@
         <div class="ribbon-button" id="btn-event-export">
           <img src="../assets/ChronoTrace/flag.png" alt="Export" />
           <span>Export</span>
+        </div>
+        <div class="ribbon-button" id="btn-event-delete">
+          <img src="../assets/ChronoTrace/flag.png" alt="Delete" />
+          <span>Delete</span>
         </div>
       </div>
     </div>
@@ -436,6 +929,32 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="simulateModalOverlay" aria-hidden="true">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="simulateModalTitle">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="simulateModalTitle">Select Events</h2>
+          <p class="modal-subtitle">Choose the event cases to send to the solver.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="simulateModalClose" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-toolbar">
+          <div class="modal-toolbar-actions">
+            <button type="button" class="modal-btn" id="simulateSelectAll">Select All</button>
+            <button type="button" class="modal-btn" id="simulateClearAll">Clear</button>
+          </div>
+          <div class="modal-status" id="simulateSelectionStatus">0 selected</div>
+        </div>
+        <div class="event-picker-list" id="simulateEventList"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="modal-btn" id="simulateCancel">Cancel</button>
+        <button type="button" class="modal-btn primary" id="simulateConfirm">Send To Solver</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /********************************************************
      *                   GLOBAL ARRAYS
@@ -447,105 +966,1214 @@
 
     let tabs = [];
     let currentTabId = 0;
+    let selectedTreeItem = null;
+    const tractiveCharts = new Map();
+    const ggvCharts = new Map();
+    const trackFootprintCharts = new Map();
+    const trackTableStates = new Map();
+    const trackRefreshTimers = new Map();
+    const gearPalette = ["#6ea8fe", "#7cd992", "#f7b267", "#e76f51", "#b48cf2", "#9ad5ff", "#ff9de2", "#9bc53d"];
+    const TRACK_TABLE_PAGE_SIZE = 250;
+    const TRACK_TABLE_COMPACT_THRESHOLD = 1000;
+    const TRACK_CHART_MARKER_THRESHOLD = 1200;
+    const TRACK_CHART_SAMPLE_TARGET = 4000;
+    const TRACK_CHART_REFRESH_DEBOUNCE_MS = 90;
+    function refreshTractiveChart(id) {
+      const chart = tractiveCharts.get(id);
+      if (chart) {
+        const vehicle = vehicles.find(v => v.id === id);
+        ensureSpecDefaults(vehicle);
+        const curves = computeTractiveCurves(vehicle);
+        chart.data.datasets = buildTractiveDatasets(curves);
+        chart.options.scales.x.max = curves.maxSpeed;
+        chart.update("none");
+      }
+      refreshGGVChart(id);
+    }
+    const tractiveAnnotPlugin = {
+      id: "tractiveAnnot",
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        const area = chart.chartArea;
+        const datasets = chart.data.datasets;
+        const calloutTargets = datasets
+          .map((ds, idx) => ({ ds, idx }))
+          .filter(({ ds }) => ["Max Velocity", "Grip Intersection", "Gear Change"].includes(ds.label));
+
+        calloutTargets.forEach(({ ds, idx }) => {
+          const meta = chart.getDatasetMeta(idx);
+          if (!meta || meta.hidden || !chart.isDatasetVisible(idx) || !meta.data || meta.data.length === 0) return;
+          meta.data.forEach((pt, i) => {
+            const { x, y } = pt.getProps(["x", "y"], true);
+            const fontStr = "10px 'IBM Plex Sans', 'Segoe UI', sans-serif";
+            ctx.font = fontStr;
+            const dy = ds.label === "Max Velocity" ? -18 : -12;
+            const isVmax = ds.label === "Max Velocity";
+            const text =
+              ds.label === "Max Velocity"
+                ? `Vmax ${(ds.data[i]?.x ?? 0).toFixed(1)} m/s`
+                : ds.label === "Grip Intersection"
+                  ? `Traction=Grip @ ${(ds.data[i]?.x ?? 0).toFixed(1)} m/s`
+                  : `Shift @ ${(ds.data[i]?.x ?? 0).toFixed(1)} m/s`;
+            const textWidth = Math.ceil(ctx.measureText(text).width);
+            const pad = 6;
+            let tx;
+            let ty = y + dy;
+            if (isVmax) {
+              tx = x - textWidth - 16; // text to NW
+              const minTx = area.left + pad;
+              tx = Math.max(tx, minTx);
+            } else {
+              tx = x + 16; // text to NE
+              const maxTx = area.right - textWidth - 16;
+              tx = Math.min(Math.max(tx, area.left + pad), maxTx);
+            }
+            ty = Math.min(Math.max(ty, area.top + pad), area.bottom - pad);
+            const lineEndX = isVmax
+              ? Math.min(Math.max(tx + textWidth + 6, area.left + pad), area.right - pad) // right side of text
+              : Math.max(Math.min(tx - 6, area.right - pad), area.left + pad); // left side of text
+            const lineEndY = ty;
+
+            ctx.save();
+            ctx.strokeStyle = "#e8f0fb";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo((x + lineEndX) / 2, (y + lineEndY) / 2);
+            ctx.lineTo(lineEndX, lineEndY);
+            ctx.stroke();
+
+            ctx.fillStyle = ds.label === "Gear Change" ? "#ffd166" : ds.label === "Grip Intersection" ? "#9be070" : "#e8f0fb";
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = "rgba(0,0,0,0.6)";
+            ctx.lineWidth = 3;
+            ctx.font = "10px 'IBM Plex Sans', 'Segoe UI', sans-serif";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.strokeText(text, tx, ty);
+            ctx.fillStyle = "#e8f0fb";
+            ctx.fillText(text, tx, ty);
+            ctx.restore();
+          });
+        });
+      }
+    };
+    const slipPatternPlugin = {
+      id: "slipPattern",
+      afterDatasetsDraw(chart) {
+        const slipIdx = chart.data.datasets.findIndex(ds => ds.label === "Grip Limited Region");
+        if (slipIdx !== -1) {
+          const metaSlip = chart.getDatasetMeta(slipIdx);
+          if (metaSlip.hidden || !chart.isDatasetVisible(slipIdx)) return;
+        }
+        const tIdx = chart.data.datasets.findIndex(ds => ds.label === "Tractive Force");
+        const gIdx = chart.data.datasets.findIndex(ds => ds.label === "Grip Limit");
+        if (tIdx === -1 || gIdx === -1) return;
+        const tMeta = chart.getDatasetMeta(tIdx);
+        const gMeta = chart.getDatasetMeta(gIdx);
+        if (!tMeta.data || !gMeta.data || tMeta.data.length !== gMeta.data.length) return;
+        const valuesT = chart.data.datasets[tIdx].data.map(pt => typeof pt === "number" ? pt : pt.y);
+        const valuesG = chart.data.datasets[gIdx].data.map(pt => typeof pt === "number" ? pt : pt.y);
+        const ctx = chart.ctx;
+        const spacing = 6;
+        const n = Math.min(valuesT.length, valuesG.length) - 1;
+        for (let i = 0; i < n; i++) {
+          const t1 = valuesT[i], t2 = valuesT[i + 1];
+          const g1 = valuesG[i], g2 = valuesG[i + 1];
+          const x1 = tMeta.data[i].x;
+          const x2 = tMeta.data[i + 1].x;
+          const y1t = tMeta.data[i].y, y2t = tMeta.data[i + 1].y;
+          const y1g = gMeta.data[i].y, y2g = gMeta.data[i + 1].y;
+          const d1 = t1 - g1;
+          const d2 = t2 - g2;
+          if (d1 <= 0 && d2 <= 0) continue;
+          let poly = [];
+          if (d1 > 0 && d2 > 0) {
+            poly = [
+              [x1, y1t], [x2, y2t],
+              [x2, y2g], [x1, y1g]
+            ];
+          } else {
+            const f = d1 / (d1 - d2);
+            const xC = x1 + (x2 - x1) * f;
+            const yCGrip = y1g + (y2g - y1g) * f;
+            const yCTrac = y1t + (y2t - y1t) * f;
+            if (d1 > 0 && d2 <= 0) {
+              poly = [
+                [x1, y1t], [xC, yCTrac],
+                [xC, yCGrip], [x1, y1g]
+              ];
+            } else if (d1 <= 0 && d2 > 0) {
+              poly = [
+                [xC, yCTrac], [x2, y2t],
+                [x2, y2g], [xC, yCGrip]
+              ];
+            }
+          }
+          if (poly.length === 0) continue;
+          const area = chart.chartArea;
+          ctx.save();
+          ctx.beginPath();
+          poly.forEach(([px, py], idx) => {
+            const cx = Math.min(Math.max(px, area.left), area.right);
+            const cy = Math.min(Math.max(py, area.top), area.bottom);
+            if (idx === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+          });
+          ctx.closePath();
+          ctx.clip();
+          ctx.strokeStyle = "rgba(232,240,251,0.9)";
+          ctx.lineWidth = 1;
+          const minX = Math.min(...poly.map(p => p[0]));
+          const maxX = Math.max(...poly.map(p => p[0]));
+          const minY = Math.min(...poly.map(p => p[1]));
+          const maxY = Math.max(...poly.map(p => p[1]));
+          const diag = maxY - minY + 12;
+          for (let x = minX - diag; x < maxX + diag; x += spacing) {
+            ctx.beginPath();
+            ctx.moveTo(x, maxY);
+            ctx.lineTo(x + diag, minY);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+    };
+
+    function refreshGGVChart(id) {
+      const chart = ggvCharts.get(id);
+      if (!chart) return;
+      const vehicle = vehicles.find(v => v.id === id);
+      const { ellipses, maxAbs } = computeGGVEllipses(vehicle);
+      chart.data.datasets = buildGGVDatasets(ellipses);
+      const pad = maxAbs * 1.1;
+      chart.options.scales.x.suggestedMin = -pad;
+      chart.options.scales.x.suggestedMax = pad;
+      chart.options.scales.y.suggestedMin = -pad;
+      chart.options.scales.y.suggestedMax = pad;
+      chart.update("none");
+    }
+
+    function initGGVChart(id) {
+      const canvas = document.getElementById(`ggvChart-${id}`);
+      if (!canvas || ggvCharts.has(id)) return;
+      const ctx = canvas.getContext("2d");
+      const vehicle = vehicles.find(v => v.id === id);
+      const { ellipses, maxAbs } = computeGGVEllipses(vehicle);
+      const pad = maxAbs * 1.1;
+      const chart = new Chart(ctx, {
+        type: "line",
+        data: { datasets: buildGGVDatasets(ellipses) },
+        options: {
+          parsing: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: { top: 4, right: 6, bottom: 4, left: 6 }
+          },
+          scales: {
+            x: {
+              type: "linear",
+              title: {
+                display: true,
+                text: "Lateral Accel (m/s/s)",
+                color: "#9fb1c4",
+                font: { size: 11, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" }
+              },
+              ticks: {
+                color: "#9fb1c4",
+                font: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+                padding: 4
+              },
+              grid: { color: "rgba(255,255,255,0.08)" },
+              suggestedMin: -pad,
+              suggestedMax: pad
+            },
+            y: {
+              title: {
+                display: true,
+                text: "Longitudinal Accel (m/s/s)",
+                color: "#9fb1c4",
+                font: { size: 11, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" }
+              },
+              ticks: {
+                color: "#9fb1c4",
+                font: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+                padding: 4
+              },
+              grid: { color: "rgba(255,255,255,0.08)" },
+              suggestedMin: -pad,
+              suggestedMax: pad
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: "#c0c7d0",
+                font: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+                boxWidth: 10,
+                boxHeight: 10,
+                padding: 8
+              }
+            },
+            tooltip: {
+              titleFont: { size: 11, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+              bodyFont: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" }
+            }
+          }
+        }
+      });
+      ggvCharts.set(id, chart);
+    }
+
+    const defaultVehicleSpec = {
+      weight: 1192,
+      dragCoefficient: 0.34,
+      liftCoefficient: -0.1,
+      frontalArea: 1.8,
+      tireRadius: 0.308,
+      rollingResistance: 0.03,
+      longFriction: 1.2,
+      latFriction: 1.2,
+      drivetrainType: "RWD",
+      finalDriveRatio: 4.1,
+      driveEfficiency: 0.93,
+      thermalEfficiency: 0.3,
+      fuelEnergyDensity: 47200000,
+      engineData: [
+        { rpm: 1500, torque: 165.0 },
+        { rpm: 2000, torque: 170.0 },
+        { rpm: 2500, torque: 175.0 },
+        { rpm: 3000, torque: 178.0 },
+        { rpm: 3500, torque: 182.0 },
+        { rpm: 4000, torque: 186.0 },
+        { rpm: 4500, torque: 187.0 },
+        { rpm: 5000, torque: 188.0 },
+        { rpm: 5500, torque: 185.0 },
+        { rpm: 6000, torque: 180.0 },
+        { rpm: 6500, torque: 172.0 },
+        { rpm: 6700, torque: 169.0 },
+      ],
+      gearRatios: [3.8150, 2.2600, 1.6400, 1.1770, 1.0000, 0.8320],
+    };
+
+    const cloneDefaultSpec = () => JSON.parse(JSON.stringify(defaultVehicleSpec));
+    const defaultTrackSpec = {
+      circuitType: "closed",
+      points: [
+        { x: 0, y: 0, z: 0 },
+        { x: 90, y: 0, z: 1.2 },
+        { x: 125, y: 65, z: 3.4 },
+        { x: 70, y: 130, z: 5.1 },
+        { x: 0, y: 105, z: 2.8 }
+      ]
+    };
+
+    const cloneDefaultTrackSpec = () => JSON.parse(JSON.stringify(defaultTrackSpec));
+    const defaultEventSpec = {
+      vehicleId: "",
+      trackId: "",
+      airTemperature: 25,
+      airPressure: 101.325,
+      elevation: 0,
+      humidity: 50
+    };
+
+    const cloneDefaultEventSpec = () => JSON.parse(JSON.stringify(defaultEventSpec));
+    const VEHICLE_FIELD_SECTIONS = [
+      {
+        title: "Body",
+        fields: [
+          { key: "vehicleName", label: "Name:", type: "text" },
+          { key: "vehicleWeight", label: "Weight (kg):", type: "number" }
+        ]
+      },
+      {
+        title: "Aerodynamics",
+        fields: [
+          { key: "vehicleCoeffDrag", label: "Drag Coefficient:", type: "number" },
+          { key: "vehicleCoeffLift", label: "Lift Coefficient:", type: "number" },
+          { key: "vehicleFrontalArea", label: "Frontal Area (m^2):", type: "number" }
+        ]
+      },
+      {
+        title: "Tires",
+        fields: [
+          { key: "vehicleTireRadius", label: "Tire Radius (m):", type: "number" },
+          { key: "vehicleRollingRes", label: "Rolling Resistance:", type: "number" },
+          { key: "vehicleLongFriction", label: "Longitudinal Friction:", type: "number" },
+          { key: "vehicleLatFriction", label: "Lateral Friction:", type: "number" }
+        ]
+      },
+      {
+        title: "Drivetrain",
+        fields: [
+          {
+            key: "drivetrainType",
+            label: "Type",
+            type: "select",
+            options: [
+              { value: "FWD", label: "Front Wheel Drive" },
+              { value: "RWD", label: "Rear Wheel Drive" },
+              { value: "AWD", label: "All Wheel Drive" }
+            ]
+          },
+          { key: "finalDriveRatio", label: "Final Drive Ratio", type: "number", step: "0.0001" },
+          { key: "driveEfficiency", label: "Drive Efficiency", type: "number", step: "0.0001" }
+        ]
+      }
+    ];
+    const EVENT_FIELD_SECTIONS = [
+      {
+        title: "Event",
+        fields: [
+          { key: "eventName", label: "Name:", type: "text" },
+          { key: "eventVehicle", label: "Vehicle:", type: "select", options: [] },
+          { key: "eventTrack", label: "Track:", type: "select", options: [] }
+        ]
+      },
+      {
+        title: "Ambient",
+        fields: [
+          { key: "eventAirTemperature", label: "Air Temperature [C]", type: "number", step: "0.1" },
+          { key: "eventAirPressure", label: "Air Pressure [kPa]", type: "number", step: "0.001" },
+          { key: "eventElevation", label: "Elevation [m]", type: "number", step: "0.1" },
+          { key: "eventHumidity", label: "Humidity [%]", type: "number", step: "0.1", min: "0", max: "100" }
+        ]
+      }
+    ];
+    const VEHICLE_NUMERIC_BINDINGS = [
+      { key: "vehicleWeight", prop: "weight" },
+      { key: "vehicleCoeffDrag", prop: "dragCoefficient" },
+      { key: "vehicleCoeffLift", prop: "liftCoefficient" },
+      { key: "vehicleFrontalArea", prop: "frontalArea" },
+      { key: "vehicleTireRadius", prop: "tireRadius" },
+      { key: "vehicleRollingRes", prop: "rollingResistance" },
+      { key: "vehicleLongFriction", prop: "longFriction" },
+      { key: "vehicleLatFriction", prop: "latFriction" },
+      { key: "thermalEfficiency", prop: "thermalEfficiency" },
+      { key: "fuelEnergyDensity", prop: "fuelEnergyDensity" },
+      { key: "finalDriveRatio", prop: "finalDriveRatio" },
+      { key: "driveEfficiency", prop: "driveEfficiency" }
+    ];
+    const EVENT_NUMERIC_BINDINGS = [
+      { key: "eventAirTemperature", prop: "airTemperature" },
+      { key: "eventAirPressure", prop: "airPressure" },
+      { key: "eventElevation", prop: "elevation" },
+      { key: "eventHumidity", prop: "humidity" }
+    ];
+    const VEHICLE_XML_BRANCHES = [
+      { key: "body", props: ["weight"] },
+      { key: "aerodynamics", props: ["dragCoefficient", "liftCoefficient", "frontalArea"] },
+      { key: "tires", props: ["tireRadius", "rollingResistance", "longFriction", "latFriction"] },
+      { key: "drivetrain", props: ["drivetrainType", "finalDriveRatio", "driveEfficiency", "gearRatios"] },
+      { key: "powertrain", props: ["thermalEfficiency", "fuelEnergyDensity", "engineData"] }
+    ];
+    const XML_TABLE_COLUMN_OVERRIDES = {
+      "spec.gearRatios": ["ratio"],
+      "spec.drivetrain.gearRatios": ["ratio"]
+    };
+    const ENTITY_CONFIG = {
+      vehicle: {
+        branchName: "Vehicles",
+        getCollection: () => vehicles,
+        setCollection: (next) => { vehicles = next; },
+        cloneSpec: cloneDefaultSpec,
+        createName: (count) => `Vehicle ${count}`,
+        importName: "Imported Vehicle",
+        exportFile: "vehicle.json",
+        exportTag: "Vehicle",
+        syncOpenEditors: () => refreshOpenEventEditors()
+      },
+      track: {
+        branchName: "Tracks",
+        getCollection: () => tracks,
+        setCollection: (next) => { tracks = next; },
+        cloneSpec: cloneDefaultTrackSpec,
+        createName: (count) => `Track ${count}`,
+        importName: "Imported Track",
+        exportFile: "track.json",
+        exportTag: "Track",
+        syncOpenEditors: () => refreshOpenEventEditors()
+      },
+      event: {
+        branchName: "Events",
+        getCollection: () => eventsArray,
+        setCollection: (next) => { eventsArray = next; },
+        cloneSpec: cloneDefaultEventSpec,
+        createName: (count) => `Event ${count}`,
+        importName: "Imported Event",
+        exportFile: "event.json",
+        exportTag: "Event"
+      }
+    };
 
     /********************************************************
-     *            FILE MANAGER (PLACEHOLDER LOGIC)
+     *          FILE MANAGER (JSON + LEGACY XML)
      ********************************************************/
+    function getUsedEntityIds() {
+      return new Set([
+        ...vehicles.map(vehicle => vehicle.id),
+        ...tracks.map(track => track.id),
+        ...eventsArray.map(eventObj => eventObj.id)
+      ]);
+    }
+
+    function allocateEntityId(preferredId = null) {
+      const usedIds = getUsedEntityIds();
+      const preferredNumeric = Number(preferredId);
+      if (Number.isInteger(preferredNumeric) && preferredNumeric > 0 && !usedIds.has(preferredNumeric)) {
+        return preferredNumeric;
+      }
+      let candidate = Date.now();
+      while (usedIds.has(candidate)) {
+        candidate += 1;
+      }
+      return candidate;
+    }
+
+    function applyEntityDefaults(type, entity) {
+      if (type === "vehicle") {
+        ensureSpecDefaults(entity);
+      } else if (type === "track") {
+        TrackEditor.ensureDefaults(entity);
+      } else if (type === "event") {
+        ensureEventDefaults(entity);
+      }
+    }
+
+    function isPlainObject(value) {
+      return !!value && typeof value === "object" && !Array.isArray(value);
+    }
+
+    function inferXmlTableColumns(value) {
+      if (!Array.isArray(value) || value.length === 0) return null;
+      const populatedItems = value.filter(item => item !== null && item !== undefined);
+      if (populatedItems.length === 0) return null;
+      if (populatedItems.every(item => !isPlainObject(item))) {
+        return ["value"];
+      }
+
+      const firstObject = populatedItems.find(item => isPlainObject(item));
+      if (!firstObject) return null;
+      const columns = Object.keys(firstObject);
+      if (columns.length === 0) return null;
+
+      const isUniform = populatedItems.every((item) => {
+        if (!isPlainObject(item)) return false;
+        const itemKeys = Object.keys(item);
+        return itemKeys.length === columns.length && columns.every((column, idx) => itemKeys[idx] === column);
+      });
+      return isUniform ? columns : null;
+    }
+
+    function getXmlTableColumns(path, value) {
+      return XML_TABLE_COLUMN_OVERRIDES[path] || inferXmlTableColumns(value);
+    }
+
+    function stringifyXmlScalar(value) {
+      if (value === null || value === undefined) return "";
+      return `${value}`;
+    }
+
+    function buildXmlTableText(value, columns) {
+      return value.map((item) => {
+        const rowValues = columns.length === 1 && !isPlainObject(item)
+          ? [item]
+          : columns.map(column => item?.[column]);
+        return rowValues.map(cellValue => stringifyXmlScalar(cellValue)).join(" ");
+      }).join("\n");
+    }
+
+    function parseXmlScalar(text) {
+      const trimmed = `${text ?? ""}`.trim();
+      if (trimmed === "") return "";
+      if (trimmed.toLowerCase() === "true") return true;
+      if (trimmed.toLowerCase() === "false") return false;
+      const numericVal = parseFloat(trimmed);
+      if (!Number.isNaN(numericVal) && `${numericVal}` === trimmed.replace(/\.0+$/, match => match === ".0" ? "" : match)) {
+        return numericVal;
+      }
+      if (!Number.isNaN(numericVal) && /^[-+]?\d*\.?\d+(e[-+]?\d+)?$/i.test(trimmed)) {
+        return numericVal;
+      }
+      return trimmed;
+    }
+
+    function parseXmlTableText(node, columns) {
+      const delimiter = (node.getAttribute("delimiter") || "whitespace").toLowerCase();
+      const rawText = node.textContent || "";
+      const lines = rawText
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+      const splitPattern = delimiter === "tab" ? /\t/ : /\s+/;
+      const rows = lines.map(line => line.split(splitPattern).map(cell => parseXmlScalar(cell)));
+      if (columns.length === 1 && columns[0] === "value") {
+        return rows.map(row => row[0] ?? "");
+      }
+      return rows.map((row) => {
+        const rowObj = {};
+        columns.forEach((column, idx) => {
+          rowObj[column] = row[idx] ?? "";
+        });
+        return rowObj;
+      });
+    }
+
+    function exportVehicleSpecToXmlShape(spec) {
+      const source = isPlainObject(spec) ? spec : {};
+      const grouped = {};
+      VEHICLE_XML_BRANCHES.forEach(({ key, props }) => {
+        grouped[key] = {};
+        props.forEach((prop) => {
+          if (source[prop] !== undefined) {
+            grouped[key][prop] = source[prop];
+          }
+        });
+      });
+      Object.keys(source).forEach((prop) => {
+        const covered = VEHICLE_XML_BRANCHES.some(branch => branch.props.includes(prop));
+        if (!covered) {
+          grouped[prop] = source[prop];
+        }
+      });
+      return grouped;
+    }
+
+    function importVehicleSpecFromXmlShape(spec) {
+      if (!isPlainObject(spec)) return spec;
+      const flattened = {};
+      Object.entries(spec).forEach(([key, value]) => {
+        const branch = VEHICLE_XML_BRANCHES.find(entry => entry.key === key);
+        if (branch && isPlainObject(value)) {
+          Object.assign(flattened, value);
+        } else {
+          flattened[key] = value;
+        }
+      });
+      return flattened;
+    }
+
+    function exportSpecForXml(type, spec) {
+      if (type === "vehicle") {
+        return exportVehicleSpecToXmlShape(spec);
+      }
+      return spec;
+    }
+
+    function importSpecFromXml(type, spec) {
+      if (type === "vehicle") {
+        return importVehicleSpecFromXmlShape(spec);
+      }
+      return spec;
+    }
+
+    function appendXmlValue(doc, parent, key, value, path = key) {
+      const node = doc.createElement(key);
+      if (Array.isArray(value)) {
+        const columns = getXmlTableColumns(path, value);
+        if (columns) {
+          node.setAttribute("type", "table");
+          node.setAttribute("columns", columns.join(","));
+          node.setAttribute("delimiter", "whitespace");
+          node.appendChild(doc.createCDATASection(`\n${buildXmlTableText(value, columns)}\n`));
+        } else {
+          node.setAttribute("type", "array");
+          value.forEach((item, idx) => appendXmlValue(doc, node, "item", item, `${path}[${idx}]`));
+        }
+      } else if (value === null || value === undefined) {
+        node.setAttribute("type", "null");
+      } else if (typeof value === "object") {
+        node.setAttribute("type", "object");
+        Object.entries(value).forEach(([childKey, childValue]) => appendXmlValue(doc, node, childKey, childValue, `${path}.${childKey}`));
+      } else {
+        const valueType = typeof value === "number" ? "number" : typeof value === "boolean" ? "boolean" : "string";
+        node.setAttribute("type", valueType);
+        node.textContent = `${value}`;
+      }
+      parent.appendChild(node);
+    }
+
+    function parseXmlValue(node) {
+      const nodeType = node.getAttribute("type") || (node.children.length > 0 ? "object" : "string");
+      if (nodeType === "table") {
+        const columns = (node.getAttribute("columns") || "")
+          .split(",")
+          .map(column => column.trim())
+          .filter(Boolean);
+        const rowNodes = Array.from(node.children).filter(child => child.nodeName === "row");
+        if (rowNodes.length > 0) {
+          const rows = rowNodes.map(row => Array.from(row.children).filter(child => child.nodeName === "c").map(cell => parseXmlValue(cell)));
+          if (columns.length === 1 && columns[0] === "value") {
+            return rows.map(row => row[0] ?? "");
+          }
+          return rows.map((row) => {
+            const rowObj = {};
+            columns.forEach((column, idx) => {
+              rowObj[column] = row[idx] ?? "";
+            });
+            return rowObj;
+          });
+        }
+        return parseXmlTableText(node, columns);
+      }
+      if (nodeType === "array") {
+        return Array.from(node.children).map(child => parseXmlValue(child));
+      }
+      if (nodeType === "object") {
+        const value = {};
+        Array.from(node.children).forEach((child) => {
+          value[child.nodeName] = parseXmlValue(child);
+        });
+        return value;
+      }
+      if (nodeType === "number") {
+        const numericVal = parseFloat(node.textContent || "");
+        return Number.isNaN(numericVal) ? 0 : numericVal;
+      }
+      if (nodeType === "boolean") {
+        return (node.textContent || "").trim().toLowerCase() === "true";
+      }
+      if (nodeType === "null") {
+        return null;
+      }
+      return node.textContent || "";
+    }
+
+    function escapeXmlText(value) {
+      return `${value ?? ""}`
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function escapeXmlAttribute(value) {
+      return escapeXmlText(value).replace(/"/g, "&quot;");
+    }
+
+    function serializeXmlNode(node, indent = "") {
+      if (node.nodeType === Node.CDATA_SECTION_NODE) {
+        return `<![CDATA[${node.data}]]>`;
+      }
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || "";
+        return text.trim().length === 0 ? "" : escapeXmlText(text);
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return "";
+      }
+
+      const tagName = node.nodeName;
+      const attrs = Array.from(node.attributes || [])
+        .map(attr => ` ${attr.name}="${escapeXmlAttribute(attr.value)}"`)
+        .join("");
+      const childNodes = Array.from(node.childNodes || []).filter((child) => {
+        if (child.nodeType === Node.TEXT_NODE) {
+          return (child.textContent || "").trim().length > 0;
+        }
+        return child.nodeType === Node.ELEMENT_NODE || child.nodeType === Node.CDATA_SECTION_NODE;
+      });
+
+      if (childNodes.length === 0) {
+        return `${indent}<${tagName}${attrs}/>`;
+      }
+
+      if (childNodes.length === 1 && childNodes[0].nodeType === Node.TEXT_NODE) {
+        return `${indent}<${tagName}${attrs}>${escapeXmlText(childNodes[0].textContent || "")}</${tagName}>`;
+      }
+
+      if (childNodes.length === 1 && childNodes[0].nodeType === Node.CDATA_SECTION_NODE) {
+        return `${indent}<${tagName}${attrs}>\n${serializeXmlNode(childNodes[0])}\n${indent}</${tagName}>`;
+      }
+
+      const childIndent = `${indent}  `;
+      const content = childNodes
+        .map(child => serializeXmlNode(child, child.nodeType === Node.ELEMENT_NODE ? childIndent : ""))
+        .filter(Boolean)
+        .join("\n");
+      return `${indent}<${tagName}${attrs}>\n${content}\n${indent}</${tagName}>`;
+    }
+
+    function createJsonValue(value, unit) {
+      return { value, unit };
+    }
+
+    function createJsonData(data, unit, columns = null) {
+      const result = { data, unit };
+      if (columns) {
+        result.columns = columns;
+      }
+      return result;
+    }
+
+    function getJsonValue(node, fallback = "") {
+      if (node === undefined || node === null) return fallback;
+      if (isPlainObject(node) && Object.prototype.hasOwnProperty.call(node, "value")) {
+        return node.value;
+      }
+      return node;
+    }
+
+    function getJsonData(node, fallback = []) {
+      if (node === undefined || node === null) return fallback;
+      if (isPlainObject(node) && Array.isArray(node.data)) {
+        return node.data;
+      }
+      if (Array.isArray(node)) {
+        return node;
+      }
+      return fallback;
+    }
+
+    function normalizeNumericValue(value, fallback = "") {
+      if (value === undefined || value === null || value === "") return fallback;
+      const numericVal = Number(value);
+      return Number.isFinite(numericVal) ? numericVal : fallback;
+    }
+
+    function buildVehicleJson(entity) {
+      ensureSpecDefaults(entity);
+      const spec = entity.spec || cloneDefaultSpec();
+      const engineData = Array.isArray(spec.engineData) ? spec.engineData : [];
+      return {
+        vehicle: {
+          meta: {
+            id: entity.id,
+            name: entity.name || ""
+          },
+          aerodynamics: {
+            drag: createJsonValue(spec.dragCoefficient, "unitless"),
+            lift: createJsonValue(spec.liftCoefficient, "unitless"),
+            frontalArea: createJsonValue(spec.frontalArea, "m2")
+          },
+          chassis: {
+            mass: createJsonValue(spec.weight, "kg")
+          },
+          drivetrain: {
+            type: createJsonValue(spec.drivetrainType, "unitless"),
+            gears: createJsonData(Array.isArray(spec.gearRatios) ? spec.gearRatios : [], "ratio"),
+            final: createJsonValue(spec.finalDriveRatio, "ratio"),
+            efficiency: createJsonValue(spec.driveEfficiency, "ratio")
+          },
+          powertrain: {
+            motor: {
+              speed: createJsonData(engineData.map(row => row.rpm ?? ""), "rpm"),
+              torque: createJsonData(engineData.map(row => row.torque ?? ""), "Nm")
+            },
+            fuel: {
+              energyDensity: createJsonValue((Number(spec.fuelEnergyDensity) || 0) / 1000000, "MJ/kg")
+            },
+            efficiency: createJsonValue(spec.thermalEfficiency, "ratio")
+          },
+          tyres: {
+            friction: {
+              lateral: createJsonValue(spec.latFriction, "unitless"),
+              longitudinal: createJsonValue(spec.longFriction, "unitless")
+            },
+            radius: createJsonValue(spec.tireRadius, "m"),
+            resistance: createJsonValue(spec.rollingResistance, "unitless")
+          }
+        }
+      };
+    }
+
+    function parseVehicleJson(payload) {
+      const root = payload?.vehicle || payload || {};
+      const meta = root.meta || {};
+      const speedNode = root.powertrain?.motor?.speed;
+      const speedUnit = `${speedNode?.unit || "rpm"}`.toLowerCase();
+      const speedScale = speedUnit === "rad/s" ? (60 / (2 * Math.PI)) : 1;
+      const speedData = getJsonData(speedNode).map(value => normalizeNumericValue(value));
+      const torqueData = getJsonData(root.powertrain?.motor?.torque).map(value => normalizeNumericValue(value));
+      const pointCount = Math.max(speedData.length, torqueData.length);
+      const engineData = pointCount > 0
+        ? Array.from({ length: pointCount }, (_, idx) => {
+            const rpmValue = normalizeNumericValue(speedData[idx], "");
+            return {
+              rpm: rpmValue === "" ? "" : rpmValue * speedScale,
+              torque: normalizeNumericValue(torqueData[idx], "")
+            };
+          })
+        : cloneDefaultSpec().engineData;
+
+      const energyNode = root.powertrain?.fuel?.energyDensity;
+      const energyUnit = `${energyNode?.unit || "J/kg"}`.toLowerCase();
+      const energyDensityRaw = normalizeNumericValue(getJsonValue(energyNode, cloneDefaultSpec().fuelEnergyDensity), cloneDefaultSpec().fuelEnergyDensity);
+      const fuelEnergyDensity = energyUnit === "mj/kg" ? energyDensityRaw * 1000000 : energyDensityRaw;
+
+      return {
+        id: allocateEntityId(meta.id),
+        name: meta.name || ENTITY_CONFIG.vehicle.importName,
+        spec: {
+          weight: normalizeNumericValue(getJsonValue(root.chassis?.mass, cloneDefaultSpec().weight), cloneDefaultSpec().weight),
+          dragCoefficient: normalizeNumericValue(getJsonValue(root.aerodynamics?.drag, cloneDefaultSpec().dragCoefficient), cloneDefaultSpec().dragCoefficient),
+          liftCoefficient: normalizeNumericValue(getJsonValue(root.aerodynamics?.lift, cloneDefaultSpec().liftCoefficient), cloneDefaultSpec().liftCoefficient),
+          frontalArea: normalizeNumericValue(getJsonValue(root.aerodynamics?.frontalArea, cloneDefaultSpec().frontalArea), cloneDefaultSpec().frontalArea),
+          tireRadius: normalizeNumericValue(getJsonValue(root.tyres?.radius, cloneDefaultSpec().tireRadius), cloneDefaultSpec().tireRadius),
+          rollingResistance: normalizeNumericValue(getJsonValue(root.tyres?.resistance, cloneDefaultSpec().rollingResistance), cloneDefaultSpec().rollingResistance),
+          longFriction: normalizeNumericValue(getJsonValue(root.tyres?.friction?.longitudinal, cloneDefaultSpec().longFriction), cloneDefaultSpec().longFriction),
+          latFriction: normalizeNumericValue(getJsonValue(root.tyres?.friction?.lateral, cloneDefaultSpec().latFriction), cloneDefaultSpec().latFriction),
+          drivetrainType: `${getJsonValue(root.drivetrain?.type, cloneDefaultSpec().drivetrainType) || cloneDefaultSpec().drivetrainType}`,
+          finalDriveRatio: normalizeNumericValue(getJsonValue(root.drivetrain?.final, cloneDefaultSpec().finalDriveRatio), cloneDefaultSpec().finalDriveRatio),
+          driveEfficiency: normalizeNumericValue(getJsonValue(root.drivetrain?.efficiency, cloneDefaultSpec().driveEfficiency), cloneDefaultSpec().driveEfficiency),
+          thermalEfficiency: normalizeNumericValue(getJsonValue(root.powertrain?.efficiency, cloneDefaultSpec().thermalEfficiency), cloneDefaultSpec().thermalEfficiency),
+          fuelEnergyDensity,
+          engineData,
+          gearRatios: getJsonData(root.drivetrain?.gears, cloneDefaultSpec().gearRatios)
+            .map(value => normalizeNumericValue(value, ""))
+            .filter(value => value !== "")
+        }
+      };
+    }
+
+    function buildTrackJson(entity) {
+      TrackEditor.ensureDefaults(entity);
+      const spec = entity.spec || cloneDefaultTrackSpec();
+      return {
+        track: {
+          meta: {
+            id: entity.id,
+            name: entity.name || ""
+          },
+          layout: {
+            circuitType: createJsonValue(spec.circuitType, "unitless"),
+            coordinates: createJsonData(
+              (Array.isArray(spec.points) ? spec.points : []).map(point => [point.x ?? "", point.y ?? "", point.z ?? ""]),
+              "m",
+              ["x", "y", "z"]
+            )
+          }
+        }
+      };
+    }
+
+    function parseTrackJson(payload) {
+      const root = payload?.track || payload || {};
+      const meta = root.meta || {};
+      const coordinatesNode = root.layout?.coordinates;
+      const pointsData = getJsonData(coordinatesNode, []);
+      const points = pointsData.length > 0
+        ? pointsData.map((row) => {
+            const cells = Array.isArray(row) ? row : [row?.x, row?.y, row?.z];
+            return {
+              x: normalizeNumericValue(cells[0], ""),
+              y: normalizeNumericValue(cells[1], ""),
+              z: normalizeNumericValue(cells[2], "")
+            };
+          })
+        : cloneDefaultTrackSpec().points;
+      return {
+        id: allocateEntityId(meta.id),
+        name: meta.name || ENTITY_CONFIG.track.importName,
+        spec: {
+          circuitType: `${getJsonValue(root.layout?.circuitType, cloneDefaultTrackSpec().circuitType) || cloneDefaultTrackSpec().circuitType}`,
+          points
+        }
+      };
+    }
+
+    function buildEventJson(entity) {
+      ensureEventDefaults(entity);
+      const spec = entity.spec || cloneDefaultEventSpec();
+      return {
+        event: {
+          meta: {
+            id: entity.id,
+            name: entity.name || ""
+          },
+          references: {
+            vehicleId: createJsonValue(spec.vehicleId, "id"),
+            trackId: createJsonValue(spec.trackId, "id")
+          },
+          ambient: {
+            airTemperature: createJsonValue(spec.airTemperature, "C"),
+            airPressure: createJsonValue(spec.airPressure, "kPa"),
+            elevation: createJsonValue(spec.elevation, "m"),
+            humidity: createJsonValue(spec.humidity, "%")
+          }
+        }
+      };
+    }
+
+    function parseEventJson(payload) {
+      const root = payload?.event || payload || {};
+      const meta = root.meta || {};
+      const vehicleId = getJsonValue(root.references?.vehicleId, "");
+      const trackId = getJsonValue(root.references?.trackId, "");
+      return {
+        id: allocateEntityId(meta.id),
+        name: meta.name || ENTITY_CONFIG.event.importName,
+        spec: {
+          vehicleId: vehicleId === "" || vehicleId === null || vehicleId === undefined ? "" : parseInt(vehicleId, 10),
+          trackId: trackId === "" || trackId === null || trackId === undefined ? "" : parseInt(trackId, 10),
+          airTemperature: normalizeNumericValue(getJsonValue(root.ambient?.airTemperature, cloneDefaultEventSpec().airTemperature), cloneDefaultEventSpec().airTemperature),
+          airPressure: normalizeNumericValue(getJsonValue(root.ambient?.airPressure, cloneDefaultEventSpec().airPressure), cloneDefaultEventSpec().airPressure),
+          elevation: normalizeNumericValue(getJsonValue(root.ambient?.elevation, cloneDefaultEventSpec().elevation), cloneDefaultEventSpec().elevation),
+          humidity: normalizeNumericValue(getJsonValue(root.ambient?.humidity, cloneDefaultEventSpec().humidity), cloneDefaultEventSpec().humidity)
+        }
+      };
+    }
+
+    function buildEntityJson(type, entity) {
+      if (type === "vehicle") return buildVehicleJson(entity);
+      if (type === "track") return buildTrackJson(entity);
+      if (type === "event") return buildEventJson(entity);
+      return {};
+    }
+
+    function parseEntityJson(type, jsonText) {
+      const payload = JSON.parse(jsonText);
+      if (type === "vehicle") return parseVehicleJson(payload);
+      if (type === "track") return parseTrackJson(payload);
+      if (type === "event") return parseEventJson(payload);
+      throw new Error(`Unsupported entity type: ${type}`);
+    }
+
+    function buildEntityXml(type, entity) {
+      const config = ENTITY_CONFIG[type];
+      const doc = document.implementation.createDocument("", config.exportTag, null);
+      const root = doc.documentElement;
+      root.setAttribute("type", type);
+      root.setAttribute("version", "4");
+      root.setAttribute("id", `${entity.id}`);
+      root.setAttribute("name", entity.name || "");
+      if (entity.spec !== undefined) {
+        appendXmlValue(doc, root, "spec", exportSpecForXml(type, entity.spec), "spec");
+      }
+      return `<?xml version="1.0" encoding="UTF-8"?>\n${serializeXmlNode(root)}`;
+    }
+
+    function parseEntityXml(type, xmlText) {
+      const config = ENTITY_CONFIG[type];
+      const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+      const parseError = doc.querySelector("parsererror");
+      if (parseError) {
+        throw new Error("The XML file could not be parsed.");
+      }
+
+      const root = doc.documentElement;
+      if (!root || root.nodeName !== config.exportTag) {
+        throw new Error(`Expected a <${config.exportTag}> root element.`);
+      }
+
+      const entity = {
+        id: allocateEntityId(root.getAttribute("id")),
+        name: root.getAttribute("name") || config.importName
+      };
+      const specNode = Array.from(root.children).find(child => child.nodeName === "spec");
+      entity.spec = specNode ? importSpecFromXml(type, parseXmlValue(specNode)) : config.cloneSpec();
+      applyEntityDefaults(type, entity);
+      return entity;
+    }
+
+    function getActiveTabEntity(type) {
+      const activeTab = tabs.find(tab => tab.type === type && tab.headerEl.classList.contains("active"));
+      if (!activeTab) return null;
+      return ENTITY_CONFIG[type].getCollection().find(entry => entry.id === activeTab.id) || null;
+    }
+
+    function getSelectedTreeEntity(type) {
+      if (!selectedTreeItem || selectedTreeItem.getAttribute("data-type") !== type) {
+        return null;
+      }
+      const entityId = parseInt(selectedTreeItem.getAttribute("data-id"), 10);
+      return ENTITY_CONFIG[type].getCollection().find(entry => entry.id === entityId) || null;
+    }
+
+    function getEntityForExport(type) {
+      return getActiveTabEntity(type)
+        || getSelectedTreeEntity(type)
+        || (ENTITY_CONFIG[type].getCollection().length === 1 ? ENTITY_CONFIG[type].getCollection()[0] : null);
+    }
+
+    function getActiveEntity(type) {
+      return getActiveTabEntity(type) || getSelectedTreeEntity(type);
+    }
+
+    function describeEventForPicker(eventObj) {
+      ensureEventDefaults(eventObj);
+      const vehicleLabel = vehicles.find(vehicle => `${vehicle.id}` === `${eventObj.spec.vehicleId ?? ""}`)?.name || "No Vehicle";
+      const trackLabel = tracks.find(track => `${track.id}` === `${eventObj.spec.trackId ?? ""}`)?.name || "No Track";
+      const ambientLabel = `${Number(eventObj.spec.airTemperature ?? 0).toFixed(1)} C, ${Number(eventObj.spec.airPressure ?? 0).toFixed(3)} kPa`;
+      return {
+        vehicleLabel,
+        trackLabel,
+        ambientLabel
+      };
+    }
+
+    function updateSimulateSelectionStatus() {
+      const checkboxes = Array.from(document.querySelectorAll('#simulateEventList input[type="checkbox"][data-event-id]'));
+      const selectedCount = checkboxes.filter(checkbox => checkbox.checked).length;
+      const statusEl = document.getElementById("simulateSelectionStatus");
+      const confirmBtn = document.getElementById("simulateConfirm");
+      if (statusEl) {
+        statusEl.textContent = `${selectedCount} selected`;
+      }
+      if (confirmBtn) {
+        confirmBtn.disabled = selectedCount === 0;
+      }
+    }
+
+    function renderSimulateEventPicker() {
+      const listEl = document.getElementById("simulateEventList");
+      if (!listEl) return;
+      const activeEvent = getActiveEntity("event");
+      const activeEventId = activeEvent?.id ?? null;
+      if (eventsArray.length === 0) {
+        listEl.innerHTML = '<div class="event-picker-empty">Create or import at least one event before running the solver.</div>';
+        updateSimulateSelectionStatus();
+        return;
+      }
+
+      listEl.innerHTML = eventsArray.map((eventObj) => {
+        const details = describeEventForPicker(eventObj);
+        const checked = activeEventId === eventObj.id || (activeEventId === null && eventsArray.length === 1);
+        return `
+          <label class="event-picker-item">
+            <input type="checkbox" data-event-id="${eventObj.id}" ${checked ? "checked" : ""}>
+            <div>
+              <div class="event-picker-name">${eventObj.name || `Event ${eventObj.id}`}</div>
+              <div class="event-picker-meta">
+                <span>Vehicle: ${details.vehicleLabel}</span>
+                <span>Track: ${details.trackLabel}</span>
+                <span>Ambient: ${details.ambientLabel}</span>
+              </div>
+            </div>
+          </label>
+        `;
+      }).join("");
+
+      listEl.querySelectorAll('input[type="checkbox"][data-event-id]').forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          updateSimulateSelectionStatus();
+        });
+      });
+      updateSimulateSelectionStatus();
+    }
+
+    function openSimulateEventModal() {
+      const overlay = document.getElementById("simulateModalOverlay");
+      if (!overlay) return;
+      renderSimulateEventPicker();
+      overlay.classList.add("is-open");
+      overlay.setAttribute("aria-hidden", "false");
+    }
+
+    function closeSimulateEventModal() {
+      const overlay = document.getElementById("simulateModalOverlay");
+      if (!overlay) return;
+      overlay.classList.remove("is-open");
+      overlay.setAttribute("aria-hidden", "true");
+    }
+
+    function getSelectedSimulationEvents() {
+      const selectedIds = Array.from(document.querySelectorAll('#simulateEventList input[type="checkbox"][data-event-id]:checked'))
+        .map(checkbox => parseInt(checkbox.getAttribute("data-event-id"), 10))
+        .filter(Number.isFinite);
+      return eventsArray.filter(eventObj => selectedIds.includes(eventObj.id));
+    }
+
+    function sendEventsToSolver(selectedEvents) {
+      const eventNames = selectedEvents.map(eventObj => eventObj.name || `Event ${eventObj.id}`);
+      alert(`Sending ${selectedEvents.length} event(s) to solver:\n${eventNames.join("\n")}`);
+    }
+
+    function buildExportFilename(type, entity) {
+      const fallbackName = ENTITY_CONFIG[type].exportFile.replace(/\.(xml|json)$/i, "");
+      const safeName = `${entity?.name || fallbackName}`
+        .trim()
+        .replace(/[<>:"/\\|?*\x00-\x1F]+/g, "_")
+        .replace(/\s+/g, "_");
+      return `${safeName || fallbackName}.json`;
+    }
+
+    function buildEntity(type, name) {
+      const config = ENTITY_CONFIG[type];
+      const entity = { id: allocateEntityId(), name };
+      if (config.cloneSpec) {
+        entity.spec = config.cloneSpec();
+      }
+      return entity;
+    }
+
+    function createEntity(type, name = null) {
+      const config = ENTITY_CONFIG[type];
+      const collection = config.getCollection();
+      const entityName = name || config.createName(collection.length + 1);
+      const entity = buildEntity(type, entityName);
+      collection.push(entity);
+      addProjectTreeItem(config.branchName, entity.id, entity.name);
+      openEditorTab(type, entity.id, entity.name);
+      config.syncOpenEditors?.();
+      return entity;
+    }
+
+    function importEntityFile(type) {
+      const config = ENTITY_CONFIG[type];
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".json,.xml";
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const fileText = await file.text();
+          const trimmed = fileText.trim();
+          const entity = trimmed.startsWith("{")
+            ? parseEntityJson(type, fileText)
+            : parseEntityXml(type, fileText);
+          config.getCollection().push(entity);
+          addProjectTreeItem(config.branchName, entity.id, entity.name);
+          openEditorTab(type, entity.id, entity.name);
+          config.syncOpenEditors?.();
+          alert(`${config.exportTag} file imported:\n${file.name}`);
+        } catch (error) {
+          alert(`Unable to import ${config.exportTag.toLowerCase()} file:\n${error.message}`);
+        }
+      };
+      input.click();
+    }
+
+    function exportEntityFile(type) {
+      const config = ENTITY_CONFIG[type];
+      const collection = config.getCollection();
+      if (collection.length === 0) {
+        alert(`No ${config.branchName.toLowerCase()} to export.`);
+        return;
+      }
+      const entity = getEntityForExport(type);
+      if (!entity) {
+        alert(`Select or open a ${type} to export.`);
+        return;
+      }
+      const jsonContent = JSON.stringify(buildEntityJson(type, entity), null, 2);
+      downloadFile(jsonContent, buildExportFilename(type, entity), "application/json");
+    }
+
     const fileManager = {
       importVehicleFile() {
-        // Basic example using an <input type="file"> dynamically
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".xml"; // or other file types
-        input.onchange = async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const text = await file.text();
-          // TODO: parse XML text, build JS object
-          // For demonstration, we create a placeholder object
-          const newVehicle = {
-            id: Date.now(),
-            name: `Imported Vehicle`
-          };
-          vehicles.push(newVehicle);
-          addProjectTreeItem("Vehicles", newVehicle.id, newVehicle.name);
-          openEditorTab("vehicle", newVehicle.id, newVehicle.name);
-          alert("Vehicle file imported:\n" + file.name);
-        };
-        input.click();
+        importEntityFile("vehicle");
       },
       exportVehicleFile() {
-        if (vehicles.length === 0) {
-          alert("No vehicles to export.");
-          return;
-        }
-        // For simplicity, export the first vehicle
-        const vehicle = vehicles[0];
-        // Convert to placeholder XML
-        const xmlContent = `<Vehicle id="${vehicle.id}" name="${vehicle.name}"></Vehicle>`;
-
-        // Download as file
-        downloadFile(xmlContent, "vehicle.xml", "application/xml");
+        exportEntityFile("vehicle");
       },
 
       importTrackFile() {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".xml";
-        input.onchange = async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const text = await file.text();
-          // Parse logic placeholder
-          const newTrack = {
-            id: Date.now(),
-            name: "Imported Track"
-          };
-          tracks.push(newTrack);
-          addProjectTreeItem("Tracks", newTrack.id, newTrack.name);
-          openEditorTab("track", newTrack.id, newTrack.name);
-          alert("Track file imported:\n" + file.name);
-        };
-        input.click();
+        importEntityFile("track");
       },
       exportTrackFile() {
-        if (tracks.length === 0) {
-          alert("No tracks to export.");
-          return;
-        }
-        const track = tracks[0];
-        const xmlContent = `<Track id="${track.id}" name="${track.name}"></Track>`;
-        downloadFile(xmlContent, "track.xml", "application/xml");
+        exportEntityFile("track");
       },
 
       importEventFile() {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".xml";
-        input.onchange = async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const text = await file.text();
-          // Parse logic placeholder
-          const newEvent = {
-            id: Date.now(),
-            name: "Imported Event"
-          };
-          eventsArray.push(newEvent);
-          addProjectTreeItem("Events", newEvent.id, newEvent.name);
-          openEditorTab("event", newEvent.id, newEvent.name);
-          alert("Event file imported:\n" + file.name);
-        };
-        input.click();
+        importEntityFile("event");
       },
       exportEventFile() {
-        if (eventsArray.length === 0) {
-          alert("No events to export.");
-          return;
-        }
-        const evt = eventsArray[0];
-        const xmlContent = `<Event id="${evt.id}" name="${evt.name}"></Event>`;
-        downloadFile(xmlContent, "event.xml", "application/xml");
+        exportEntityFile("event");
       }
     };
 
@@ -588,7 +2216,7 @@
 
       const arrowSpan = document.createElement("span");
       arrowSpan.className = "toggle-arrow";
-      arrowSpan.textContent = "▼"; // or "►" if default collapsed
+      arrowSpan.textContent = "▾";
 
       const titleSpan = document.createElement("span");
       titleSpan.textContent = branchName;
@@ -602,7 +2230,7 @@
       arrowSpan.addEventListener("click", () => {
         const isHidden = subUl.style.display === "none";
         subUl.style.display = isHidden ? "block" : "none";
-        arrowSpan.textContent = isHidden ? "▼" : "►";
+        arrowSpan.textContent = isHidden ? "▾" : "▸";
       });
 
       branchLi.appendChild(arrowSpan);
@@ -623,7 +2251,8 @@
 
       // Single click: open the tab
       itemLi.addEventListener("click", () => {
-        openEditorTab(itemLi.getAttribute("data-type"), itemId, itemLabel);
+        setSelectedTreeItem(itemLi);
+        openEditorTab(itemLi.getAttribute("data-type"), itemId, itemLi.textContent);
       });
 
       branchUl.appendChild(itemLi);
@@ -632,15 +2261,391 @@
     /********************************************************
      *                TABS / EDITOR LOGIC
      ********************************************************/
+    function renderEditorShell({ leftHtml, tabs }) {
+      const tabHeaders = tabs.map((tab, idx) => `
+        <div class="vehicle-editor-tab-header${idx === 0 ? " active" : ""}" data-sub-tab="${tab.id}">${tab.label}</div>
+      `).join("");
+      const tabPanels = tabs.map((tab, idx) => `
+        <div class="vehicle-editor-right-tab${idx === 0 ? " active" : ""}" data-sub-tab="${tab.id}">
+          ${tab.content}
+        </div>
+      `).join("");
+
+      return `
+        <div class="vehicle-editor-container">
+          <div class="vehicle-editor-left">
+            ${leftHtml}
+          </div>
+          <div class="vehicle-editor-resizer"></div>
+          <div class="vehicle-editor-right">
+            <div class="vehicle-editor-tab-headers">
+              ${tabHeaders}
+            </div>
+            <div class="vehicle-editor-tab-content">
+              ${tabPanels}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDefaultEditor(type, id, label) {
+      return `
+        <h2>${label} Editor</h2>
+        <p>Type: ${type}, ID: ${id}</p>
+      `;
+    }
+
+    function renderFormField(field, id) {
+      const attrs = [];
+      if (field.type && field.type !== "select") attrs.push(`type="${field.type}"`);
+      if (field.step !== undefined) attrs.push(`step="${field.step}"`);
+      if (field.min !== undefined) attrs.push(`min="${field.min}"`);
+      if (field.max !== undefined) attrs.push(`max="${field.max}"`);
+      const inputId = `${field.key}-${id}`;
+      const controlHtml = field.type === "select"
+        ? `<select id="${inputId}">${(field.options || []).map(option => `<option value="${option.value}">${option.label}</option>`).join("")}</select>`
+        : `<input ${attrs.join(" ")} id="${inputId}" />`;
+
+      return `
+        <div class="form-group">
+          <label for="${inputId}">${field.label}</label>
+          ${controlHtml}
+        </div>
+      `;
+    }
+
+    function renderFormSection(section, id, extraContent = "") {
+      return `
+        <div class="form-section">
+          <h4>${section.title}</h4>
+          ${section.fields.map(field => renderFormField(field, id)).join("")}
+          ${extraContent}
+        </div>
+      `;
+    }
+
+    function renderVehicleEditor(id) {
+      const leftHtml = [
+        renderFormSection(VEHICLE_FIELD_SECTIONS[0], id),
+        renderFormSection(VEHICLE_FIELD_SECTIONS[1], id),
+        renderFormSection(VEHICLE_FIELD_SECTIONS[2], id),
+        renderFormSection(
+          { title: "Powertrain", fields: [
+            { key: "thermalEfficiency", label: "Thermal Efficiency", type: "number", step: "0.0001" },
+            { key: "fuelEnergyDensity", label: "Fuel Energy Density (J/kg)", type: "number", step: "1" }
+          ]},
+          id,
+          `
+            <label>Engine Torque Curve</label>
+            <div class="table-actions">
+              <button type="button" class="mini-btn" id="addEngineRow-${id}">Add Row</button>
+              <button type="button" class="mini-btn" id="removeEngineRow-${id}">Remove Row</button>
+            </div>
+            <div class="powertrain-table-wrapper">
+              <table class="powertrain-table">
+                <thead>
+                  <tr>
+                    <th>Engine Speed (rpm)</th>
+                    <th>Engine Torque (N.m)</th>
+                  </tr>
+                </thead>
+                <tbody id="engineTorqueTableBody-${id}"></tbody>
+              </table>
+            </div>
+          `
+        ),
+        renderFormSection(
+          VEHICLE_FIELD_SECTIONS[3],
+          id,
+          `
+            <div class="form-group">
+              <label>Gear Ratios</label>
+              <div class="table-actions">
+                <button type="button" class="mini-btn" id="addGearRow-${id}">Add Row</button>
+                <button type="button" class="mini-btn" id="removeGearRow-${id}">Remove Row</button>
+              </div>
+              <div class="powertrain-table-wrapper">
+                <table class="powertrain-table">
+                  <thead>
+                    <tr>
+                      <th>Gear</th>
+                      <th>Ratio</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gearRatioTableBody-${id}"></tbody>
+                </table>
+              </div>
+            </div>
+          `
+        )
+      ].join("");
+
+      return renderEditorShell({
+        leftHtml,
+        tabs: [
+          { id: `vTab1-${id}`, label: "Tractive Effort", content: `<canvas id="tractiveChart-${id}" height="260"></canvas>` },
+          { id: `vTab2-${id}`, label: "G-G-V", content: `<canvas id="ggvChart-${id}" height="260"></canvas>` },
+          { id: `vTab3-${id}`, label: "Gearing", content: `Content for Tab 3` }
+        ]
+      });
+    }
+
+    function renderTrackEditor(id) {
+      const leftHtml = `
+        <div class="form-section">
+          <h4>Track</h4>
+          <div class="form-group">
+            <label for="trackName-${id}">Name:</label>
+            <input type="text" id="trackName-${id}" />
+          </div>
+          <div class="form-group">
+            <label for="trackCircuitType-${id}">Circuit Type:</label>
+            <select id="trackCircuitType-${id}">
+              <option value="closed">Closed Circuit</option>
+              <option value="open">Open Path</option>
+            </select>
+          </div>
+          <div class="track-editor-summary">
+            <div class="track-summary-row">
+              <span>Valid Points</span>
+              <strong id="trackPointCount-${id}">0</strong>
+            </div>
+            <div class="track-summary-row">
+              <span>Plan Length</span>
+              <strong id="trackPlanLength-${id}">0.0 m</strong>
+            </div>
+            <div class="track-summary-row">
+              <span>Elevation Range</span>
+              <strong id="trackElevationRange-${id}">0.0 m to 0.0 m</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Coordinates</h4>
+          <label>Track Points</label>
+          <div class="table-actions track-table-actions">
+            <button type="button" class="mini-btn" id="addTrackRow-${id}">Add Row</button>
+            <button type="button" class="mini-btn" id="removeTrackRow-${id}">Remove Row</button>
+            <button type="button" class="mini-btn" id="prevTrackPage-${id}">Prev</button>
+            <button type="button" class="mini-btn" id="nextTrackPage-${id}">Next</button>
+            <span class="track-table-status" id="trackTableStatus-${id}">Showing 0 of 0 rows</span>
+          </div>
+          <div class="powertrain-table-wrapper">
+            <table class="powertrain-table">
+              <thead>
+                <tr>
+                  <th>X (m)</th>
+                  <th>Y (m)</th>
+                  <th>Z (m)</th>
+                </tr>
+              </thead>
+              <tbody id="trackCoordinateTableBody-${id}"></tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      return renderEditorShell({
+        leftHtml,
+        tabs: [
+          {
+            id: `tTab1-${id}`,
+            label: "Footprint",
+            content: `
+              <div class="track-plot-layout">
+                <div class="track-plot-card">
+                  <div class="table-actions track-plot-controls">
+                    <button type="button" class="mini-btn" id="trackZoomIn-${id}">Zoom In</button>
+                    <button type="button" class="mini-btn" id="trackZoomOut-${id}">Zoom Out</button>
+                    <button type="button" class="mini-btn" id="trackPanLeft-${id}">Left</button>
+                    <button type="button" class="mini-btn" id="trackPanRight-${id}">Right</button>
+                    <button type="button" class="mini-btn" id="trackPanUp-${id}">Up</button>
+                    <button type="button" class="mini-btn" id="trackPanDown-${id}">Down</button>
+                    <button type="button" class="mini-btn" id="trackViewReset-${id}">Reset View</button>
+                    <span class="track-view-status" id="trackViewStatus-${id}">1:1 view</span>
+                  </div>
+                  <div class="track-plot-canvas-wrap">
+                    <div class="track-plot-square">
+                      <canvas id="trackFootprintChart-${id}"></canvas>
+                    </div>
+                  </div>
+                  <div class="track-elevation-legend">
+                    <span class="track-elevation-label" id="trackElevationMin-${id}">0.0 m</span>
+                    <div class="track-elevation-bar"></div>
+                    <span class="track-elevation-label" id="trackElevationMax-${id}">0.0 m</span>
+                  </div>
+                </div>
+              </div>
+            `
+          }
+        ]
+      });
+    }
+
+    function renderEventEditor(id) {
+      const leftHtml = EVENT_FIELD_SECTIONS.map(section => renderFormSection(section, id)).join("");
+
+      return renderEditorShell({
+        leftHtml,
+        tabs: [
+          {
+            id: `eTab1-${id}`,
+            label: "Overview",
+            content: `
+              <div class="track-editor-summary">
+                <div class="track-summary-row">
+                  <span>Selected Vehicle</span>
+                  <strong id="eventVehicleSummary-${id}">Not Set</strong>
+                </div>
+                <div class="track-summary-row">
+                  <span>Selected Track</span>
+                  <strong id="eventTrackSummary-${id}">Not Set</strong>
+                </div>
+                <div class="track-summary-row">
+                  <span>Air Temperature</span>
+                  <strong id="eventAirTemperatureSummary-${id}">0.0 C</strong>
+                </div>
+                <div class="track-summary-row">
+                  <span>Air Pressure</span>
+                  <strong id="eventAirPressureSummary-${id}">0.000 kPa</strong>
+                </div>
+                <div class="track-summary-row">
+                  <span>Elevation</span>
+                  <strong id="eventElevationSummary-${id}">0.0 m</strong>
+                </div>
+                <div class="track-summary-row">
+                  <span>Humidity</span>
+                  <strong id="eventHumiditySummary-${id}">0.0 %</strong>
+                </div>
+              </div>
+            `
+          }
+        ]
+      });
+    }
+
+    function bindNameInput(inputId, label, fallbackValue, onChange) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.value = label;
+      input.addEventListener("input", () => {
+        onChange(input.value || fallbackValue);
+      });
+    }
+
+    function initVehicleEditorTab(tabId, id, label, headerEl) {
+      setTimeout(() => {
+        initVehicleEditorLayout(tabId, id);
+
+        const vehicle = vehicles.find(v => v.id === id);
+        ensureSpecDefaults(vehicle);
+
+        const tableBody = document.getElementById(`engineTorqueTableBody-${id}`);
+        renderEngineTable(tableBody, vehicle);
+        attachPowertrainClipboard(tableBody, vehicle);
+
+        const gearTableBody = document.getElementById(`gearRatioTableBody-${id}`);
+        if (gearTableBody) {
+          renderGearTable(gearTableBody, vehicle);
+          attachGearClipboard(gearTableBody, vehicle);
+        }
+
+        if (vehicle && vehicle.spec) {
+          applyVehicleSpecToUI(id, vehicle.spec);
+          bindVehicleInputsToSpec(id, vehicle);
+        }
+
+        initTractiveChart(id);
+        initGGVChart(id);
+
+        document.getElementById(`addEngineRow-${id}`)?.addEventListener("click", () => addEngineRow(id));
+        document.getElementById(`removeEngineRow-${id}`)?.addEventListener("click", () => removeEngineRow(id));
+        document.getElementById(`addGearRow-${id}`)?.addEventListener("click", () => addGearRow(id));
+        document.getElementById(`removeGearRow-${id}`)?.addEventListener("click", () => removeGearRow(id));
+
+        bindNameInput(`vehicleName-${id}`, label, `Vehicle ${id}`, (newName) => updateVehicleName(id, newName, headerEl));
+      }, 0);
+    }
+
+    function initTrackEditorTab(tabId, id, label, headerEl) {
+      setTimeout(() => {
+        initVehicleEditorLayout(tabId, id);
+
+        const track = tracks.find(t => t.id === id);
+        TrackEditor.ensureDefaults(track);
+        TrackEditor.ensureTableState(id);
+
+        const tableBody = document.getElementById(`trackCoordinateTableBody-${id}`);
+        TrackEditor.renderCoordinateTable(tableBody, track);
+        TrackEditor.attachClipboard(tableBody, track);
+        applyTrackSpecToUI(id, track?.spec);
+        TrackEditor.initChart(id);
+        TrackEditor.refreshChart(id);
+
+        document.getElementById(`addTrackRow-${id}`)?.addEventListener("click", () => TrackEditor.addRow(id));
+        document.getElementById(`removeTrackRow-${id}`)?.addEventListener("click", () => TrackEditor.removeRow(id));
+        document.getElementById(`prevTrackPage-${id}`)?.addEventListener("click", () => TrackEditor.shiftPage(id, -1));
+        document.getElementById(`nextTrackPage-${id}`)?.addEventListener("click", () => TrackEditor.shiftPage(id, 1));
+        document.getElementById(`trackZoomIn-${id}`)?.addEventListener("click", () => TrackEditor.zoomChart(id, 0.8));
+        document.getElementById(`trackZoomOut-${id}`)?.addEventListener("click", () => TrackEditor.zoomChart(id, 1.25));
+        document.getElementById(`trackPanLeft-${id}`)?.addEventListener("click", () => TrackEditor.panChart(id, -0.12, 0));
+        document.getElementById(`trackPanRight-${id}`)?.addEventListener("click", () => TrackEditor.panChart(id, 0.12, 0));
+        document.getElementById(`trackPanUp-${id}`)?.addEventListener("click", () => TrackEditor.panChart(id, 0, 0.12));
+        document.getElementById(`trackPanDown-${id}`)?.addEventListener("click", () => TrackEditor.panChart(id, 0, -0.12));
+        document.getElementById(`trackViewReset-${id}`)?.addEventListener("click", () => TrackEditor.resetChartView(id));
+
+        bindNameInput(`trackName-${id}`, label, `Track ${id}`, (newName) => updateTrackName(id, newName, headerEl));
+
+        const circuitTypeEl = document.getElementById(`trackCircuitType-${id}`);
+          if (circuitTypeEl) {
+            circuitTypeEl.addEventListener("change", () => {
+              track.spec = track.spec || {};
+              track.spec.circuitType = circuitTypeEl.value;
+              TrackEditor.refreshChart(id);
+            });
+          }
+        }, 0);
+    }
+
+    function initEventEditorTab(tabId, id, label, headerEl) {
+      setTimeout(() => {
+        initVehicleEditorLayout(tabId, id);
+
+        const eventObj = eventsArray.find(evt => evt.id === id);
+        ensureEventDefaults(eventObj);
+        populateEventSelectOptions(id, eventObj?.spec);
+        applyEventSpecToUI(id, eventObj?.spec);
+        updateEventSummary(id, eventObj?.spec);
+        bindEventInputsToSpec(id, eventObj);
+
+        bindNameInput(`eventName-${id}`, label, `Event ${id}`, (newName) => updateEventName(id, newName, headerEl));
+      }, 0);
+    }
+
+    const editorRegistry = {
+      vehicle: {
+        render: renderVehicleEditor,
+        init: initVehicleEditorTab
+      },
+      track: {
+        render: renderTrackEditor,
+        init: initTrackEditorTab
+      },
+      event: {
+        render: renderEventEditor,
+        init: initEventEditorTab
+      }
+    };
+
     function openEditorTab(type, id, label) {
-      // If already open, just activate
       const existing = tabs.find(t => t.type === type && t.id === id);
       if (existing) {
         setActiveTab(existing.tabId);
         return;
       }
 
-      // Create new tab
       const tabId = `tab-${currentTabId++}`;
       const tabHeaders = document.querySelector(".tab-headers");
       const tabContent = document.querySelector(".tab-content");
@@ -654,139 +2659,10 @@
       contentEl.className = "tab-panel";
       contentEl.setAttribute("data-tab-id", tabId);
 
-      // For non-vehicle tabs, we can still show the heading & id if desired:
-      if (type !== "vehicle") {
-        contentEl.innerHTML = `
-          <h2>${label} Editor</h2>
-          <p>Type: ${type}, ID: ${id}</p>
-        `;
-      }
-
-      if (type === "vehicle") {
-        contentEl.innerHTML = `
-          <div class="vehicle-editor-container">
-            <!-- LEFT: vehicle definition inputs -->
-            <div class="vehicle-editor-left">
-              <div class="form-section">
-                <h4>Body</h4>
-                <div class="form-group">
-                  <label for="vehicleName-${id}">Name:</label>
-                  <input type="text" id="vehicleName-${id}" />
-                </div>
-                <div class="form-group">
-                  <label for="vehicleWeight-${id}">Weight (kg):</label>
-                  <input type="number" id="vehicleWeight-${id}" />
-                </div>
-              </div>
-
-              <div class="form-section">
-                <h4>Aerodynamics</h4>
-                <div class="form-group">
-                  <label for="vehicleCoeffDrag-${id}">Drag Coefficient:</label>
-                  <input type="number" id="vehicleCoeffDrag-${id}" />
-                </div>
-                <div class="form-group">
-                  <label for="vehicleCoeffLift-${id}">Lift Coefficient:</label>
-                  <input type="number" id="vehicleCoeffLift-${id}" />
-                </div>
-                <div class="form-group">
-                  <label for="vehicleFrontalArea-${id}">Frontal Area (m^2):</label>
-                  <input type="number" id="vehicleFrontalArea-${id}" />
-                </div>
-              </div>
-
-              <div class="form-section">
-                <h4>Tires</h4>
-                <div class="form-group">
-                  <label for="vehicleTireRadius-${id}">Tire Radius (m):</label>
-                  <input type="number" id="vehicleTireRadius-${id}" />
-                </div>
-                <div class="form-group">
-                  <label for="vehicleRollingRes-${id}">Rolling Resistance:</label>
-                  <input type="number" id="vehicleRollingRes-${id}" />
-                </div>
-                <div class="form-group">
-                  <label for="vehicleLongFriction-${id}">Longitudinal Friction:</label>
-                  <input type="number" id="vehicleLongFriction-${id}" />
-                </div>
-                <div class="form-group">
-                  <label for="vehicleLatFriction-${id}">Lateral Friction:</label>
-                  <input type="number" id="vehicleLatFriction-${id}" />
-                </div>
-              </div>
-
-              <div class="form-section">
-                <h4>Powertrain</h4>
-                <!-- Scrollable container around the table -->
-                <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc;">
-                  <table style="border-collapse: collapse; width: 100%;">
-                    <thead>
-                      <tr>
-                        <th style="border: 1px solid #ccc; padding: 8px;">Engine Speed (rpm)</th>
-                        <th style="border: 1px solid #ccc; padding: 8px;">Engine Torque (N.m)</th>
-                      </tr>
-                    </thead>
-                    <!-- EMPTY body that we'll fill programmatically -->
-                    <tbody id="engineTorqueTableBody-${id}">
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="form-section">
-                <h4>Drivetrain</h4>
-                <!-- Additional Drivetrain fields go here -->
-              </div>
-            </div>
-
-            <!-- RESIZER between left and right -->
-            <div class="vehicle-editor-resizer"></div>
-
-            <!-- RIGHT: tab group with 3 sub tabs -->
-            <div class="vehicle-editor-right">
-              <div class="vehicle-editor-tab-headers">
-                <div class="vehicle-editor-tab-header active" data-sub-tab="vTab1-${id}">Tractive Effort</div>
-                <div class="vehicle-editor-tab-header" data-sub-tab="vTab2-${id}">G-G-V</div>
-                <div class="vehicle-editor-tab-header" data-sub-tab="vTab3-${id}">Gearing</div>
-              </div>
-              <div class="vehicle-editor-tab-content">
-                <div class="vehicle-editor-right-tab active" data-sub-tab="vTab1-${id}">
-                  Content for Tab 1
-                </div>
-                <div class="vehicle-editor-right-tab" data-sub-tab="vTab2-${id}">
-                  Content for Tab 2
-                </div>
-                <div class="vehicle-editor-right-tab" data-sub-tab="vTab3-${id}">
-                  Content for Tab 3
-                </div>
-                <div class="vehicle-editor-right-tab" data-sub-tab="vTab4-${id}">
-                  Content for Tab 4
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-
-        // Once the DOM elements exist, fill the table body with 100 rows
-        setTimeout(() => {
-          initVehicleEditorLayout(tabId, id);  // Your existing layout init
-
-          const tableBody = document.getElementById(`engineTorqueTableBody-${id}`);
-          let rowsHtml = "";
-          for (let i = 1; i <= 100; i++) {
-            rowsHtml += `
-              <tr>
-                <td style="border: 1px solid #ccc; padding: 8px;">
-                  <input type="number" id="vehicleEngineSpeed-${id}-${i}" />
-                </td>
-                <td style="border: 1px solid #ccc; padding: 8px;">
-                  <input type="number" id="vehicleEngineTorque-${id}-${i}" />
-                </td>
-              </tr>
-            `;
-          }
-          tableBody.innerHTML = rowsHtml;
-        }, 0);
+      const editorConfig = editorRegistry[type];
+      contentEl.innerHTML = editorConfig ? editorConfig.render(id, label) : renderDefaultEditor(type, id, label);
+      if (editorConfig?.init) {
+        editorConfig.init(tabId, id, label, headerEl);
       }
 
 
@@ -808,6 +2684,1477 @@
       setActiveTab(tabId);
     }
 
+    function attachPowertrainClipboard(tableBody, vehicle) {
+      let activeRow = 0;
+      let activeCol = 0;
+
+      tableBody.addEventListener("focusin", (e) => {
+        const cell = e.target.closest(".powertrain-cell");
+        if (!cell) return;
+        activeRow = parseInt(cell.dataset.row, 10) || 0;
+        activeCol = parseInt(cell.dataset.col, 10) || 0;
+      });
+
+      tableBody.addEventListener("paste", (e) => {
+        const cell = e.target.closest(".powertrain-cell");
+        if (!cell) return;
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData("text");
+        const rows = text.split(/\r?\n/).filter(r => r.length > 0);
+        rows.forEach((rowText, rIdx) => {
+          const cols = rowText.split(/\t/);
+          cols.forEach((val, cIdx) => {
+            const target = tableBody.querySelector(`.powertrain-cell[data-row="${activeRow + rIdx}"][data-col="${activeCol + cIdx}"]`);
+            if (target) {
+              target.textContent = val.trim();
+              updateEngineSpec(vehicle, activeRow + rIdx, activeCol + cIdx, val.trim());
+            }
+          });
+        });
+      });
+
+      tableBody.addEventListener("keydown", (e) => {
+        const cell = e.target.closest(".powertrain-cell");
+        if (!cell) return;
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const row = parseInt(cell.dataset.row, 10) || 0;
+          const col = parseInt(cell.dataset.col, 10) || 0;
+          const nextCol = col === 0 ? 1 : 0;
+          const nextRow = col === 0 ? row : row + 1;
+          const nextCell = tableBody.querySelector(`.powertrain-cell[data-row="${nextRow}"][data-col="${nextCol}"]`);
+          if (nextCell) {
+            nextCell.focus();
+            placeCaretAtEnd(nextCell);
+          }
+        }
+      });
+
+      tableBody.addEventListener("input", (e) => {
+        const cell = e.target.closest(".powertrain-cell");
+        if (!cell) return;
+        const sanitized = cell.textContent.replace(/\r?\n/g, " ");
+        if (sanitized !== cell.textContent) {
+          cell.textContent = sanitized;
+          placeCaretAtEnd(cell);
+        }
+        updateEngineSpec(vehicle, parseInt(cell.dataset.row, 10) || 0, parseInt(cell.dataset.col, 10) || 0, sanitized);
+      });
+    }
+
+    function placeCaretAtEnd(el) {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    function attachGearClipboard(tableBody, vehicle) {
+      let activeRow = 0;
+      let activeCol = 0;
+
+      tableBody.addEventListener("focusin", (e) => {
+        const cell = e.target.closest(".powertrain-cell");
+        if (!cell) return;
+        activeRow = parseInt(cell.dataset.gearRow, 10) || 0;
+        activeCol = parseInt(cell.dataset.gearCol, 10) || 0;
+      });
+
+      tableBody.addEventListener("paste", (e) => {
+        const cell = e.target.closest(".powertrain-cell");
+        if (!cell) return;
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData("text");
+        const rows = text.split(/\r?\n/).filter(r => r.length > 0);
+        rows.forEach((rowText, rIdx) => {
+          const cols = rowText.split(/\t/);
+          cols.forEach((val, cIdx) => {
+            const target = tableBody.querySelector(`.powertrain-cell[data-gear-row="${activeRow + rIdx}"][data-gear-col="${activeCol + cIdx}"]`);
+            if (target) {
+              target.textContent = val.trim();
+              updateGearSpec(vehicle, activeRow + rIdx, activeCol + cIdx, val.trim());
+            }
+          });
+        });
+      });
+
+      tableBody.addEventListener("keydown", (e) => {
+        const cell = e.target.closest(".powertrain-cell");
+        if (!cell) return;
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const row = parseInt(cell.dataset.gearRow, 10) || 0;
+          const col = parseInt(cell.dataset.gearCol, 10) || 0;
+          const nextCol = col === 0 ? 1 : 0;
+          const nextRow = col === 0 ? row : row + 1;
+          const nextCell = tableBody.querySelector(`.powertrain-cell[data-gear-row="${nextRow}"][data-gear-col="${nextCol}"]`);
+          if (nextCell) {
+            nextCell.focus();
+            placeCaretAtEnd(nextCell);
+          }
+        }
+      });
+
+      tableBody.addEventListener("input", (e) => {
+        const cell = e.target.closest(".powertrain-cell");
+        if (!cell) return;
+        const sanitized = cell.textContent.replace(/\r?\n/g, " ");
+        if (sanitized !== cell.textContent) {
+          cell.textContent = sanitized;
+          placeCaretAtEnd(cell);
+        }
+        updateGearSpec(vehicle, parseInt(cell.dataset.gearRow, 10) || 0, parseInt(cell.dataset.gearCol, 10) || 0, sanitized);
+      });
+    }
+
+    function ensureSpecDefaults(vehicle) {
+      if (!vehicle) return;
+      if (!vehicle.spec) {
+        vehicle.spec = cloneDefaultSpec();
+      }
+      if (!vehicle.spec.engineData || vehicle.spec.engineData.length === 0) {
+        vehicle.spec.engineData = cloneDefaultSpec().engineData;
+      }
+      if (!vehicle.spec.gearRatios || vehicle.spec.gearRatios.length === 0) {
+        vehicle.spec.gearRatios = [...cloneDefaultSpec().gearRatios];
+      }
+    }
+
+    function renderEngineTable(tableBody, vehicle) {
+      if (!tableBody || !vehicle) return;
+      const data = (vehicle.spec && vehicle.spec.engineData) ? vehicle.spec.engineData : cloneDefaultSpec().engineData;
+      tableBody.innerHTML = data.map((row, idx) => `
+        <tr>
+          <td class="powertrain-cell" contenteditable="true" data-row="${idx}" data-col="0">${row.rpm ?? ""}</td>
+          <td class="powertrain-cell" contenteditable="true" data-row="${idx}" data-col="1">${row.torque ?? ""}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderGearTable(tableBody, vehicle) {
+      if (!tableBody || !vehicle) return;
+      const ratios = (vehicle.spec && vehicle.spec.gearRatios) ? vehicle.spec.gearRatios : cloneDefaultSpec().gearRatios;
+      tableBody.innerHTML = ratios.map((ratio, idx) => `
+        <tr>
+          <td class="powertrain-cell" contenteditable="true" data-gear-row="${idx}" data-gear-col="0">${idx + 1}</td>
+          <td class="powertrain-cell" contenteditable="true" data-gear-row="${idx}" data-gear-col="1">${ratio ?? ""}</td>
+        </tr>
+      `).join("");
+    }
+
+    function addEngineRow(id) {
+      const vehicle = vehicles.find(v => v.id === id);
+      if (!vehicle) return;
+      ensureSpecDefaults(vehicle);
+      vehicle.spec.engineData.push({ rpm: "", torque: "" });
+      const body = document.getElementById(`engineTorqueTableBody-${id}`);
+      if (body) {
+        const idx = vehicle.spec.engineData.length - 1;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="powertrain-cell" contenteditable="true" data-row="${idx}" data-col="0"></td>
+          <td class="powertrain-cell" contenteditable="true" data-row="${idx}" data-col="1"></td>
+        `;
+        body.appendChild(row);
+      }
+      refreshTractiveChart(id);
+    }
+
+    function removeEngineRow(id) {
+      const vehicle = vehicles.find(v => v.id === id);
+      if (!vehicle || !vehicle.spec || !vehicle.spec.engineData) return;
+      if (vehicle.spec.engineData.length <= 1) return;
+      vehicle.spec.engineData.pop();
+      const body = document.getElementById(`engineTorqueTableBody-${id}`);
+      if (body && body.lastElementChild) {
+        body.removeChild(body.lastElementChild);
+      }
+      refreshTractiveChart(id);
+    }
+
+    function addGearRow(id) {
+      const vehicle = vehicles.find(v => v.id === id);
+      if (!vehicle) return;
+      ensureSpecDefaults(vehicle);
+      vehicle.spec.gearRatios.push("");
+      const body = document.getElementById(`gearRatioTableBody-${id}`);
+      if (body) {
+        const idx = vehicle.spec.gearRatios.length - 1;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="powertrain-cell" contenteditable="true" data-gear-row="${idx}" data-gear-col="0">${idx + 1}</td>
+          <td class="powertrain-cell" contenteditable="true" data-gear-row="${idx}" data-gear-col="1"></td>
+        `;
+        body.appendChild(row);
+      }
+      refreshTractiveChart(id);
+    }
+
+    function removeGearRow(id) {
+      const vehicle = vehicles.find(v => v.id === id);
+      if (!vehicle || !vehicle.spec || !vehicle.spec.gearRatios) return;
+      if (vehicle.spec.gearRatios.length <= 1) return;
+      vehicle.spec.gearRatios.pop();
+      const body = document.getElementById(`gearRatioTableBody-${id}`);
+      if (body && body.lastElementChild) {
+        body.removeChild(body.lastElementChild);
+      }
+      refreshTractiveChart(id);
+    }
+    function updateEngineSpec(vehicle, rowIdx, colIdx, value) {
+      if (!vehicle) return;
+      vehicle.spec = vehicle.spec || {};
+      vehicle.spec.engineData = vehicle.spec.engineData || [];
+      while (vehicle.spec.engineData.length <= rowIdx) {
+        vehicle.spec.engineData.push({ rpm: "", torque: "" });
+      }
+      const numericVal = value === "" ? "" : parseFloat(value);
+      if (colIdx === 0) {
+        vehicle.spec.engineData[rowIdx].rpm = isNaN(numericVal) ? value : numericVal;
+      } else if (colIdx === 1) {
+        vehicle.spec.engineData[rowIdx].torque = isNaN(numericVal) ? value : numericVal;
+      }
+      if (vehicle.id) refreshTractiveChart(vehicle.id);
+    }
+
+    function updateGearSpec(vehicle, rowIdx, colIdx, value) {
+      if (!vehicle) return;
+      vehicle.spec = vehicle.spec || {};
+      vehicle.spec.gearRatios = vehicle.spec.gearRatios || [];
+      const numericVal = value === "" ? "" : parseFloat(value);
+      if (colIdx === 1) {
+        vehicle.spec.gearRatios[rowIdx] = isNaN(numericVal) ? value : numericVal;
+      }
+      if (vehicle.id) refreshTractiveChart(vehicle.id);
+    }
+
+    const TrackEditor = {
+      elevationStops: [
+        { t: 0.0, color: "#2d7ff9", rgb: [45, 127, 249] },
+        { t: 0.3, color: "#3cc7d7", rgb: [60, 199, 215] },
+        { t: 0.6, color: "#8fd85a", rgb: [143, 216, 90] },
+        { t: 0.82, color: "#ffd166", rgb: [255, 209, 102] },
+        { t: 1.0, color: "#ff6b6b", rgb: [255, 107, 107] }
+      ],
+
+      ensureDefaults(track) {
+        if (!track) return;
+        if (!track.spec) {
+          track.spec = cloneDefaultTrackSpec();
+        }
+        if (!Array.isArray(track.spec.points) || track.spec.points.length === 0) {
+          track.spec.points = cloneDefaultTrackSpec().points;
+        }
+        if (!track.spec.circuitType) {
+          track.spec.circuitType = cloneDefaultTrackSpec().circuitType;
+        }
+      },
+
+      ensureTableState(id) {
+        const key = `${id}`;
+        if (!trackTableStates.has(key)) {
+          trackTableStates.set(key, {
+            page: 0,
+            pageSize: TRACK_TABLE_PAGE_SIZE
+          });
+        }
+        return trackTableStates.get(key);
+      },
+
+      getPageInfo(id, track) {
+        const state = TrackEditor.ensureTableState(id);
+        const totalRows = track?.spec?.points?.length || 0;
+        const pageSize = state.pageSize || TRACK_TABLE_PAGE_SIZE;
+        const totalPages = Math.max(1, Math.ceil(Math.max(totalRows, 1) / pageSize));
+        state.page = Math.min(Math.max(state.page, 0), totalPages - 1);
+        const startRow = state.page * pageSize;
+        const endRow = Math.min(totalRows, startRow + pageSize);
+        return { state, totalRows, pageSize, totalPages, startRow, endRow };
+      },
+
+      setPageForRow(id, rowIdx) {
+        const state = TrackEditor.ensureTableState(id);
+        state.page = Math.max(0, Math.floor(Math.max(0, rowIdx) / (state.pageSize || TRACK_TABLE_PAGE_SIZE)));
+      },
+
+      shiftPage(id, delta) {
+        const track = tracks.find(t => t.id === id);
+        if (!track) return;
+        const state = TrackEditor.ensureTableState(id);
+        state.page += delta;
+        TrackEditor.renderCoordinateTable(document.getElementById(`trackCoordinateTableBody-${id}`), track);
+      },
+
+      updateTableStatus(id, track) {
+        const statusEl = document.getElementById(`trackTableStatus-${id}`);
+        const prevBtn = document.getElementById(`prevTrackPage-${id}`);
+        const nextBtn = document.getElementById(`nextTrackPage-${id}`);
+        if (!statusEl) return;
+
+        const { totalRows, totalPages, startRow, endRow } = TrackEditor.getPageInfo(id, track);
+        const compact = totalRows > TRACK_TABLE_COMPACT_THRESHOLD;
+        statusEl.classList.toggle("compact", compact);
+        statusEl.textContent = totalRows === 0
+          ? "Showing 0 of 0 rows"
+          : compact
+            ? `Showing rows ${startRow + 1}-${endRow} of ${totalRows} (${totalPages} pages)`
+            : `Showing all ${totalRows} rows`;
+        if (prevBtn) prevBtn.disabled = startRow <= 0;
+        if (nextBtn) nextBtn.disabled = endRow >= totalRows;
+      },
+
+      resizePointArray(track, targetLength) {
+        TrackEditor.ensureDefaults(track);
+        const nextLength = Math.max(1, targetLength);
+        while (track.spec.points.length < nextLength) {
+          track.spec.points.push({ x: "", y: "", z: "" });
+        }
+        if (track.spec.points.length > nextLength) {
+          track.spec.points.length = nextLength;
+        }
+      },
+
+      normalizeCellValue(value) {
+        const trimmed = `${value ?? ""}`.trim();
+        if (trimmed === "") return "";
+        const numericVal = parseFloat(trimmed);
+        return Number.isNaN(numericVal) ? trimmed : numericVal;
+      },
+
+      setPointValue(track, rowIdx, colIdx, value) {
+        const prop = ["x", "y", "z"][colIdx];
+        if (!prop) return;
+        track.spec.points[rowIdx][prop] = TrackEditor.normalizeCellValue(value);
+      },
+
+      renderCoordinateTable(tableBody, track) {
+        if (!tableBody || !track) return;
+        TrackEditor.ensureDefaults(track);
+        const tableIdSuffix = tableBody.id.replace("trackCoordinateTableBody-", "");
+        const { startRow, endRow } = TrackEditor.getPageInfo(tableIdSuffix, track);
+        const visibleRows = track.spec.points.slice(startRow, endRow);
+        tableBody.innerHTML = visibleRows.map((point, offset) => {
+          const idx = startRow + offset;
+          return `
+          <tr>
+            <td class="powertrain-cell" contenteditable="true" data-track-row="${idx}" data-track-col="0">${point.x ?? ""}</td>
+            <td class="powertrain-cell" contenteditable="true" data-track-row="${idx}" data-track-col="1">${point.y ?? ""}</td>
+            <td class="powertrain-cell" contenteditable="true" data-track-row="${idx}" data-track-col="2">${point.z ?? ""}</td>
+          </tr>
+        `;
+        }).join("");
+        TrackEditor.updateTableStatus(tableIdSuffix, track);
+      },
+
+      scheduleChartRefresh(id, immediate = false) {
+        const existingTimer = trackRefreshTimers.get(id);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+          trackRefreshTimers.delete(id);
+        }
+        if (immediate) {
+          TrackEditor.refreshChart(id);
+          return;
+        }
+        const timer = setTimeout(() => {
+          trackRefreshTimers.delete(id);
+          TrackEditor.refreshChart(id);
+        }, TRACK_CHART_REFRESH_DEBOUNCE_MS);
+        trackRefreshTimers.set(id, timer);
+      },
+
+      updatePoint(track, rowIdx, colIdx, value, refresh = true) {
+        if (!track) return;
+        TrackEditor.ensureDefaults(track);
+        TrackEditor.resizePointArray(track, rowIdx + 1);
+        TrackEditor.setPointValue(track, rowIdx, colIdx, value);
+        if (refresh && track.id) TrackEditor.scheduleChartRefresh(track.id);
+      },
+
+      addRow(id) {
+        const track = tracks.find(t => t.id === id);
+        if (!track) return;
+        TrackEditor.resizePointArray(track, (track.spec?.points?.length || 0) + 1);
+        TrackEditor.setPageForRow(id, Math.max(0, track.spec.points.length - 1));
+        TrackEditor.renderCoordinateTable(document.getElementById(`trackCoordinateTableBody-${id}`), track);
+        TrackEditor.scheduleChartRefresh(id, true);
+      },
+
+      removeRow(id) {
+        const track = tracks.find(t => t.id === id);
+        if (!track) return;
+        TrackEditor.ensureDefaults(track);
+        if (track.spec.points.length <= 1) return;
+        TrackEditor.resizePointArray(track, track.spec.points.length - 1);
+        TrackEditor.renderCoordinateTable(document.getElementById(`trackCoordinateTableBody-${id}`), track);
+        TrackEditor.scheduleChartRefresh(id, true);
+      },
+
+      attachClipboard(tableBody, track) {
+        let activeRow = 0;
+        let activeCol = 0;
+
+        tableBody.addEventListener("focusin", (e) => {
+          const cell = e.target.closest(".powertrain-cell");
+          if (!cell) return;
+          activeRow = parseInt(cell.dataset.trackRow, 10) || 0;
+          activeCol = parseInt(cell.dataset.trackCol, 10) || 0;
+        });
+
+        tableBody.addEventListener("paste", (e) => {
+          const cell = e.target.closest(".powertrain-cell");
+          if (!cell) return;
+          e.preventDefault();
+          const text = (e.clipboardData || window.clipboardData).getData("text");
+          const rows = text
+            .split(/\r?\n/)
+            .map(row => row.replace(/\r/g, ""))
+            .filter(row => row.length > 0)
+            .map(row => row.split(/\t/).slice(0, 3));
+          if (rows.length === 0) return;
+
+          TrackEditor.resizePointArray(track, activeRow + rows.length);
+          rows.forEach((cols, rIdx) => {
+            const rowIndex = activeRow + rIdx;
+            for (let cIdx = 0; cIdx < 3; cIdx += 1) {
+              const colIndex = activeCol + cIdx;
+              if (colIndex >= 3) continue;
+              const nextValue = (cols[cIdx] ?? "").trim();
+              TrackEditor.setPointValue(track, rowIndex, colIndex, nextValue);
+            }
+          });
+
+          TrackEditor.setPageForRow(track.id, activeRow);
+          TrackEditor.renderCoordinateTable(tableBody, track);
+          TrackEditor.scheduleChartRefresh(track.id);
+        });
+
+        tableBody.addEventListener("keydown", (e) => {
+          const cell = e.target.closest(".powertrain-cell");
+          if (!cell) return;
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const row = parseInt(cell.dataset.trackRow, 10) || 0;
+            const col = parseInt(cell.dataset.trackCol, 10) || 0;
+            const nextCol = col < 2 ? col + 1 : 0;
+            const nextRow = col < 2 ? row : row + 1;
+            if (nextRow >= (track.spec?.points?.length || 0)) {
+              TrackEditor.addRow(track.id);
+            } else if (Math.floor(nextRow / TRACK_TABLE_PAGE_SIZE) !== Math.floor(row / TRACK_TABLE_PAGE_SIZE)) {
+              TrackEditor.setPageForRow(track.id, nextRow);
+              TrackEditor.renderCoordinateTable(tableBody, track);
+            }
+            const nextCell = tableBody.querySelector(`.powertrain-cell[data-track-row="${nextRow}"][data-track-col="${nextCol}"]`);
+            if (nextCell) {
+              nextCell.focus();
+              placeCaretAtEnd(nextCell);
+            }
+          }
+        });
+
+        tableBody.addEventListener("input", (e) => {
+          const cell = e.target.closest(".powertrain-cell");
+          if (!cell) return;
+          const sanitized = cell.textContent.replace(/\r?\n/g, " ");
+          if (sanitized !== cell.textContent) {
+            cell.textContent = sanitized;
+            placeCaretAtEnd(cell);
+          }
+          TrackEditor.updatePoint(
+            track,
+            parseInt(cell.dataset.trackRow, 10) || 0,
+            parseInt(cell.dataset.trackCol, 10) || 0,
+            sanitized
+          );
+        });
+      },
+
+      parsePoints(track) {
+        TrackEditor.ensureDefaults(track);
+        return track.spec.points
+          .map((point) => {
+            const x = Number(point.x);
+            const y = Number(point.y);
+            const z = point.z === "" || point.z === null || point.z === undefined ? 0 : Number(point.z);
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+            return {
+              x,
+              y,
+              z: Number.isFinite(z) ? z : 0
+            };
+          })
+          .filter(Boolean);
+      },
+
+      interpolateColor(stops, t) {
+        if (stops.length === 0) return "rgb(77,163,255)";
+        if (stops.length === 1) return stops[0].color;
+        const clamped = Math.max(0, Math.min(1, t));
+        for (let i = 0; i < stops.length - 1; i += 1) {
+          const start = stops[i];
+          const end = stops[i + 1];
+          if (clamped >= start.t && clamped <= end.t) {
+            const localT = (clamped - start.t) / Math.max(1e-9, end.t - start.t);
+            const color = start.rgb.map((value, idx) => Math.round(value + (end.rgb[idx] - value) * localT));
+            return `rgb(${color[0]},${color[1]},${color[2]})`;
+          }
+        }
+        return stops[stops.length - 1].color;
+      },
+
+      getElevationColor(z, zMin, zMax) {
+        const span = Math.max(1e-9, zMax - zMin);
+        const normalized = (z - zMin) / span;
+        return TrackEditor.interpolateColor(TrackEditor.elevationStops, normalized);
+      },
+
+      computeMetrics(track) {
+        const points = TrackEditor.parsePoints(track);
+        const isClosed = (track?.spec?.circuitType || "closed") === "closed";
+        const xs = points.map(point => point.x);
+        const ys = points.map(point => point.y);
+        const zs = points.map(point => point.z);
+        const zMin = zs.length ? Math.min(...zs) : 0;
+        const zMax = zs.length ? Math.max(...zs) : 0;
+
+        let planLength = 0;
+        for (let i = 1; i < points.length; i += 1) {
+          planLength += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+        }
+        if (isClosed && points.length > 2) {
+          planLength += Math.hypot(points[0].x - points[points.length - 1].x, points[0].y - points[points.length - 1].y);
+        }
+
+        const footprintPoints = points.map(point => ({
+          x: point.x,
+          y: point.y,
+          z: point.z
+        }));
+        if (isClosed && points.length > 2) {
+          footprintPoints.push({
+            x: points[0].x,
+            y: points[0].y,
+            z: points[0].z
+          });
+        }
+
+        const xMinBase = xs.length ? Math.min(...xs) : -10;
+        const xMaxBase = xs.length ? Math.max(...xs) : 10;
+        const yMinBase = ys.length ? Math.min(...ys) : -10;
+        const yMaxBase = ys.length ? Math.max(...ys) : 10;
+        const xCenter = (xMinBase + xMaxBase) / 2;
+        const yCenter = (yMinBase + yMaxBase) / 2;
+        const span = Math.max(xMaxBase - xMinBase, yMaxBase - yMinBase, 10);
+        const paddedSpan = span * 1.12;
+
+        return {
+          points,
+          footprintPoints,
+          isClosed,
+          pointCount: points.length,
+          planLength,
+          zMin,
+          zMax,
+          axisBounds: {
+            xMin: xCenter - paddedSpan / 2,
+            xMax: xCenter + paddedSpan / 2,
+            yMin: yCenter - paddedSpan / 2,
+            yMax: yCenter + paddedSpan / 2
+          }
+        };
+      },
+
+      sampleDisplayPoints(points, target = TRACK_CHART_SAMPLE_TARGET) {
+        if (points.length <= target) return points;
+        const desiredCount = Math.max(2, target);
+        const lastIdx = points.length - 1;
+        const step = lastIdx / (desiredCount - 1);
+        const sampled = [];
+        let previousIdx = -1;
+        for (let i = 0; i < desiredCount; i += 1) {
+          const idx = Math.min(lastIdx, Math.round(i * step));
+          if (idx === previousIdx) continue;
+          sampled.push(points[idx]);
+          previousIdx = idx;
+        }
+        if (sampled[sampled.length - 1] !== points[lastIdx]) {
+          sampled.push(points[lastIdx]);
+        }
+        return sampled;
+      },
+
+      buildFootprintDatasets(metrics) {
+        const zMin = metrics.zMin;
+        const zMax = metrics.zMax;
+        const outlinePoints = TrackEditor.sampleDisplayPoints(metrics.footprintPoints);
+        const denseMode = metrics.pointCount > TRACK_CHART_MARKER_THRESHOLD;
+        const colorSampleTarget = denseMode ? 1600 : Math.min(Math.max(metrics.pointCount, 48), 900);
+        const colorPoints = TrackEditor.sampleDisplayPoints(metrics.points, colorSampleTarget);
+        const pointColors = colorPoints.map(point => TrackEditor.getElevationColor(point.z, zMin, zMax));
+        const datasets = denseMode
+          ? [
+              {
+                label: "Track Outline",
+                data: outlinePoints,
+                parsing: false,
+                showLine: true,
+                borderColor: "rgba(232,240,251,0.48)",
+                borderWidth: 2.2,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                tension: 0,
+                fill: false
+              },
+              {
+                label: "Elevation Samples",
+                data: colorPoints,
+                parsing: false,
+                showLine: false,
+                pointRadius: 2.6,
+                pointHoverRadius: 4,
+                pointBackgroundColor: pointColors,
+                pointBorderWidth: 0
+              }
+            ]
+          : [
+              {
+                label: "Track Footprint",
+                data: outlinePoints,
+                parsing: false,
+                showLine: true,
+                borderColor: "#4da3ff",
+                borderWidth: 2.5,
+                pointRadius: outlinePoints.length > 1 ? 2.5 : 4,
+                pointHoverRadius: 5,
+                pointBackgroundColor: outlinePoints.map(point => TrackEditor.getElevationColor(point.z, zMin, zMax)),
+                pointBorderWidth: 0,
+                tension: 0,
+                fill: false,
+                segment: {
+                  borderColor: (ctx) => {
+                    const p0 = ctx.p0?.raw;
+                    const p1 = ctx.p1?.raw;
+                    if (!p0 || !p1) return "#4da3ff";
+                    return TrackEditor.getElevationColor((p0.z + p1.z) / 2, zMin, zMax);
+                  }
+                }
+              }
+            ];
+
+        if (metrics.points.length > 0) {
+          datasets.push({
+            label: "Start",
+            data: [{ x: metrics.points[0].x, y: metrics.points[0].y, z: metrics.points[0].z }],
+            parsing: false,
+            showLine: false,
+            pointRadius: 6,
+            pointHoverRadius: 7,
+            pointBackgroundColor: "#e8f0fb",
+            pointBorderColor: "#0f1318",
+            pointBorderWidth: 1.5
+          });
+        }
+
+        if (!metrics.isClosed && metrics.points.length > 1) {
+          const endPoint = metrics.points[metrics.points.length - 1];
+          datasets.push({
+            label: "End",
+            data: [{ x: endPoint.x, y: endPoint.y, z: endPoint.z }],
+            parsing: false,
+            showLine: false,
+            pointRadius: 6,
+            pointHoverRadius: 7,
+            pointBackgroundColor: "#ffd166",
+            pointBorderColor: "#0f1318",
+            pointBorderWidth: 1.5
+          });
+        }
+
+        return datasets;
+      },
+
+      getChartView(chart) {
+        if (!chart?.scales?.x || !chart?.scales?.y) return null;
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+        const xMin = xScale.options.min ?? xScale.min;
+        const xMax = xScale.options.max ?? xScale.max;
+        const yMin = yScale.options.min ?? yScale.min;
+        const yMax = yScale.options.max ?? yScale.max;
+        const span = Math.max(xMax - xMin, yMax - yMin, 1);
+        return {
+          xCenter: (xMin + xMax) / 2,
+          yCenter: (yMin + yMax) / 2,
+          span
+        };
+      },
+
+      applyChartView(chart, xCenter, yCenter, span) {
+        if (!chart) return;
+        const nextSpan = Math.max(1, span);
+        const halfSpan = nextSpan / 2;
+        chart.options.scales.x.min = xCenter - halfSpan;
+        chart.options.scales.x.max = xCenter + halfSpan;
+        chart.options.scales.y.min = yCenter - halfSpan;
+        chart.options.scales.y.max = yCenter + halfSpan;
+        chart.update("none");
+        TrackEditor.updateViewStatus(chart);
+      },
+
+      updateViewStatus(chart) {
+        const statusEl = chart?.$viewStatusEl;
+        const baseBounds = chart?.$baseBounds;
+        const view = TrackEditor.getChartView(chart);
+        if (!statusEl || !view) return;
+        if (!baseBounds) {
+          statusEl.textContent = "1:1 view";
+          return;
+        }
+        const baseSpan = Math.max(baseBounds.xMax - baseBounds.xMin, baseBounds.yMax - baseBounds.yMin, 1);
+        const zoom = baseSpan / Math.max(view.span, 1);
+        statusEl.textContent = `1:1 view • ${zoom.toFixed(2)}x`;
+      },
+
+      zoomChartAtPoint(chart, factor, pixelX, pixelY) {
+        if (!chart?.scales?.x || !chart?.scales?.y) return;
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+        const view = TrackEditor.getChartView(chart);
+        if (!view) return;
+
+        const currentXMin = view.xCenter - view.span / 2;
+        const currentYMin = view.yCenter - view.span / 2;
+        const anchorX = xScale.getValueForPixel(pixelX);
+        const anchorY = yScale.getValueForPixel(pixelY);
+        const relX = (anchorX - currentXMin) / view.span;
+        const relY = (anchorY - currentYMin) / view.span;
+        const nextSpan = view.span * factor;
+        const nextCenterX = anchorX + (0.5 - relX) * nextSpan;
+        const nextCenterY = anchorY + (0.5 - relY) * nextSpan;
+        TrackEditor.applyChartView(chart, nextCenterX, nextCenterY, nextSpan);
+      },
+
+      zoomChart(id, factor) {
+        const chart = trackFootprintCharts.get(id);
+        const view = TrackEditor.getChartView(chart);
+        if (!chart || !view) return;
+        TrackEditor.applyChartView(chart, view.xCenter, view.yCenter, view.span * factor);
+      },
+
+      panChart(id, xFraction, yFraction) {
+        const chart = trackFootprintCharts.get(id);
+        const view = TrackEditor.getChartView(chart);
+        if (!chart || !view) return;
+        TrackEditor.applyChartView(
+          chart,
+          view.xCenter + view.span * xFraction,
+          view.yCenter + view.span * yFraction,
+          view.span
+        );
+      },
+
+      resetChartView(id) {
+        const chart = trackFootprintCharts.get(id);
+        const bounds = chart?.$baseBounds;
+        if (!chart || !bounds) return;
+        chart.options.scales.x.min = bounds.xMin;
+        chart.options.scales.x.max = bounds.xMax;
+        chart.options.scales.y.min = bounds.yMin;
+        chart.options.scales.y.max = bounds.yMax;
+        chart.update("none");
+        TrackEditor.updateViewStatus(chart);
+      },
+
+      attachChartInteractions(id, chart) {
+        if (!chart || chart.$interactionCleanup) return;
+        const canvas = chart.canvas;
+        const statusEl = document.getElementById(`trackViewStatus-${id}`);
+        chart.$viewStatusEl = statusEl || null;
+
+        const panState = {
+          active: false,
+          lastX: 0,
+          lastY: 0
+        };
+
+        const onMouseDown = (e) => {
+          if (e.button !== 1) return;
+          e.preventDefault();
+          panState.active = true;
+          panState.lastX = e.offsetX;
+          panState.lastY = e.offsetY;
+          canvas.style.cursor = "grabbing";
+        };
+
+        const onMouseMove = (e) => {
+          if (!panState.active) return;
+          e.preventDefault();
+          const xScale = chart.scales?.x;
+          const yScale = chart.scales?.y;
+          const view = TrackEditor.getChartView(chart);
+          if (!xScale || !yScale || !view) return;
+          const dx = xScale.getValueForPixel(panState.lastX) - xScale.getValueForPixel(e.offsetX);
+          const dy = yScale.getValueForPixel(panState.lastY) - yScale.getValueForPixel(e.offsetY);
+          panState.lastX = e.offsetX;
+          panState.lastY = e.offsetY;
+          TrackEditor.applyChartView(chart, view.xCenter + dx, view.yCenter + dy, view.span);
+        };
+
+        const endPan = () => {
+          if (!panState.active) return;
+          panState.active = false;
+          canvas.style.cursor = "";
+        };
+
+        const onWheel = (e) => {
+          e.preventDefault();
+          const factor = e.deltaY > 0 ? 1.12 : 0.88;
+          TrackEditor.zoomChartAtPoint(chart, factor, e.offsetX, e.offsetY);
+        };
+
+        const onAuxClick = (e) => {
+          if (e.button === 1) {
+            e.preventDefault();
+          }
+        };
+
+        canvas.addEventListener("mousedown", onMouseDown);
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", endPan);
+        canvas.addEventListener("mouseleave", endPan);
+        canvas.addEventListener("wheel", onWheel, { passive: false });
+        canvas.addEventListener("auxclick", onAuxClick);
+
+        chart.$interactionCleanup = () => {
+          canvas.removeEventListener("mousedown", onMouseDown);
+          window.removeEventListener("mousemove", onMouseMove);
+          window.removeEventListener("mouseup", endPan);
+          canvas.removeEventListener("mouseleave", endPan);
+          canvas.removeEventListener("wheel", onWheel);
+          canvas.removeEventListener("auxclick", onAuxClick);
+        };
+      },
+
+      initChart(id) {
+        const canvas = document.getElementById(`trackFootprintChart-${id}`);
+        if (!canvas || trackFootprintCharts.has(id)) return;
+        const ctx = canvas.getContext("2d");
+        const chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            datasets: []
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            layout: {
+              padding: { top: 4, right: 6, bottom: 4, left: 6 }
+            },
+            scales: {
+              x: {
+                type: "linear",
+                title: {
+                  display: true,
+                  text: "X (m)",
+                  color: "#9fb1c4",
+                  font: { size: 11, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" }
+                },
+                ticks: {
+                  color: "#9fb1c4",
+                  font: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+                  padding: 4,
+                  maxRotation: 0
+                },
+                grid: {
+                  color: "rgba(255,255,255,0.06)"
+                }
+              },
+              y: {
+                type: "linear",
+                title: {
+                  display: true,
+                  text: "Y (m)",
+                  color: "#9fb1c4",
+                  font: { size: 11, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" }
+                },
+                ticks: {
+                  color: "#9fb1c4",
+                  font: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+                  padding: 4
+                },
+                grid: {
+                  color: "rgba(255,255,255,0.06)"
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                titleFont: { size: 11, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+                bodyFont: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+                callbacks: {
+                  title: (items) => items[0]?.dataset?.label || "Track Point",
+                  label: (context) => {
+                    const raw = context.raw || {};
+                    const x = Number.isFinite(raw.x) ? raw.x.toFixed(2) : "--";
+                    const y = Number.isFinite(raw.y) ? raw.y.toFixed(2) : "--";
+                    const z = Number.isFinite(raw.z) ? raw.z.toFixed(2) : "--";
+                    return `x ${x} m, y ${y} m, z ${z} m`;
+                  }
+                }
+              }
+            }
+          }
+        });
+        TrackEditor.attachChartInteractions(id, chart);
+        trackFootprintCharts.set(id, chart);
+      },
+
+      updateMetricsUI(id, metrics) {
+        const pointCountEl = document.getElementById(`trackPointCount-${id}`);
+        const planLengthEl = document.getElementById(`trackPlanLength-${id}`);
+        const elevationRangeEl = document.getElementById(`trackElevationRange-${id}`);
+        const elevationMinEl = document.getElementById(`trackElevationMin-${id}`);
+        const elevationMaxEl = document.getElementById(`trackElevationMax-${id}`);
+
+        if (pointCountEl) pointCountEl.textContent = `${metrics.pointCount}`;
+        if (planLengthEl) planLengthEl.textContent = `${metrics.planLength.toFixed(1)} m`;
+        if (elevationRangeEl) elevationRangeEl.textContent = `${metrics.zMin.toFixed(1)} m to ${metrics.zMax.toFixed(1)} m`;
+        if (elevationMinEl) elevationMinEl.textContent = `${metrics.zMin.toFixed(1)} m`;
+        if (elevationMaxEl) elevationMaxEl.textContent = `${metrics.zMax.toFixed(1)} m`;
+      },
+
+      refreshChart(id) {
+        const chart = trackFootprintCharts.get(id);
+        const track = tracks.find(t => t.id === id);
+        if (!track) return;
+        TrackEditor.ensureDefaults(track);
+        const metrics = TrackEditor.computeMetrics(track);
+        TrackEditor.updateMetricsUI(id, metrics);
+        if (!chart) return;
+
+        chart.data.datasets = TrackEditor.buildFootprintDatasets(metrics);
+        chart.$baseBounds = { ...metrics.axisBounds };
+        chart.options.scales.x.min = metrics.axisBounds.xMin;
+        chart.options.scales.x.max = metrics.axisBounds.xMax;
+        chart.options.scales.y.min = metrics.axisBounds.yMin;
+        chart.options.scales.y.max = metrics.axisBounds.yMax;
+        chart.update("none");
+        TrackEditor.updateViewStatus(chart);
+      }
+    };
+
+    function ensureEventDefaults(eventObj) {
+      if (!eventObj) return;
+      if (!eventObj.spec) {
+        eventObj.spec = cloneDefaultEventSpec();
+      }
+      const defaults = cloneDefaultEventSpec();
+      Object.keys(defaults).forEach((key) => {
+        if (eventObj.spec[key] === undefined || eventObj.spec[key] === null) {
+          eventObj.spec[key] = defaults[key];
+        }
+      });
+    }
+
+    function populateEventSelectOptions(id, spec) {
+      const vehicleEl = document.getElementById(`eventVehicle-${id}`);
+      const trackEl = document.getElementById(`eventTrack-${id}`);
+      if (vehicleEl) {
+        vehicleEl.innerHTML = [
+          '<option value="">Select Vehicle</option>',
+          ...vehicles.map(vehicle => `<option value="${vehicle.id}">${vehicle.name}</option>`)
+        ].join("");
+        vehicleEl.value = spec?.vehicleId !== undefined && spec?.vehicleId !== null ? `${spec.vehicleId}` : "";
+      }
+      if (trackEl) {
+        trackEl.innerHTML = [
+          '<option value="">Select Track</option>',
+          ...tracks.map(track => `<option value="${track.id}">${track.name}</option>`)
+        ].join("");
+        trackEl.value = spec?.trackId !== undefined && spec?.trackId !== null ? `${spec.trackId}` : "";
+      }
+    }
+
+    function updateEventSummary(id, spec) {
+      const vehicleLabel = vehicles.find(vehicle => `${vehicle.id}` === `${spec?.vehicleId ?? ""}`)?.name || "Not Set";
+      const trackLabel = tracks.find(track => `${track.id}` === `${spec?.trackId ?? ""}`)?.name || "Not Set";
+      const setText = (suffix, text) => {
+        const el = document.getElementById(`${suffix}-${id}`);
+        if (el) el.textContent = text;
+      };
+      setText("eventVehicleSummary", vehicleLabel);
+      setText("eventTrackSummary", trackLabel);
+      setText("eventAirTemperatureSummary", `${Number(spec?.airTemperature ?? 0).toFixed(1)} C`);
+      setText("eventAirPressureSummary", `${Number(spec?.airPressure ?? 0).toFixed(3)} kPa`);
+      setText("eventElevationSummary", `${Number(spec?.elevation ?? 0).toFixed(1)} m`);
+      setText("eventHumiditySummary", `${Number(spec?.humidity ?? 0).toFixed(1)} %`);
+    }
+
+    function refreshOpenEventEditors() {
+      const openEventTabs = tabs.filter(tab => tab.type === "event");
+      openEventTabs.forEach((tab) => {
+        const eventObj = eventsArray.find(evt => evt.id === tab.id);
+        if (!eventObj) return;
+        ensureEventDefaults(eventObj);
+
+        const vehicleStillExists = eventObj.spec.vehicleId !== "" && vehicles.some(vehicle => `${vehicle.id}` === `${eventObj.spec.vehicleId}`);
+        const trackStillExists = eventObj.spec.trackId !== "" && tracks.some(track => `${track.id}` === `${eventObj.spec.trackId}`);
+        if (!vehicleStillExists) {
+          eventObj.spec.vehicleId = "";
+        }
+        if (!trackStillExists) {
+          eventObj.spec.trackId = "";
+        }
+
+        populateEventSelectOptions(tab.id, eventObj.spec);
+        applyEventSpecToUI(tab.id, eventObj.spec);
+        updateEventSummary(tab.id, eventObj.spec);
+      });
+    }
+
+    function initTractiveChart(id) {
+      const canvas = document.getElementById(`tractiveChart-${id}`);
+      if (!canvas || tractiveCharts.has(id)) return;
+      const ctx = canvas.getContext("2d");
+      const vehicle = vehicles.find(v => v.id === id);
+      ensureSpecDefaults(vehicle);
+      const curves = computeTractiveCurves(vehicle);
+
+      const data = {
+        datasets: buildTractiveDatasets(curves)
+      };
+
+      const options = {
+        parsing: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 4, right: 6, bottom: 4, left: 6 }
+        },
+        scales: {
+          x: {
+            type: "linear",
+            title: {
+              display: true,
+              text: "Speed (m/s)",
+              color: "#9fb1c4",
+              font: { size: 11, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" }
+            },
+            ticks: {
+              color: "#9fb1c4",
+              font: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+              padding: 4,
+              maxRotation: 0
+            },
+            grid: {
+              color: "rgba(255,255,255,0.06)"
+            },
+            max: curves.maxSpeed
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Force (N)",
+              color: "#9fb1c4",
+              font: { size: 11, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" }
+            },
+            ticks: {
+              color: "#9fb1c4",
+              font: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+              padding: 4
+            },
+            grid: {
+              color: "rgba(255,255,255,0.06)"
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#c0c7d0",
+              font: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 8,
+              generateLabels: (chart) => {
+                const defaults = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                const mapped = defaults.map(label => {
+                  if (label.text === "Grip Limited Region") {
+                    return {
+                      ...label,
+                      fillStyle: "rgba(155,155,155,0.35)",
+                      strokeStyle: "#9ea4af",
+                      lineWidth: 1.5,
+                      _sortWeight: 9000
+                    };
+                  }
+                  if (label.text.startsWith("Gear ")) {
+                    return { ...label, _sortWeight: 10000 };
+                  }
+                  return { ...label, _sortWeight: 0 };
+                });
+                return mapped.sort((a, b) => a._sortWeight - b._sortWeight);
+              }
+            }
+          },
+          tooltip: {
+            titleFont: { size: 11, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" },
+            bodyFont: { size: 10, family: "'IBM Plex Sans', 'Segoe UI', sans-serif" }
+          }
+        }
+      };
+
+      const chart = new Chart(ctx, {
+        type: "line",
+        data,
+        options,
+        plugins: [tractiveAnnotPlugin, slipPatternPlugin]
+      });
+
+      tractiveCharts.set(id, chart);
+    }
+
+    function buildTractiveDatasets(curves) {
+      const gearLines = (curves.gearCurves || []).map((gc, idx) => ({
+        label: gc.label,
+        data: toXY(curves.speeds, gc.forces),
+        borderColor: gearPalette[idx % gearPalette.length],
+        backgroundColor: "transparent",
+        borderWidth: 1,
+        tension: 0.15,
+        pointRadius: 0,
+        hidden: true,
+        order: 8
+      }));
+
+      return [
+        {
+          label: "Tractive Force",
+          data: toXY(curves.speeds, curves.tractive),
+          borderColor: "#4da3ff",
+          backgroundColor: "rgba(77,163,255,0.08)",
+          borderWidth: 2.5,
+          tension: 0.2,
+          pointRadius: 0,
+          order: 1
+        },
+        {
+          label: "Drag Force",
+          data: toXY(curves.speeds, curves.drag),
+          borderColor: "#ff6b6b",
+          backgroundColor: "rgba(255,107,107,0.08)",
+          borderWidth: 2,
+          tension: 0.2,
+          pointRadius: 0,
+          order: 2
+        },
+        {
+          label: "Grip Limit",
+          data: toXY(curves.speeds, curves.grip),
+          id: "gripLimit",
+          borderColor: "#9be070",
+          backgroundColor: "rgba(155,224,112,0.08)",
+          borderWidth: 2,
+          borderDash: [6, 4],
+          tension: 0.2,
+          pointRadius: 0,
+          order: 3
+        },
+        {
+          label: "Grip Limited Region",
+          data: toXY(curves.speeds, curves.grip),
+          borderColor: "transparent",
+          backgroundColor: "transparent",
+          pointRadius: 0,
+          showLine: false,
+          order: 4
+        },
+        {
+          label: "Grip Intersection",
+          data: curves.gripIntersect ? [{ x: curves.gripIntersect.speed, y: curves.gripIntersect.force }] : [],
+          borderColor: "transparent",
+          backgroundColor: "#9be070",
+          pointRadius: curves.gripIntersect ? 6 : 0,
+          pointBorderColor: "#1b1f26",
+          pointHoverRadius: 7,
+          order: 5
+        },
+        {
+          label: "Max Velocity",
+          data: [{ x: curves.maxVel.speed, y: curves.maxVel.force }],
+          borderColor: "transparent",
+          backgroundColor: "#e8f0fb",
+          pointRadius: 6,
+          pointBackgroundColor: "#e8f0fb",
+          pointBorderColor: "#1b1f26",
+          pointHoverRadius: 7,
+          order: 6
+        },
+        {
+          label: "Gear Change",
+          data: curves.gearChanges.map(gc => ({ x: gc.speed, y: gc.force })),
+          borderColor: "transparent",
+          backgroundColor: "#ffd166",
+          pointRadius: curves.gearChanges.length ? 5 : 0,
+          pointBorderColor: "#1b1f26",
+          pointHoverRadius: 6,
+          order: 7
+        }
+        // Gear lines appended at end for legend ordering
+        ,...gearLines
+      ];
+
+    }
+
+    function toXY(xs, ys) {
+      return xs.map((x, i) => ({ x, y: ys[i] }));
+    }
+
+    function computeTractiveCurves(vehicle) {
+      const spec = vehicle?.spec || cloneDefaultSpec();
+      const rho = 1.225; // air density kg/m^3
+      const g = 9.81;
+      const mass = spec.weight || cloneDefaultSpec().weight;
+      const Rr = spec.tireRadius || cloneDefaultSpec().tireRadius;
+      const cd = spec.dragCoefficient || cloneDefaultSpec().dragCoefficient;
+      const cl = spec.liftCoefficient || cloneDefaultSpec().liftCoefficient;
+      const area = spec.frontalArea || cloneDefaultSpec().frontalArea;
+      const mu = spec.longFriction || cloneDefaultSpec().longFriction;
+      const rollingRes = (spec.rollingResistance !== undefined ? spec.rollingResistance : cloneDefaultSpec().rollingResistance) || 0;
+      const finalDrive = spec.finalDriveRatio || 1;
+      const driveEff = spec.driveEfficiency || 1;
+      const gearRatios = (spec.gearRatios && spec.gearRatios.length > 0 ? spec.gearRatios : cloneDefaultSpec().gearRatios).map(parseFloat).filter(n => !isNaN(n) && n > 0);
+
+      let enginePairs = (spec.engineData && spec.engineData.length > 0 ? spec.engineData : cloneDefaultSpec().engineData)
+        .map(({ rpm, torque }) => ({ rpm: parseFloat(rpm), torque: parseFloat(torque) }))
+        .filter(row => !isNaN(row.rpm) && !isNaN(row.torque))
+        .sort((a, b) => a.rpm - b.rpm);
+      if (enginePairs.length >= 2 && enginePairs[0].rpm > 0) {
+        const a = enginePairs[0];
+        const b = enginePairs[1];
+        const slope = (b.torque - a.torque) / (b.rpm - a.rpm || 1);
+        enginePairs = [{ rpm: 0, torque: Math.max(0, a.torque - a.rpm * slope) }, ...enginePairs];
+      }
+
+      if (enginePairs.length < 2 || gearRatios.length === 0) {
+        const speeds = [0];
+        const zeros = [0];
+        return { speeds, tractive: zeros, drag: zeros, grip: zeros, maxVel: { speed: 0, force: 0, type: "gear" } };
+      }
+
+      const maxEngineRpm = enginePairs[enginePairs.length - 1].rpm;
+      const topGear = Math.min(...gearRatios);
+      const maxSpeed = (maxEngineRpm / (topGear * finalDrive)) * (2 * Math.PI * Rr / 60);
+      const step = Math.max(0.5, maxSpeed / 120);
+
+      const speeds = [];
+      const tractive = [];
+      const drag = [];
+      const grip = [];
+      const gearIdx = [];
+      const gearForces = gearRatios.map(() => []);
+
+      for (let v = 0; v <= maxSpeed; v += step) {
+        const wheelRpm = v / (2 * Math.PI * Rr / 60);
+        let maxForce = 0;
+        let maxGear = 0;
+        gearRatios.forEach((ratio, gi) => {
+          const engRpm = wheelRpm * finalDrive * ratio;
+          if (engRpm > maxEngineRpm || engRpm < enginePairs[0].rpm) {
+            gearForces[gi].push(null);
+            return;
+          }
+          const tq = interpTorque(enginePairs, engRpm);
+          const driveTorque = tq * ratio * finalDrive * driveEff;
+          const force = driveTorque / Rr;
+          gearForces[gi].push(force);
+          if (force > maxForce) {
+            maxForce = force;
+            maxGear = gi;
+          }
+        });
+
+        const fDrag = 0.5 * rho * cd * area * v * v;
+        const fLift = 0.5 * rho * cl * area * v * v;
+        const normalLoad = mass * g - fLift;
+        const driveAxles = (spec.drivetrainType === "FWD" || spec.drivetrainType === "RWD") ? 2 : 1;
+        const fGrip = (mu * normalLoad) / driveAxles;
+        const fRoll = normalLoad * rollingRes;
+
+        speeds.push(Number(v.toFixed(2)));
+        tractive.push(maxForce);
+        drag.push(fDrag + fRoll);
+        grip.push(fGrip);
+        gearIdx.push(maxGear);
+      }
+
+      // Determine max velocity: aero-limited where available force (min of tractive and grip) crosses drag; else gear-limited at end
+      let maxVel = { speed: speeds[speeds.length - 1], force: Math.min(tractive[tractive.length - 1], grip[grip.length - 1]), type: "gear" };
+      for (let i = 1; i < speeds.length; i++) {
+        const availPrev = Math.min(tractive[i - 1], grip[i - 1]);
+        const avail = Math.min(tractive[i], grip[i]);
+        if (avail <= drag[i]) {
+          const dragPrev = drag[i - 1];
+          const dragNow = drag[i];
+          const dv = speeds[i] - speeds[i - 1];
+          const da = (availPrev - dragPrev) - (avail - dragNow);
+          const t = da === 0 ? 0 : (availPrev - dragPrev) / da;
+          const vCross = speeds[i - 1] + Math.max(0, Math.min(1, t)) * dv;
+          const fCross = dragPrev + (dragNow - dragPrev) * Math.max(0, Math.min(1, t));
+          maxVel = { speed: vCross, force: fCross, type: "aero" };
+          break;
+        }
+      }
+
+      // Grip intersection (highest speed crossing)
+      let gripIntersect = null;
+      for (let i = 1; i < speeds.length; i++) {
+        const diffPrev = tractive[i - 1] - grip[i - 1];
+        const diffNow = tractive[i] - grip[i];
+        if ((diffPrev >= 0 && diffNow <= 0) || (diffPrev <= 0 && diffNow >= 0)) {
+          const t = diffPrev === diffNow ? 0 : diffPrev / (diffPrev - diffNow);
+          const speedCross = speeds[i - 1] + t * (speeds[i] - speeds[i - 1]);
+          const forceCross = grip[i - 1] + t * (grip[i] - grip[i - 1]);
+          if (!gripIntersect || speedCross > gripIntersect.speed) {
+            gripIntersect = { speed: speedCross, force: forceCross };
+          }
+        }
+      }
+
+      // Gear change points (where chosen gear ratio changes)
+      const gearChanges = [];
+      for (let i = 1; i < speeds.length; i++) {
+        if (gearIdx[i] !== gearIdx[i - 1]) {
+          gearChanges.push({ speed: speeds[i - 1], force: tractive[i - 1], gear: gearIdx[i - 1] });
+        }
+      }
+
+      const gearCurves = gearRatios.map((ratio, i) => ({
+        label: `Gear ${i + 1}`,
+        ratio,
+        forces: gearForces[i]
+      }));
+
+      return { speeds, tractive, drag, grip, maxVel, gripIntersect, gearChanges, maxSpeed, gearCurves };
+    }
+
+    function computeGGVEllipses(vehicle) {
+      ensureSpecDefaults(vehicle);
+      const spec = vehicle?.spec || cloneDefaultSpec();
+      const rho = 1.225;
+      const g = 9.81;
+      const mass = spec.weight || cloneDefaultSpec().weight;
+      const cd = (spec.dragCoefficient !== undefined ? spec.dragCoefficient : cloneDefaultSpec().dragCoefficient) || 0;
+      const cl = (spec.liftCoefficient !== undefined ? spec.liftCoefficient : cloneDefaultSpec().liftCoefficient) || 0;
+      const area = spec.frontalArea || cloneDefaultSpec().frontalArea;
+      const muLat = (spec.latFriction !== undefined ? spec.latFriction : cloneDefaultSpec().latFriction) || 0;
+      const muLong = (spec.longFriction !== undefined ? spec.longFriction : cloneDefaultSpec().longFriction) || 0;
+      const rollingRes = (spec.rollingResistance !== undefined ? spec.rollingResistance : cloneDefaultSpec().rollingResistance) || 0;
+      const drivetrainType = spec.drivetrainType || cloneDefaultSpec().drivetrainType;
+      const driveWheelFactor = drivetrainType === "AWD" ? 1 : 0.5;
+
+      const curves = computeTractiveCurves(vehicle);
+      const vmax = Math.max(5, (curves.maxVel && curves.maxVel.speed) ? curves.maxVel.speed : curves.maxSpeed || 0);
+      const speedSteps = [];
+      for (let v = 0; v <= vmax; v += 10) {
+        speedSteps.push(Number(v.toFixed(3)));
+      }
+      if (speedSteps[speedSteps.length - 1] < vmax - 0.5) {
+        speedSteps.push(vmax);
+      }
+
+      const ellipses = [];
+      let maxAbs = 0;
+      const segments = 80;
+
+      speedSteps.forEach(v => {
+        const fDrag = 0.5 * rho * cd * area * v * v;
+        const fLift = 0.5 * rho * cl * area * v * v;
+        const normalLoad = Math.max(1, mass * g - fLift);
+        const fRoll = normalLoad * rollingRes;
+
+        const aLat = (muLat * normalLoad) / mass;
+        const aLongGrip = (muLong * normalLoad) / mass;
+        const aLongGripPos = aLongGrip * driveWheelFactor;
+
+        const tractiveForce = interpValue(curves.speeds, curves.tractive, v);
+        const resistiveForce = interpValue(curves.speeds, curves.drag, v);
+        const tractionAccel = Math.max(0, tractiveForce) / mass;
+        const resistiveAccel = resistiveForce / mass; // drag + rolling decel
+
+        const pts = [];
+        for (let i = 0; i <= segments; i++) {
+          const theta = (i / segments) * Math.PI * 2;
+          const x = aLat * Math.cos(theta);
+          const sinT = Math.sin(theta);
+          if (sinT >= 0) {
+            const desired = aLongGripPos * sinT;
+            const y = Math.min(desired, tractionAccel) - resistiveAccel; // follow grip then flatten at tractive cap, shifted by drag
+            maxAbs = Math.max(maxAbs, Math.abs(x), Math.abs(y));
+            pts.push({ x, y });
+          } else {
+            const y = aLongGrip * sinT - resistiveAccel; // braking uses full grip, plus aero drag decel
+            maxAbs = Math.max(maxAbs, Math.abs(x), Math.abs(y));
+            pts.push({ x, y });
+          }
+        }
+        ellipses.push({ speed: v, data: pts });
+      });
+
+      return { ellipses, maxAbs: maxAbs || 1 };
+    }
+
+    function buildGGVDatasets(ellipses) {
+      const total = Math.max(ellipses.length, 1);
+      return ellipses.map((ellipse, idx) => {
+        const hue = (idx * 360) / total;
+        const color = `hsl(${hue}, 70%, 65%)`;
+        return {
+          label: `${ellipse.speed.toFixed(0)} m/s`,
+          data: ellipse.data,
+          borderColor: color,
+          backgroundColor: "transparent",
+          borderWidth: 1.5,
+          tension: 0.25,
+          pointRadius: 0,
+          spanGaps: true
+        };
+      });
+    }
+
+    function interpValue(xs, ys, target) {
+      if (!xs || !ys || xs.length === 0 || ys.length === 0) return 0;
+      if (target <= xs[0]) return ys[0];
+      for (let i = 1; i < xs.length; i++) {
+        if (target <= xs[i]) {
+          const t = (target - xs[i - 1]) / (xs[i] - xs[i - 1] || 1);
+          const y1 = typeof ys[i - 1] === "number" ? ys[i - 1] : (ys[i - 1]?.y ?? 0);
+          const y2 = typeof ys[i] === "number" ? ys[i] : (ys[i]?.y ?? 0);
+          return y1 + t * (y2 - y1);
+        }
+      }
+      return ys[ys.length - 1];
+    }
+
+    function interpTorque(pairs, rpm) {
+      if (rpm < pairs[0].rpm || rpm > pairs[pairs.length - 1].rpm) return 0;
+      for (let i = 0; i < pairs.length - 1; i++) {
+        const a = pairs[i];
+        const b = pairs[i + 1];
+        if (rpm >= a.rpm && rpm <= b.rpm) {
+          const t = (rpm - a.rpm) / (b.rpm - a.rpm || 1);
+          return a.torque + t * (b.torque - a.torque);
+        }
+      }
+      return 0;
+    }
+
     function setActiveTab(tabId) {
       tabs.forEach(tab => {
         const active = (tab.tabId === tabId);
@@ -821,6 +4168,22 @@
       if (idx === -1) return;
 
       const tab = tabs[idx];
+      if (tab.type === "track") {
+        const chart = trackFootprintCharts.get(tab.id);
+        if (chart) {
+          if (chart.$interactionCleanup) {
+            chart.$interactionCleanup();
+          }
+          chart.destroy();
+          trackFootprintCharts.delete(tab.id);
+        }
+        const refreshTimer = trackRefreshTimers.get(tab.id);
+        if (refreshTimer) {
+          clearTimeout(refreshTimer);
+          trackRefreshTimers.delete(tab.id);
+        }
+        trackTableStates.delete(`${tab.id}`);
+      }
       tab.headerEl.remove();
       tab.contentEl.remove();
       tabs.splice(idx, 1);
@@ -828,6 +4191,191 @@
       // Optionally switch to the last open tab
       if (tabs.length > 0) {
         setActiveTab(tabs[tabs.length - 1].tabId);
+      }
+    }
+
+    function setSelectedTreeItem(itemEl) {
+      if (selectedTreeItem) {
+        selectedTreeItem.classList.remove("tree-selected");
+      }
+      selectedTreeItem = itemEl;
+      if (selectedTreeItem) {
+        selectedTreeItem.classList.add("tree-selected");
+      }
+    }
+
+    function notifyEntityChanged(type) {
+      ENTITY_CONFIG[type]?.syncOpenEditors?.();
+    }
+
+    function deleteEntityFromTree(type) {
+      if (!selectedTreeItem || selectedTreeItem.getAttribute("data-type") !== type) {
+        alert(`Select a ${type} in the tree to delete.`);
+        return;
+      }
+      const config = ENTITY_CONFIG[type];
+      const entityId = parseInt(selectedTreeItem.getAttribute("data-id"), 10);
+      config.setCollection(config.getCollection().filter(entry => entry.id !== entityId));
+      const openTabs = tabs.filter(t => t.type === type && t.id === entityId);
+      openTabs.forEach(t => closeTab(t.tabId));
+      selectedTreeItem.remove();
+      selectedTreeItem = null;
+      notifyEntityChanged(type);
+    }
+
+    function deleteVehicleFromTree() {
+      deleteEntityFromTree("vehicle");
+    }
+
+    function deleteTrackFromTree() {
+      deleteEntityFromTree("track");
+    }
+
+    function deleteEventFromTree() {
+      deleteEntityFromTree("event");
+    }
+
+    function updateEntityNameInUI(collection, id, newName, headerEl) {
+      const item = collection.find(entry => entry.id === id);
+      if (item) {
+        item.name = newName;
+      }
+
+      const treeItem = document.querySelector(`#project-tree li[data-id="${id}"]`);
+      if (treeItem) {
+        treeItem.textContent = newName;
+      }
+
+      if (headerEl) {
+        const span = headerEl.querySelector("span:first-child");
+        if (span) {
+          span.textContent = newName;
+        }
+      }
+    }
+
+    function updateVehicleName(id, newName, headerEl) {
+      updateEntityNameInUI(vehicles, id, newName, headerEl);
+      notifyEntityChanged("vehicle");
+    }
+
+    function updateTrackName(id, newName, headerEl) {
+      updateEntityNameInUI(tracks, id, newName, headerEl);
+      notifyEntityChanged("track");
+    }
+
+    function updateEventName(id, newName, headerEl) {
+      updateEntityNameInUI(eventsArray, id, newName, headerEl);
+    }
+
+    function setFormValues(id, bindings) {
+      bindings.forEach(({ key, value }) => {
+        const el = document.getElementById(`${key}-${id}`);
+        if (el && value !== undefined) {
+          el.value = value;
+        }
+      });
+    }
+
+    function specBindingsToFormValues(spec, bindings) {
+      return bindings.map(({ key, prop }) => ({ key, value: spec?.[prop] }));
+    }
+
+    function bindNumericSpecFields(id, target, bindings, onUpdate, options = {}) {
+      const emptyValue = Object.prototype.hasOwnProperty.call(options, "emptyValue") ? options.emptyValue : "";
+      bindings.forEach(({ key, prop }) => {
+        const el = document.getElementById(`${key}-${id}`);
+        if (!el) return;
+        el.addEventListener("input", () => {
+          const value = el.value === "" ? emptyValue : parseFloat(el.value);
+          target[prop] = Number.isNaN(value) ? el.value : value;
+          if (onUpdate) onUpdate();
+        });
+      });
+    }
+
+    function applyTrackSpecToUI(id, spec) {
+      const circuitTypeEl = document.getElementById(`trackCircuitType-${id}`);
+      if (circuitTypeEl && spec?.circuitType) {
+        circuitTypeEl.value = spec.circuitType;
+      }
+    }
+
+    function applyEventSpecToUI(id, spec) {
+      setFormValues(id, specBindingsToFormValues(spec, EVENT_NUMERIC_BINDINGS));
+      const vehicleEl = document.getElementById(`eventVehicle-${id}`);
+      if (vehicleEl) {
+        vehicleEl.value = spec?.vehicleId !== undefined && spec?.vehicleId !== null ? `${spec.vehicleId}` : "";
+      }
+      const trackEl = document.getElementById(`eventTrack-${id}`);
+      if (trackEl) {
+        trackEl.value = spec?.trackId !== undefined && spec?.trackId !== null ? `${spec.trackId}` : "";
+      }
+    }
+
+    function bindEventInputsToSpec(id, eventObj) {
+      if (!eventObj) return;
+      const vehicleEl = document.getElementById(`eventVehicle-${id}`);
+      const trackEl = document.getElementById(`eventTrack-${id}`);
+
+      if (vehicleEl) {
+        vehicleEl.addEventListener("change", () => {
+          ensureEventDefaults(eventObj);
+          eventObj.spec.vehicleId = vehicleEl.value === "" ? "" : parseInt(vehicleEl.value, 10);
+          updateEventSummary(id, eventObj.spec);
+        });
+      }
+      if (trackEl) {
+        trackEl.addEventListener("change", () => {
+          ensureEventDefaults(eventObj);
+          eventObj.spec.trackId = trackEl.value === "" ? "" : parseInt(trackEl.value, 10);
+          updateEventSummary(id, eventObj.spec);
+        });
+      }
+
+      bindNumericSpecFields(id, eventObj.spec, EVENT_NUMERIC_BINDINGS, () => {
+        updateEventSummary(id, eventObj.spec);
+      });
+    }
+
+    function applyVehicleSpecToUI(id, spec) {
+      setFormValues(id, specBindingsToFormValues(spec, VEHICLE_NUMERIC_BINDINGS));
+      const typeEl = document.getElementById(`drivetrainType-${id}`);
+      if (typeEl && spec.drivetrainType) {
+        typeEl.value = spec.drivetrainType;
+      }
+
+      const engineBody = document.getElementById(`engineTorqueTableBody-${id}`);
+      if (engineBody && Array.isArray(spec.engineData)) {
+        spec.engineData.forEach((row, idx) => {
+          const rpmCell = engineBody.querySelector(`.powertrain-cell[data-row="${idx}"][data-col="0"]`);
+          const tqCell = engineBody.querySelector(`.powertrain-cell[data-row="${idx}"][data-col="1"]`);
+          if (rpmCell) rpmCell.textContent = row.rpm;
+          if (tqCell) tqCell.textContent = row.torque;
+        });
+      }
+
+      const gearBody = document.getElementById(`gearRatioTableBody-${id}`);
+      if (gearBody && Array.isArray(spec.gearRatios)) {
+        spec.gearRatios.forEach((ratio, idx) => {
+          const ratioCell = gearBody.querySelector(`.powertrain-cell[data-gear-row="${idx}"][data-gear-col="1"]`);
+          if (ratioCell) ratioCell.textContent = ratio;
+        });
+      }
+    }
+
+    function bindVehicleInputsToSpec(id, vehicle) {
+      if (!vehicle) return;
+      vehicle.spec = vehicle.spec || {};
+      bindNumericSpecFields(id, vehicle.spec, VEHICLE_NUMERIC_BINDINGS, () => refreshTractiveChart(id), { emptyValue: null });
+
+      const typeEl = document.getElementById(`drivetrainType-${id}`);
+      if (typeEl) {
+        typeEl.addEventListener("change", () => {
+          vehicle.spec = vehicle.spec || {};
+          vehicle.spec.drivetrainType = typeEl.value;
+          refreshTractiveChart(id);
+        });
       }
     }
 
@@ -881,6 +4429,8 @@
         // set a sensible minimum to avoid negative widths
         if (newWidth > 50) {
           leftPane.style.width = `${newWidth}px`;
+          leftPane.style.flex = `0 0 ${newWidth}px`; // force reflow in flex layout
+          contentEl.querySelector(".vehicle-editor-right").style.minWidth = 0; // allow right to shrink
         }
       }
 
@@ -932,10 +4482,7 @@
     function initToolbarActions() {
       /* VEHICLE CREATE / IMPORT / EXPORT */
       document.getElementById("btn-vehicle-create")?.addEventListener("click", () => {
-        const newVehicle = { id: Date.now(), name: `Vehicle ${vehicles.length + 1}` };
-        vehicles.push(newVehicle);
-        addProjectTreeItem("Vehicles", newVehicle.id, newVehicle.name);
-        openEditorTab("vehicle", newVehicle.id, newVehicle.name);
+        createEntity("vehicle");
       });
       document.getElementById("btn-vehicle-import")?.addEventListener("click", () => {
         fileManager.importVehicleFile();
@@ -943,13 +4490,13 @@
       document.getElementById("btn-vehicle-export")?.addEventListener("click", () => {
         fileManager.exportVehicleFile();
       });
+      document.getElementById("btn-vehicle-delete")?.addEventListener("click", () => {
+        deleteVehicleFromTree();
+      });
 
       /* TRACK CREATE / IMPORT / EXPORT */
       document.getElementById("btn-track-create")?.addEventListener("click", () => {
-        const newTrack = { id: Date.now(), name: `Track ${tracks.length + 1}` };
-        tracks.push(newTrack);
-        addProjectTreeItem("Tracks", newTrack.id, newTrack.name);
-        openEditorTab("track", newTrack.id, newTrack.name);
+        createEntity("track");
       });
       document.getElementById("btn-track-import")?.addEventListener("click", () => {
         fileManager.importTrackFile();
@@ -957,13 +4504,13 @@
       document.getElementById("btn-track-export")?.addEventListener("click", () => {
         fileManager.exportTrackFile();
       });
+      document.getElementById("btn-track-delete")?.addEventListener("click", () => {
+        deleteTrackFromTree();
+      });
 
       /* EVENT CREATE / IMPORT / EXPORT */
       document.getElementById("btn-event-create")?.addEventListener("click", () => {
-        const newEvent = { id: Date.now(), name: `Event ${eventsArray.length + 1}` };
-        eventsArray.push(newEvent);
-        addProjectTreeItem("Events", newEvent.id, newEvent.name);
-        openEditorTab("event", newEvent.id, newEvent.name);
+        createEntity("event");
       });
       document.getElementById("btn-event-import")?.addEventListener("click", () => {
         fileManager.importEventFile();
@@ -971,10 +4518,52 @@
       document.getElementById("btn-event-export")?.addEventListener("click", () => {
         fileManager.exportEventFile();
       });
+      document.getElementById("btn-event-delete")?.addEventListener("click", () => {
+        deleteEventFromTree();
+      });
 
       /* SIMULATE */
       document.getElementById("btn-simulate")?.addEventListener("click", () => {
-        alert("Simulate clicked!");
+        openSimulateEventModal();
+      });
+      document.getElementById("simulateModalClose")?.addEventListener("click", () => {
+        closeSimulateEventModal();
+      });
+      document.getElementById("simulateCancel")?.addEventListener("click", () => {
+        closeSimulateEventModal();
+      });
+      document.getElementById("simulateSelectAll")?.addEventListener("click", () => {
+        document.querySelectorAll('#simulateEventList input[type="checkbox"][data-event-id]').forEach((checkbox) => {
+          checkbox.checked = true;
+        });
+        updateSimulateSelectionStatus();
+      });
+      document.getElementById("simulateClearAll")?.addEventListener("click", () => {
+        document.querySelectorAll('#simulateEventList input[type="checkbox"][data-event-id]').forEach((checkbox) => {
+          checkbox.checked = false;
+        });
+        updateSimulateSelectionStatus();
+      });
+      document.getElementById("simulateConfirm")?.addEventListener("click", () => {
+        const selectedEvents = getSelectedSimulationEvents();
+        if (selectedEvents.length === 0) {
+          return;
+        }
+        closeSimulateEventModal();
+        sendEventsToSolver(selectedEvents);
+      });
+      document.getElementById("simulateModalOverlay")?.addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) {
+          closeSimulateEventModal();
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const overlay = document.getElementById("simulateModalOverlay");
+          if (overlay?.classList.contains("is-open")) {
+            closeSimulateEventModal();
+          }
+        }
       });
 
       /* ANALYSIS */

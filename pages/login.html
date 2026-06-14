@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Sign In | OpenDyna</title>
+  <link rel="icon" sizes="16x16" type="image/x-icon" href="../OD_Logo_16x16.ico">
+  <link rel="icon" sizes="32x32" type="image/x-icon" href="../OD_Logo_32x32.ico">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../styles/auth.css">
+</head>
+<body>
+  <div class="window auth-window">
+    <div class="title-bar">
+      <div class="title-bar-text">OpenDyna Sign In</div>
+      <div class="title-bar-controls" aria-hidden="true">
+        <button tabindex="-1"></button>
+        <button tabindex="-1"></button>
+        <button tabindex="-1"></button>
+      </div>
+    </div>
+    <nav class="menu-bar" aria-label="Site navigation">
+      <ul class="menu">
+        <li><a href="../index.html">Home</a></li>
+      </ul>
+    </nav>
+    <main class="auth-main">
+      <h1>Sign in to OpenDyna</h1>
+      <p>Use your LinkedIn account to access OpenDyna's professional engineering tools and account features.</p>
+      <section class="auth-disclosure" aria-labelledby="dataDisclosureTitle">
+        <h2 id="dataDisclosureTitle">Before you continue</h2>
+        <p>
+          OpenDyna will receive your LinkedIn name, email address, LinkedIn
+          account identifier, and any profile image included by LinkedIn. We
+          use this information only to create and authenticate your OpenDyna
+          account and do not sell it or use it for advertising.
+        </p>
+        <p>
+          Authentication data is processed and stored by Supabase. You can
+          withdraw consent and delete your OpenDyna account and associated
+          LinkedIn-derived data from the account page.
+        </p>
+        <p>
+          Read the <a href="privacy.html">Privacy Policy</a> and
+          <a href="terms.html">User Agreement</a> for retention, disclosure,
+          security, and deletion details.
+        </p>
+      </section>
+      <label class="consent-control">
+        <input id="authConsent" type="checkbox">
+        <span>
+          I consent to the collection and use described above and agree to the
+          Privacy Policy and User Agreement.
+        </span>
+      </label>
+      <div class="auth-actions">
+        <button class="auth-button" id="linkedinLogin" type="button" disabled>
+          Continue with LinkedIn
+        </button>
+      </div>
+      <div class="auth-status" id="authStatus" role="status" aria-live="polite" hidden></div>
+    </main>
+    <footer>
+      <p>
+        &copy; 2026 OpenDyna. All rights reserved.
+        <a href="privacy.html">Privacy</a> |
+        <a href="terms.html">Terms</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/auth-client.js"></script>
+  <script src="../js/login.js"></script>
+</body>
+</html>
