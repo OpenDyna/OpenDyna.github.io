@@ -6,3 +6,6 @@ __pycache__/
 
 # Local reference copy; link to LinkedIn's current online terms in public docs.
 docs/LinkedIn_API_Terms_of_Use.txt
+
+# Supabase CLI local project-link metadata.
+supabase/.temp/
