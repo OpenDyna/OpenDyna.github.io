@@ -1,5 +1,5 @@
 {
-  "rows": 4658,
+  "rows": 4886,
   "competitions": [
     "Formula SAE California",
     "Formula SAE Electric",
@@ -39,6 +39,7 @@
     2022,
     2023,
     2024,
-    2025
+    2025,
+    2026
   ]
 }
