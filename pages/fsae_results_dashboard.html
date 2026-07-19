@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="en" class="auth-guard-pending">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>FSAE Results Dashboard</title>
-<link rel="stylesheet" href="../styles/protected-page.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1"></script>
-<script src="../js/supabase-config.js"></script>
-<script src="../js/auth-client.js"></script>
-<script src="../js/protected-page.js"></script>
 <style>
 .watermark{fill:var(--muted);font-size:36px;font-weight:700;letter-spacing:.04em;opacity:.5;pointer-events:none}
-:root{--bg:#0b0b0c;--panel:#151516;--panel2:#101011;--line:#343436;--text:#eeeeee;--muted:#a3a3a3;--control:#202124;--controlHover:#2a2b2e;--tableHead:#1d1d1f;--rowHover:#242426;--shadow:#0008;--pointStroke:#050505;--pointHover:#fff;--scrollThumb:#4b4b4f;--scrollTrack:#151516;--check:#d4d4d8;--checkMark:#111;--gap:7px;--h:32px;--r:8px;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}body.light{--bg:#f4f4f5;--panel:#ffffff;--panel2:#fafafa;--line:#d4d4d8;--text:#18181b;--muted:#71717a;--control:#f4f4f5;--controlHover:#e4e4e7;--tableHead:#eeeeef;--rowHover:#f0f0f1;--shadow:#0002;--pointStroke:#fff;--pointHover:#000;--scrollThumb:#a1a1aa;--scrollTrack:#f4f4f5;--check:#27272a;--checkMark:#fff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-size:13px;overflow:hidden}button,input,select{height:var(--h);border:1px solid var(--line);border-radius:8px;background:var(--control);color:var(--text);padding:0 10px;font:inherit}button{cursor:pointer}button:hover{background:var(--controlHover);border-color:var(--muted)}select{width:100%;min-height:var(--h)}input[type=checkbox]{appearance:none;width:14px;height:14px;min-width:14px;padding:0;border:1px solid var(--line);border-radius:3px;background:var(--control);display:grid;place-content:center}input[type=checkbox]::after{content:"";width:8px;height:8px;transform:scale(0);background:var(--checkMark);clip-path:polygon(14% 44%,0 59%,40% 100%,100% 18%,84% 6%,38% 68%)}input[type=checkbox]:checked{background:var(--check);border-color:var(--check)}input[type=checkbox]:checked::after{transform:scale(1)}.app{height:100vh;display:flex;gap:0}.panel{background:var(--panel);border-right:1px solid var(--line);overflow:auto}.left{width:310px;min-width:230px;max-width:520px;padding:10px}.main{flex:1;display:flex;min-width:0;background:var(--bg)}.plotPane{flex:1 1 auto;min-width:320px;padding:10px;display:flex;flex-direction:column;gap:var(--gap)}.rowsPane{width:430px;flex:0 0 430px;min-width:260px;max-width:780px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}.splitter{width:0;position:relative;cursor:col-resize;z-index:10;touch-action:none;user-select:none}.splitter::after{content:"";position:absolute;top:0;bottom:0;left:-4px;width:8px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px}.controls{display:flex;flex-direction:column;gap:7px}.panelTitle{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin:0 0 6px}.row{display:flex;gap:var(--gap);align-items:center}.row>*{flex:1}.label{font-size:11px;color:var(--muted);margin:0 0 3px}.checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px}#competitionChecks{grid-template-columns:1fr}#yearChecks{grid-template-columns:1fr 1fr 1fr}.checkgrid label,.inlineCheck{display:flex;gap:6px;align-items:center;color:var(--text);white-space:nowrap;line-height:1.25}.btnrow{display:flex;gap:var(--gap);margin-top:7px}.btnrow button{flex:1}.searchGap{margin-bottom:6px}.modeControl{display:none}.modeControl.active{display:block;margin-top:6px}h1{font-size:16px;margin:0 0 9px}.small{font-size:12px;color:var(--muted)}#chartWrap{flex:1;min-height:420px;position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}svg{width:100%;height:100%;display:block}.tooltip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:0 8px 26px var(--shadow);color:var(--text);font-size:12px;max-width:320px;display:none;z-index:20}.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:999px;padding:3px 8px;background:var(--control)}.rowsHead{padding:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:var(--gap)}.tableWrap{overflow:auto;min-height:0;flex:1}.panel,.tableWrap{scrollbar-color:var(--scrollThumb) var(--scrollTrack);scrollbar-width:thin}.panel::-webkit-scrollbar,.tableWrap::-webkit-scrollbar{width:10px;height:10px}.panel::-webkit-scrollbar-track,.tableWrap::-webkit-scrollbar-track{background:var(--scrollTrack)}.panel::-webkit-scrollbar-thumb,.tableWrap::-webkit-scrollbar-thumb{background:var(--scrollThumb);border:2px solid var(--scrollTrack);border-radius:999px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}th{position:sticky;top:0;background:var(--tableHead);z-index:1;cursor:pointer;color:var(--text)}tr:hover{background:var(--rowHover)}.muted{color:var(--muted)}.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sw{display:inline-block;width:10px;height:10px;border:1px solid var(--line);border-radius:99px;margin-right:5px}.sectionTitle{font-weight:700;margin-top:4px}.note{line-height:1.35}.linePath{fill:none;stroke-width:2;opacity:.85}.axisLabel{fill:var(--text);font-size:14px}.tick{fill:var(--muted);font-size:12px}.grid{stroke:var(--line);stroke-width:1}.axis{stroke:var(--muted);stroke-width:1}.pt{stroke:var(--pointStroke);stroke-width:1;opacity:.86}.pt:hover{opacity:1;stroke:var(--pointHover);stroke-width:2}
+:root{--bg:#0b0b0c;--panel:#151516;--panel2:#101011;--line:#343436;--text:#eeeeee;--muted:#a3a3a3;--control:#202124;--controlHover:#2a2b2e;--tableHead:#1d1d1f;--rowHover:#242426;--shadow:#0008;--pointStroke:#050505;--pointHover:#fff;--scrollThumb:#4b4b4f;--scrollTrack:#151516;--check:#d4d4d8;--checkMark:#111;--sim:#facc15;--gap:7px;--h:32px;--r:8px;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}body.light{--bg:#f4f4f5;--panel:#ffffff;--panel2:#fafafa;--line:#d4d4d8;--text:#18181b;--muted:#71717a;--control:#f4f4f5;--controlHover:#e4e4e7;--tableHead:#eeeeef;--rowHover:#f0f0f1;--shadow:#0002;--pointStroke:#fff;--pointHover:#000;--scrollThumb:#a1a1aa;--scrollTrack:#f4f4f5;--check:#27272a;--checkMark:#fff;--sim:#d97706}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-size:13px;overflow:hidden}button,input,select{height:var(--h);border:1px solid var(--line);border-radius:8px;background:var(--control);color:var(--text);padding:0 10px;font:inherit}button{cursor:pointer}button:hover{background:var(--controlHover);border-color:var(--muted)}select{width:100%;min-height:var(--h)}input[type=checkbox]{appearance:none;width:14px;height:14px;min-width:14px;padding:0;border:1px solid var(--line);border-radius:3px;background:var(--control);display:grid;place-content:center}input[type=checkbox]::after{content:"";width:8px;height:8px;transform:scale(0);background:var(--checkMark);clip-path:polygon(14% 44%,0 59%,40% 100%,100% 18%,84% 6%,38% 68%)}input[type=checkbox]:checked{background:var(--check);border-color:var(--check)}input[type=checkbox]:checked::after{transform:scale(1)}.app{height:100vh;display:flex;gap:0}.panel{background:var(--panel);border-right:1px solid var(--line);overflow:auto}.left{width:310px;min-width:230px;max-width:520px;padding:10px}.main{flex:1;display:flex;min-width:0;background:var(--bg)}.plotPane{flex:1 1 auto;min-width:320px;padding:10px;display:flex;flex-direction:column;gap:var(--gap)}.rowsPane{width:430px;flex:0 0 430px;min-width:260px;max-width:780px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}.splitter{width:0;position:relative;cursor:col-resize;z-index:10;touch-action:none;user-select:none}.splitter::after{content:"";position:absolute;top:0;bottom:0;left:-4px;width:8px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px}.controls{display:flex;flex-direction:column;gap:7px}.panelTitle{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin:0 0 6px}.row{display:flex;gap:var(--gap);align-items:center}.row>*{flex:1}.label{font-size:11px;color:var(--muted);margin:0 0 3px}.checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px}#competitionChecks{grid-template-columns:1fr}#yearChecks{grid-template-columns:1fr 1fr 1fr}.checkgrid label,.inlineCheck{display:flex;gap:6px;align-items:center;color:var(--text);white-space:nowrap;line-height:1.25}.btnrow{display:flex;gap:var(--gap);margin-top:7px}.btnrow button{flex:1}.searchGap{margin-bottom:6px}.modeControl{display:none}.modeControl.active{display:block;margin-top:6px}h1{font-size:16px;margin:0 0 9px}.small{font-size:12px;color:var(--muted)}#chartWrap{flex:1;min-height:420px;position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}svg{width:100%;height:100%;display:block}.tooltip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:0 8px 26px var(--shadow);color:var(--text);font-size:12px;max-width:320px;display:none;z-index:20}.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:999px;padding:3px 8px;background:var(--control)}.rowsHead{padding:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:var(--gap)}.tableWrap{overflow:auto;min-height:0;flex:1}.panel,.tableWrap,.simBody{scrollbar-color:var(--scrollThumb) var(--scrollTrack);scrollbar-width:thin}.panel::-webkit-scrollbar,.tableWrap::-webkit-scrollbar,.simBody::-webkit-scrollbar{width:10px;height:10px}.panel::-webkit-scrollbar-track,.tableWrap::-webkit-scrollbar-track,.simBody::-webkit-scrollbar-track{background:var(--scrollTrack)}.panel::-webkit-scrollbar-thumb,.tableWrap::-webkit-scrollbar-thumb,.simBody::-webkit-scrollbar-thumb{background:var(--scrollThumb);border:2px solid var(--scrollTrack);border-radius:999px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}th{position:sticky;top:0;background:var(--tableHead);z-index:1;cursor:pointer;color:var(--text)}tr:hover{background:var(--rowHover)}tr.simRow{background:color-mix(in srgb,var(--sim) 15%,transparent)}tr.simRow td:first-child{box-shadow:inset 3px 0 var(--sim)}.muted{color:var(--muted)}.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sw{display:inline-block;width:10px;height:10px;border:1px solid var(--line);border-radius:99px;margin-right:5px}.sectionTitle{font-weight:700;margin-top:4px}.note{line-height:1.35}.linePath{fill:none;stroke-width:2;opacity:.85}.axisLabel{fill:var(--text);font-size:14px}.tick{fill:var(--muted);font-size:12px}.grid{stroke:var(--line);stroke-width:1}.axis{stroke:var(--muted);stroke-width:1}.pt{stroke:var(--pointStroke);stroke-width:1;opacity:.86}.pt:hover{opacity:1;stroke:var(--pointHover);stroke-width:2}.simPoint{fill:var(--sim);stroke:var(--pointHover);stroke-width:1.5;opacity:1}.simSplit{height:8px;flex:0 0 8px;position:relative;cursor:row-resize;touch-action:none;user-select:none;border-top:1px solid var(--line)}.simSplit::after{content:"";position:absolute;left:0;right:0;top:-4px;height:8px}.simPanel{height:330px;flex:0 0 330px;min-height:92px;max-height:70%;display:flex;flex-direction:column;overflow:hidden;background:var(--panel2);border-top:1px solid var(--line)}.simPanel.collapsed{height:46px!important;flex-basis:46px!important;min-height:46px}.simPanel.collapsed .simBody{display:none}.simPanel.collapsed+.simSplit{display:none}.simHead{height:45px;flex:0 0 45px;padding:7px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}.simHead .inlineCheck{font-weight:700;flex:1}.simHead button{height:30px;padding:0 9px}.simBody{padding:9px 10px 14px;overflow:auto}.simGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.simGrid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.simField{min-width:0}.simField input,.simField select{width:100%;min-width:0}.simSection{margin-top:12px;padding-top:9px;border-top:1px solid var(--line)}.simSection:first-child{margin-top:0;padding-top:0;border-top:0}.simSectionTitle{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}.simEvent{display:grid;grid-template-columns:minmax(92px,1.25fr) repeat(3,minmax(64px,1fr));gap:6px;align-items:end;margin-bottom:7px}.simEventName{font-weight:600;padding-bottom:8px}.simSummary{margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);line-height:1.45}.simStar{color:var(--sim);font-size:16px;line-height:1}
+.simPanel{height:260px;flex-basis:260px}.simPanel.collapsed{height:39px!important;flex:0 0 39px!important;min-height:39px}.simHead{height:38px;flex-basis:38px;padding:4px 8px}.simHead button{height:28px}.simBody{padding:6px 8px 9px}.simField input,.simField select{height:27px;min-height:27px;padding:0 7px;font-size:12px}.simSection{margin-top:7px;padding-top:6px}.simSectionTitle{margin-bottom:4px}.simGrid{gap:5px}.simEvent{gap:4px;margin-bottom:4px}.simEventName{padding-bottom:6px;font-size:12px}.simSummary{margin-top:7px;padding:6px;font-size:11px}.simRef{display:block;min-height:11px;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tableWrap{flex:1 1 0}.simPanel{height:auto;flex:1 1 0;min-height:120px;max-height:none}.simHead{height:34px;flex-basis:34px;padding:3px 7px}.simHead button{height:25px;border-radius:4px;font-size:11px}.simHead .inlineCheck{font-size:11px}.simBody{padding:5px 7px 7px;font-size:11px}.simGrid{gap:4px}.simGrid.two{grid-template-columns:minmax(0,1.6fr) minmax(72px,.7fr)}.simField .label{font-size:9px;line-height:1.1}.simField input,.simField select{height:24px;min-height:24px;border-radius:3px;padding:0 5px;font-size:11px}.simSection{margin-top:5px;padding-top:5px}.simSectionTitle{margin-bottom:3px;font-size:9px;letter-spacing:.07em}.simEventHeader,.simEvent{display:grid;grid-template-columns:88px minmax(96px,1fr) 54px 64px;gap:4px}.simEventHeader{padding:0 0 2px;color:var(--muted);font-size:8px;line-height:1;text-transform:uppercase;letter-spacing:.03em}.simEventHeader span:nth-child(n+3){text-align:center}.simEvent{align-items:center;margin:0;padding:3px 0;border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent)}.simEventName{padding:0;font-size:10px;font-weight:700}.simEvent .simField{display:block}.simEvent .simField input{text-align:right}.simRef{min-height:9px;margin-top:1px;font-size:8px;line-height:1}.simSummary{margin-top:5px;padding:4px 5px;border-radius:3px;font-size:10px;line-height:1.25}.simNote{margin-top:3px;color:var(--muted);font-size:8px;line-height:1.1}.simStar{font-size:13px}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.simSetupGrid .simContextGrid{grid-template-columns:minmax(130px,1.7fr) 64px}.simStaticGrid{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:3px}.simStaticGrid .simField{display:block}.simStaticGrid .label{display:block;margin:0 0 1px;white-space:nowrap;font-size:8px;line-height:1}.simField input,.simField select{height:22px;min-height:22px}.simStaticGrid input{height:20px;min-height:20px}.simEventHeader,.simEvent{grid-template-columns:88px minmax(96px,1fr) 60px 60px}.simEvent{align-items:start;padding:2px 0}.simEventName{padding-top:6px}.simEvent .simField:nth-child(2) input{text-align:right}.simEvent .simField:nth-child(3) input,.simEvent .simField:nth-child(4) input{text-align:center}.simRef{min-height:8px;font-size:8px}.simSummary{margin-top:2px;line-height:1.15}.simNote{margin-top:0}.simBody{padding-bottom:0}
+.simPanel input[type=number]{appearance:textfield;-moz-appearance:textfield}.simPanel input[type=number]::-webkit-inner-spin-button,.simPanel input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.simPanel input::placeholder{color:var(--muted);font-size:9px;opacity:.8}
+.simHead button{font-size:12px}.simHead .inlineCheck{font-size:12px}.simBody{font-size:12px}.simField .label{font-size:10px}.simField input,.simField select{font-size:12px}.simStaticGrid .label{font-size:9px}.simSectionTitle{font-size:10px}.simEventHeader{font-size:9px}.simEvent{padding:1px 0}.simEventName{font-size:11px}.simEvent .simField:nth-child(2) input{text-align:left}.simRef{font-size:9px}.simSummary{font-size:11px}.simNote{font-size:9px}.simStar{font-size:14px}.simPanel input::placeholder{font-size:10px}
 @media (max-width:900px){
   :root{--h:38px}
   body{overflow:auto}
@@ -22,6 +22,7 @@
   .plotPane{min-width:0;padding:8px}
   .splitter{display:none}
   .rowsPane{width:100%!important;max-width:none;min-width:0;flex:0 0 auto!important;height:52dvh;border-left:0;border-top:1px solid var(--line)}
+  .simPanel{max-height:none}
   #chartWrap{min-height:58dvh}
   .status{gap:6px}
   .pill{max-width:100%;overflow:hidden;text-overflow:ellipsis}
@@ -40,6 +41,10 @@
   .axisLabel{font-size:12px}
   .tick{font-size:10px}
   .tooltip{max-width:calc(100vw - 32px)}
+  .simGrid,.simGrid.two{grid-template-columns:1fr 1fr}
+  .simEvent{grid-template-columns:1fr 1fr}
+  .simEventName{grid-column:1/-1;padding-bottom:0}
+  .simEventHeader{display:none}
 }
 </style>
 </head>
@@ -93,12 +98,72 @@
         <input id="teamSearch" placeholder="Search team..." />
       </div>
       <div class="tableWrap" id="tableWrap"><table id="rowsTable"></table></div>
+      <div class="simSplit" id="splitSimulator"></div>
+      <section class="simPanel" id="simPanel">
+        <div class="simHead">
+          <label class="inlineCheck"><input type="checkbox" id="simEnabled"> <span class="simStar">★</span> Simulated Results</label>
+          <button id="simAllFirst" type="button" title="Populate the best observed values">All First</button>
+          <button id="simClear" type="button" title="Clear all simulated result values">Clear</button>
+          <button id="simCollapse" type="button" aria-expanded="true" aria-controls="simBody">Collapse</button>
+        </div>
+        <div class="simBody" id="simBody">
+          <div class="simSection simSetupGrid">
+            <div class="simGrid simContextGrid">
+              <label class="simField"><span class="label">Competition</span><select id="simCompetition"></select></label>
+              <label class="simField"><span class="label">Year</span><select id="simYear"></select></label>
+            </div>
+            <div class="simGrid simStaticGrid">
+              <label class="simField"><span class="label">Pres. /75</span><input id="simPresentation" type="number" min="0" max="75" step="0.1" placeholder="Presentation Score"></label>
+              <label class="simField"><span class="label">Adj. Cost ($)</span><input id="simAdjustedCost" type="number" min="0" step="1" placeholder="Adjusted Cost Range"></label>
+              <label class="simField"><span class="label">Cost A/D/S /70</span><input id="simCostJudged" type="number" min="0" max="70" step="0.1" placeholder="A/D/S Score"></label>
+              <label class="simField"><span class="label">Design /150</span><input id="simDesign" type="number" min="0" max="150" step="0.1" placeholder="Design Score"></label>
+            </div>
+          </div>
+          <div class="simSection">
+            <div class="simSectionTitle">Dynamic event best runs</div>
+            <div class="simEventHeader" aria-hidden="true">
+              <span>Event</span><span>Time / observed range</span><span>Cones</span><span>Off-course</span>
+            </div>
+            <div class="simEvent">
+              <div class="simEventName">Acceleration</div>
+              <label class="simField"><span class="srOnly">Acceleration time in seconds</span><input id="simAccelerationTime" aria-label="Acceleration time in seconds" type="number" min="0" step="0.001" placeholder="Acceleration Best Raw Time"><span class="simRef" id="simAccelerationRange"></span></label>
+              <label class="simField"><span class="srOnly">Acceleration cones</span><input id="simAccelerationCones" aria-label="Acceleration cones" type="number" min="0" step="1" placeholder="Cones"></label>
+              <label class="simField"><span class="srOnly">Acceleration off-course count</span><input id="simAccelerationOC" aria-label="Acceleration off-course count" type="number" min="0" step="1" placeholder="Off-course"></label>
+            </div>
+            <div class="simEvent">
+              <div class="simEventName">Skidpad</div>
+              <label class="simField"><span class="srOnly">Skidpad best average raw time in seconds</span><input id="simSkidpadTime" aria-label="Skidpad best average raw time in seconds" type="number" min="0" step="0.001" placeholder="Skidpad Best Average Raw Time"><span class="simRef" id="simSkidpadRange"></span></label>
+              <label class="simField"><span class="srOnly">Skidpad cones</span><input id="simSkidpadCones" aria-label="Skidpad cones" type="number" min="0" step="1" placeholder="Cones"></label>
+              <label class="simField"><span class="srOnly">Skidpad off-course count</span><input id="simSkidpadOC" aria-label="Skidpad off-course count" type="number" min="0" step="1" placeholder="Off-course"></label>
+            </div>
+            <div class="simEvent">
+              <div class="simEventName">Autocross</div>
+              <label class="simField"><span class="srOnly">Autocross time in seconds</span><input id="simAutocrossTime" aria-label="Autocross time in seconds" type="number" min="0" step="0.001" placeholder="Autocross Best Raw Time"><span class="simRef" id="simAutocrossRange"></span></label>
+              <label class="simField"><span class="srOnly">Autocross cones</span><input id="simAutocrossCones" aria-label="Autocross cones" type="number" min="0" step="1" placeholder="Cones"></label>
+              <label class="simField"><span class="srOnly">Autocross off-course count</span><input id="simAutocrossOC" aria-label="Autocross off-course count" type="number" min="0" step="1" placeholder="Off-course"></label>
+            </div>
+            <div class="simEvent">
+              <div class="simEventName">Endurance</div>
+              <label class="simField"><span class="srOnly">Endurance total time in seconds</span><input id="simEnduranceTime" aria-label="Endurance total time in seconds" type="number" min="0" step="0.01" placeholder="Endurance Total Raw Time"><span class="simRef" id="simEnduranceRange"></span></label>
+              <label class="simField"><span class="srOnly">Endurance cones</span><input id="simEnduranceCones" aria-label="Endurance cones" type="number" min="0" step="1" placeholder="Cones"></label>
+              <label class="simField"><span class="srOnly">Endurance off-course count</span><input id="simEnduranceOC" aria-label="Endurance off-course count" type="number" min="0" step="1" placeholder="Off-course"></label>
+            </div>
+            <div class="simGrid">
+              <label class="simField"><span class="label">Endurance laps</span><input id="simEnduranceLaps" type="number" min="0" step="1" placeholder="Endurance Laps"><span class="simRef" id="simLapsRange"></span></label>
+              <label class="simField"><span class="label">Fuel type</span><select id="simFuelType"><option value="gasoline">Gasoline</option><option value="e85">E85</option><option value="electric">Electric</option></select></label>
+              <label class="simField"><span class="label" id="simFuelUsedLabel">Fuel used (L)</span><input id="simFuelUsed" type="number" min="0" step="0.001" placeholder="Fuel Used"><span class="simRef" id="simFuelRange"></span></label>
+            </div>
+          </div>
+          <div class="simSummary" id="simSummary">Enable the simulator to add the hypothetical team.</div>
+          <div class="simNote">2026 formulas · historical approximation · proportional lap score</div>
+        </div>
+      </section>
     </aside>
   </main>
 </div>
 <script src="fsae_school_canonicalization.js"></script>
 <script>
-let RAW_DATA=[], DATA=[], METRICS=[], metricMap={}, omitted=new Set(), sortCol='total_score_clean', sortDir='desc', competitionColors={}, tableState={cols:[],data:[],rowH:31}, ready=false;
+let RAW_DATA=[], DATA=[], METRICS=[], metricMap={}, omitted=new Set(), sortCol='total_score_clean', sortDir='desc', competitionColors={}, tableState={cols:[],data:[],rowH:31}, ready=false, lastSimResult=null;
 const competitionPalette=['#38bdf8','#f97316','#22c55e','#e879f9','#f43f5e','#a3e635','#8b5cf6','#facc15'];
 const integerKeys=new Set(['rank','rank_by_y','year','car_num','engine_cylinders','num_motors']);
 const DIST_KEY='__y_distribution';
@@ -113,7 +178,12 @@ function metricLabel(k){return metricMap[k]?.label||k}
 function isIntegerKey(k){return integerKeys.has(k)||metricMap[k]?.integer===true}
 function fmt(v,k){if(v===null||v===undefined||v==='')return ''; let n=+v; if(!Number.isFinite(n))return String(v); if(isIntegerKey(k))return String(Math.round(n)); return Math.abs(n)>=100? n.toFixed(1): n.toFixed(2).replace(/\.00$/,'')}
 function zeroNullKey(k){return $('zeroAsNull')?.checked&&metricMap[k]&&k!=='year'&&k!=='car_num'&&k!=='rank_by_y'&&k!=='rank'}
-function valueOf(r,k){let v=r[k]; return zeroNullKey(k)&&hasNum(v)&&toNum(v)===0?null:v}
+function valueOf(r,k){
+  let v=r[k],missing=v===null||v===undefined||v==='';
+  if(k==='endurance_efficiency_score'&&missing&&(num(r.total_score_clean)>0||num(r.total_score)>0))v=num(r.endurance_score)+num(r.efficiency_score);
+  if(r.__simulated&&metricMap[k]&&(v===null||v===undefined||v===''))return 0;
+  return !r.__simulated&&zeroNullKey(k)&&hasNum(v)&&toNum(v)===0?null:v;
+}
 function hasMetricNum(r,k){return hasNum(valueOf(r,k))}
 function metricNum(r,k){return toNum(valueOf(r,k))}
 function isCompetitionMetric(k){return metricMap[k]?.group==='Competition'}
@@ -128,6 +198,7 @@ function initControls(){
   competitionColors=Object.fromEntries(comps.map((c,i)=>[c,i]));
   $('competitionChecks').innerHTML=comps.map(c=>`<label><input type="checkbox" class="comp" value="${esc(c)}" checked> ${esc(c)}</label>`).join('');
   $('yearChecks').innerHTML=years.map(y=>`<label><input type="checkbox" class="yr" value="${y}" checked> ${y}</label>`).join('');
+  initSimulator(comps);
   populateSchoolSelect();
   document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',render));
   $('tableWrap').addEventListener('scroll',scheduleTableRender,{passive:true});
@@ -141,6 +212,293 @@ function initControls(){
   observeChartSize();
   splitters();
 }
+function initSimulator(comps){
+  $('simCompetition').innerHTML=comps.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  $('simCompetition').value=comps.includes('Formula SAE Michigan')?'Formula SAE Michigan':comps[0]||'';
+  populateSimYears();
+  syncSimFuelTypeToCompetition();
+  $('simCompetition').addEventListener('change',()=>{populateSimYears();syncSimFuelTypeToCompetition();ensureSimFilters();render()});
+  $('simYear').addEventListener('change',()=>{ensureSimFilters();updateSimReferences();render()});
+  $('simEnabled').addEventListener('change',()=>{if($('simEnabled').checked)ensureSimFilters();render()});
+  $('simFuelType').addEventListener('change',updateSimFuelLabel);
+  $('simAllFirst').onclick=()=>applySimPreset('first');
+  $('simClear').onclick=clearSimInputs;
+  $('simCollapse').onclick=()=>{let p=$('simPanel'),collapsed=p.classList.toggle('collapsed'); $('splitSimulator').style.display=collapsed?'none':''; $('simCollapse').textContent=collapsed?'Expand':'Collapse'; $('simCollapse').setAttribute('aria-expanded',String(!collapsed)); renderVirtualRows();schedulePlotRedraw()};
+  updateSimFuelLabel();
+}
+function clearSimInputs(){
+  document.querySelectorAll('#simBody input[type="number"]').forEach(input=>{input.value=''});
+  render();
+}
+function populateSimYears(){
+  let comp=$('simCompetition').value,years=[...new Set(DATA.filter(r=>r.competition===comp).map(r=>+r.year).filter(Number.isFinite))].sort((a,b)=>b-a),old=+$('simYear').value;
+  $('simYear').innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  $('simYear').value=years.includes(old)?String(old):String(years[0]??'');
+}
+function syncSimFuelTypeToCompetition(){
+  const types=new Set(DATA.filter(r=>r.competition===$('simCompetition').value).map(r=>r.vehicle_type));
+  const electricOnly=types.has('EV')&&!types.has('IC'),icOnly=types.has('IC')&&!types.has('EV');
+  const fuel=$('simFuelType');
+  [...fuel.options].forEach(option=>{
+    option.disabled=(electricOnly&&option.value!=='electric')||(icOnly&&option.value==='electric');
+  });
+  if(electricOnly)fuel.value='electric';
+  else if(icOnly&&fuel.value==='electric')fuel.value='gasoline';
+  updateSimFuelLabel();
+}
+function updateSimFuelLabel(){let electric=$('simFuelType').value==='electric';$('simFuelUsedLabel').textContent=electric?'Energy used (kWh)':'Fuel used (L)';$('simFuelUsed').placeholder=electric?'Energy Used':'Fuel Used';updateSimReferences()}
+function refNumber(v,digits=3){let s=(+v).toFixed(digits);return digits?s.replace(/0+$/,'').replace(/\.$/,''):s}
+function setRange(id,values,unit,digits=3){
+  values=values.map(toNum).filter(v=>Number.isFinite(v)&&v>0);
+  $(id).textContent=values.length?`${refNumber(Math.min(...values),digits)}–${refNumber(Math.max(...values),digits)}${unit}`:'No data';
+}
+function updateSimReferences(){
+  if(!DATA.length||!$('simCompetition').value||!$('simYear').value)return;
+  const comp=$('simCompetition').value,year=+$('simYear').value,type=simVehicleType(),field=DATA.filter(r=>r.competition===comp&&+r.year===year&&r.vehicle_type===type);
+  setRange('simAccelerationRange',field.map(r=>r.acceleration_best_time_raw),'s');
+  setRange('simSkidpadRange',field.map(r=>r.skidpad_best_time_raw_average),'s');
+  setRange('simAutocrossRange',field.map(r=>r.autocross_best_time_raw),'s');
+  setRange('simEnduranceRange',field.map(r=>r.endurance_time_raw),'s',0);
+  const maxLaps=Math.max(0,...field.map(r=>num(r.endurance_number_of_laps)));
+  $('simLapsRange').textContent=maxLaps?`Max ${fmt(maxLaps,'endurance_number_of_laps')} laps`:'No data';
+  $('simEnduranceLaps').max=maxLaps||'';
+  const costs=field.map(r=>toNum(r.cost_adjusted_cost)).filter(v=>Number.isFinite(v)&&v>0);
+  $('simAdjustedCost').placeholder=costs.length?`$${Math.round(Math.min(...costs)).toLocaleString()}–$${Math.round(Math.max(...costs)).toLocaleString()}`:'No cost data';
+  const kind=$('simFuelType').value,used=field.filter(r=>fuelKind(r)===kind).map(r=>kind==='electric'?r.efficiency_energy_used_kwh:r.efficiency_fuel_used_ltr);
+  setRange('simFuelRange',used,kind==='electric'?'kWh':'L');
+}
+function ensureSimFilters(){
+  if(!$('simEnabled').checked)return;
+  document.querySelectorAll('.comp').forEach(e=>{if(e.value===$('simCompetition').value)e.checked=true});
+  document.querySelectorAll('.yr').forEach(e=>{if(e.value===$('simYear').value)e.checked=true});
+}
+function observedExtreme(values,mode,highIsGood=false,zeroIsBest=false){
+  let nums=values.map(toNum).filter(Number.isFinite);
+  if(mode==='last'){
+    nums=nums.filter(v=>v>0);
+    return nums.length?(highIsGood?Math.min(...nums):Math.max(...nums)):null;
+  }
+  if(highIsGood){
+    nums=nums.filter(v=>v>0);
+    return nums.length?Math.max(...nums):null;
+  }
+  if(zeroIsBest)return 0;
+  nums=nums.filter(v=>v>0);
+  return nums.length?Math.min(...nums):null;
+}
+function costJudgedValues(field){
+  return field.map(r=>{
+    const keys=['cost_accuracy_score','cost_engineering_drawings_score','cost_scenario_score'],values=keys.map(k=>toNum(r[k])),present=values.some(Number.isFinite);
+    return present?values.reduce((sum,v)=>sum+(Number.isFinite(v)?v:0),0):null;
+  });
+}
+function inferredPriceScore(field,adjustedCost){
+  if(!Number.isFinite(adjustedCost)||adjustedCost<=0)return 0;
+  const pairs=field.map(r=>[toNum(r.cost_adjusted_cost),toNum(r.cost_price_score)]).filter(([cost,score])=>Number.isFinite(cost)&&cost>0&&Number.isFinite(score)&&score>=0);
+  if(!pairs.length)return 0;
+  const maxPrice=Math.max(...pairs.map(([,score])=>score));
+  const minObservedCost=Math.min(...pairs.map(([cost])=>cost));
+  if(adjustedCost<=minObservedCost)return maxPrice;
+  if(pairs.length===1)return clamp(pairs[0][1],0,maxPrice);
+  const meanCost=pairs.reduce((s,[cost])=>s+cost,0)/pairs.length,meanScore=pairs.reduce((s,[,score])=>s+score,0)/pairs.length;
+  const variance=pairs.reduce((s,[cost])=>s+(cost-meanCost)**2,0),covariance=pairs.reduce((s,[cost,score])=>s+(cost-meanCost)*(score-meanScore),0);
+  if(!variance)return clamp(meanScore,0,maxPrice);
+  return clamp(meanScore+covariance/variance*(adjustedCost-meanCost),0,maxPrice);
+}
+function applySimPreset(mode){
+  const comp=$('simCompetition').value,year=+$('simYear').value,type=simVehicleType(),field=DATA.filter(r=>r.competition===comp&&+r.year===year&&r.vehicle_type===type);
+  const fields=[
+    ['simPresentation','presentation_score',true],['simDesign','design_score',true],
+    ['simAccelerationTime','acceleration_best_time_raw'],['simAccelerationCones','acceleration_best_time_cones',false,true],['simAccelerationOC','acceleration_off_course',false,true],
+    ['simSkidpadTime','skidpad_best_time_raw_average'],['simSkidpadCones','skidpad_best_time_cones',false,true],['simSkidpadOC','skidpad_off_course',false,true],
+    ['simAutocrossTime','autocross_best_time_raw'],['simAutocrossCones','autocross_best_time_cones',false,true],['simAutocrossOC','autocross_best_time_off_course',false,true],
+    ['simEnduranceTime','endurance_time_raw'],['simEnduranceCones','endurance_cones',false,true],['simEnduranceOC','endurance_off_course',false,true],
+    ['simEnduranceLaps','endurance_number_of_laps',true]
+  ];
+  fields.forEach(([id,key,highIsGood=false,zeroIsBest=false])=>{let v=observedExtreme(field.map(r=>r[key]),mode,highIsGood,zeroIsBest);$(id).value=v===null?'':String(v)});
+  let adjustedCost=observedExtreme(field.map(r=>r.cost_adjusted_cost),mode),judged=observedExtreme(costJudgedValues(field),mode,true);
+  $('simAdjustedCost').value=adjustedCost===null?'':String(adjustedCost);
+  $('simCostJudged').value=judged===null?'':String(judged);
+  const kind=$('simFuelType').value,fullLaps=Math.max(0,...field.map(r=>num(r.endurance_number_of_laps))),fuelValues=field.filter(r=>fuelKind(r)===kind&&fullLaps>0&&num(r.endurance_number_of_laps)>=fullLaps).map(r=>kind==='electric'?r.efficiency_energy_used_kwh:r.efficiency_fuel_used_ltr);
+  let fuel=observedExtreme(fuelValues,mode);
+  $('simFuelUsed').value=fuel===null?'':String(fuel);
+  $('simEnabled').checked=true;
+  ensureSimFilters();
+  render();
+}
+function simInput(id){let e=$(id),v=e?.value; return v===undefined||v===null||String(v).trim()===''?null:Math.max(0,+v)}
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,Number.isFinite(+v)?+v:lo))}
+function simVehicleType(){return $('simFuelType').value==='electric'?'EV':'IC'}
+function displayData(){return $('simEnabled')?.checked?buildScenarioData(DATA):DATA}
+function buildScenarioData(base){
+  const comp=$('simCompetition').value,year=+$('simYear').value,vehicleType=simVehicleType();
+  if(!comp||!Number.isFinite(year))return base;
+  const field=base.filter(r=>r.competition===comp&&+r.year===year&&r.vehicle_type===vehicleType).map(r=>({...r}));
+  const fieldKeys=new Set(field.map(rowKey));
+  const fullLaps=Math.max(0,...field.map(r=>num(r.endurance_number_of_laps)));
+  const enteredLaps=simInput('simEnduranceLaps')||0,simLaps=fullLaps?Math.min(enteredLaps,fullLaps):enteredLaps;
+  $('simEnduranceLaps').max=fullLaps||'';
+  const fuelType=$('simFuelType').value;
+  const fuelUsed=simInput('simFuelUsed');
+  const adjustedCost=simInput('simAdjustedCost'),costJudged=clamp(simInput('simCostJudged'),0,70),costPrice=inferredPriceScore(field,adjustedCost),costScore=clamp(costPrice+costJudged,0,100);
+  const sim={
+    competition:comp,year,vehicle_type:vehicleType,source_file:'simulation',team:'Simulated Results',team_normalized:'Simulated Results',car_num:'SIM',country:'',entry_id:'__simulated__',event_id:`SIM|${comp}|${year}|${vehicleType}`,__simulated:true,
+    presentation_raw_score:clamp(simInput('simPresentation'),0,75),presentation_score:clamp(simInput('simPresentation'),0,75),
+    cost_adjusted_cost:adjustedCost,cost_price_score:costPrice,cost_judged_score:costJudged,cost_score:costScore,design_raw_score:clamp(simInput('simDesign'),0,150),design_score:clamp(simInput('simDesign'),0,150),
+    acceleration_number_of_runs:simInput('simAccelerationTime')===null?0:1,acceleration_best_time_raw:simInput('simAccelerationTime'),acceleration_best_time_cones:simInput('simAccelerationCones'),acceleration_off_course:simInput('simAccelerationOC'),
+    skidpad_number_of_runs:simInput('simSkidpadTime')===null?0:1,skidpad_best_time_raw_average:simInput('simSkidpadTime'),skidpad_best_time_cones:simInput('simSkidpadCones'),skidpad_off_course:simInput('simSkidpadOC'),
+    autocross_number_of_runs:simInput('simAutocrossTime')===null?0:1,autocross_best_time_raw:simInput('simAutocrossTime'),autocross_best_time_cones:simInput('simAutocrossCones'),autocross_best_time_off_course:simInput('simAutocrossOC'),
+    endurance_number_of_laps:simLaps,endurance_time_raw:simInput('simEnduranceTime'),endurance_cones:simInput('simEnduranceCones'),endurance_off_course:simInput('simEnduranceOC'),endurance_other_penalty:0,
+    efficiency_laps_completed:simLaps,efficiency_fuel_type_e85_93_100_ev_etc:fuelType==='electric'?'EV':fuelType==='e85'?'E85':'93',
+    efficiency_fuel_used_ltr:fuelType==='electric'?null:fuelUsed,efficiency_energy_used_kwh:fuelType==='electric'?fuelUsed:null,penalty:0
+  };
+  const rescored=rescoreField(field.concat(sim),fullLaps);
+  const simulated=rescored.find(r=>r.__simulated);
+  lastSimResult={row:simulated,fullLaps,fieldSize:rescored.length};
+  updateSimSummary(lastSimResult);
+  return base.filter(r=>!fieldKeys.has(rowKey(r))).concat(rescored);
+}
+function correctedTimes(r){
+  const accelRaw=toNum(r.acceleration_best_time_raw),accelCones=num(r.acceleration_best_time_cones),accelOC=num(r.acceleration_off_course);
+  const skidRaw=toNum(r.skidpad_best_time_raw_average),skidCones=num(r.skidpad_best_time_cones),skidOC=num(r.skidpad_off_course);
+  const autoRaw=toNum(r.autocross_best_time_raw),autoCones=num(r.autocross_best_time_cones),autoOC=num(r.autocross_best_time_off_course);
+  const endRaw=toNum(r.endurance_time_raw),endCones=num(r.endurance_cones),endOC=num(r.endurance_off_course),endOther=num(r.endurance_other_penalty);
+  return {
+    acceleration:Number.isFinite(accelRaw)&&accelRaw>0&&!accelOC?accelRaw+accelCones*2:null,
+    skidpad:Number.isFinite(skidRaw)&&skidRaw>0&&!skidOC?skidRaw+skidCones*.125:null,
+    autocross:Number.isFinite(autoRaw)&&autoRaw>0?autoRaw+autoCones*2+autoOC*20:null,
+    endurance:Number.isFinite(endRaw)&&endRaw>0?endRaw+endCones*2+endOC*20+endOther:null
+  };
+}
+function timeScore(t,tmin,mult,variable,floor=0,power=1){
+  if(!Number.isFinite(t)||!Number.isFinite(tmin)||tmin<=0)return 0;
+  const tmax=mult*tmin;
+  if(t>=tmax)return floor;
+  const ratio=Math.pow(tmax/t,power)-1,den=Math.pow(tmax/tmin,power)-1;
+  return clamp(variable*ratio/den+floor,0,variable+floor);
+}
+function enduranceLapScore(laps,fullLaps){return fullLaps?25*clamp(num(laps)/fullLaps,0,1):0}
+function fuelKind(r){let f=String(r.efficiency_fuel_type_e85_93_100_ev_etc||'').toUpperCase(); return r.vehicle_type==='EV'||f==='EV'?'electric':f.includes('E85')?'e85':'gasoline'}
+function rowCO2(r){
+  const kind=fuelKind(r),used=kind==='electric'?toNum(r.efficiency_energy_used_kwh):toNum(r.efficiency_fuel_used_ltr);
+  if(!Number.isFinite(used)||used<=0)return null;
+  return used*(kind==='electric'?.65:kind==='e85'?1.65:2.31);
+}
+function rescoreField(rows,fullLaps){
+  const sim=rows.find(r=>r.__simulated),existing=rows.filter(r=>!r.__simulated),scoreKeys=['acceleration_score','skidpad_score','autocross_score','endurance_score','efficiency_score'];
+  existing.forEach(r=>{r.__baseline=Object.fromEntries(scoreKeys.map(k=>[k,num(r[k])]))});
+  rows.forEach(r=>{r.__times=correctedTimes(r)});
+  const minExisting=k=>Math.min(...existing.map(r=>r.__times[k]).filter(v=>Number.isFinite(v)&&v>0));
+  const mins={acceleration:minExisting('acceleration'),skidpad:minExisting('skidpad'),autocross:minExisting('autocross')};
+  const eventRules={
+    acceleration:[1.5,95.5,4.5,1,'acceleration_best_adjusted_time'],
+    skidpad:[1.25,71.5,3.5,2,'skidpad_best_adjusted_time'],
+    autocross:[1.45,118.5,6.5,1,'autocross_best_adjusted_time']
+  };
+  Object.entries(eventRules).forEach(([key,[mult,variable,floor,power,adjustedKey]])=>{
+    sim[adjustedKey]=sim.__times[key];
+    sim[key+'_score']=timeScore(sim.__times[key],mins[key],mult,variable,floor,power);
+    if(Number.isFinite(sim.__times[key])&&sim.__times[key]<mins[key]){
+      existing.forEach(r=>{r[key+'_score']=timeScore(r.__times[key],sim.__times[key],mult,variable,floor,power)});
+      mins[key]=sim.__times[key];
+    }
+  });
+  const existingFinishers=existing.filter(r=>fullLaps>0&&num(r.endurance_number_of_laps)>=fullLaps&&Number.isFinite(r.__times.endurance));
+  mins.endurance=Math.min(...existingFinishers.map(r=>r.__times.endurance));
+  const simLaps=num(sim.endurance_number_of_laps),simComplete=fullLaps>0&&simLaps>=fullLaps;
+  sim.endurance_time_adjusted=sim.__times.endurance;
+  sim.endurance_time_score=simComplete?timeScore(sim.__times.endurance,mins.endurance,1.45,250,0):0;
+  sim.endurance_lap_score=enduranceLapScore(simLaps,fullLaps);
+  sim.endurance_score=sim.endurance_time_score+sim.endurance_lap_score;
+  if(simComplete&&Number.isFinite(sim.__times.endurance)&&sim.__times.endurance<mins.endurance){
+    existing.forEach(r=>{
+      const laps=toNum(r.endurance_number_of_laps);
+      if(!Number.isFinite(laps)||laps<=0)return;
+      const complete=laps>=fullLaps,lapScore=enduranceLapScore(laps,fullLaps);
+      if(complete&&Number.isFinite(r.__times.endurance)){
+        r.endurance_time_score=timeScore(r.__times.endurance,sim.__times.endurance,1.45,250,0);
+        r.endurance_lap_score=lapScore;
+        r.endurance_score=r.endurance_time_score+lapScore;
+      }else if(!complete){
+        r.endurance_time_score=0;
+        r.endurance_lap_score=lapScore;
+        r.endurance_score=lapScore;
+      }
+    });
+    mins.endurance=sim.__times.endurance;
+  }
+  const beforeRows=existing.map(efficiencyRow),afterRows=existing.concat(sim).map(efficiencyRow);
+  const beforeStats=scoreEfficiency(beforeRows,fullLaps),afterStats=scoreEfficiency(afterRows,fullLaps),afterMap=Object.fromEntries(afterRows.map(r=>[rowKey(r),r])),simEfficiency=afterMap[rowKey(sim)];
+  Object.assign(sim,{
+    efficiency_laps_completed:simEfficiency.efficiency_laps_completed,
+    efficiency_adjusted_co2_kg:simEfficiency.efficiency_adjusted_co2_kg,
+    efficiency_average_adjusted_co2_per_lap_kg:simEfficiency.efficiency_average_adjusted_co2_per_lap_kg,
+    efficiency_time_average_adjusted:simEfficiency.efficiency_time_average_adjusted,
+    efficiency_fuel_efficiency_factor:simEfficiency.efficiency_fuel_efficiency_factor,
+    efficiency_score:simEfficiency.efficiency_score
+  });
+  const efficiencyChanged=afterStats&&(!beforeStats||afterStats.fastestAvg<beforeStats.fastestAvg-1e-9||afterStats.minCO2<beforeStats.minCO2-1e-9||afterStats.efMax>beforeStats.efMax+1e-9);
+  if(efficiencyChanged)existing.forEach(r=>{
+    if(!canRecalculateEfficiency(r,fullLaps))return;
+    let scored=afterMap[rowKey(r)];
+    r.efficiency_fuel_efficiency_factor=scored.efficiency_fuel_efficiency_factor;
+    r.efficiency_score=scored.efficiency_score;
+  });
+  existing.forEach(r=>{
+    const delta=scoreKeys.reduce((sum,k)=>sum+num(r[k])-r.__baseline[k],0);
+    r.total_score=num(r.total_score)+delta;r.total_score_clean=num(r.total_score_clean)+delta;r.endurance_efficiency_score=num(r.endurance_score)+num(r.efficiency_score);
+    delete r.__baseline;delete r.__times;
+  });
+  sim.endurance_efficiency_score=num(sim.endurance_score)+num(sim.efficiency_score);
+  sim.total_score=num(sim.presentation_score)+num(sim.cost_score)+num(sim.design_score)+num(sim.acceleration_score)+num(sim.skidpad_score)+num(sim.autocross_score)+num(sim.endurance_score)+num(sim.efficiency_score);
+  sim.total_score_clean=sim.total_score;delete sim.__times;
+  const ranked=[...rows].sort((a,b)=>num(b.total_score_clean)-num(a.total_score_clean)||String(a.team).localeCompare(String(b.team)));
+  ranked.forEach((r,i)=>{r.overall_place=i+1;r.overall_percentile=ranked.length>1?100*(ranked.length-1-i)/(ranked.length-1):100});
+  const finishers=rows.filter(r=>fullLaps>0&&num(r.endurance_number_of_laps)>=fullLaps&&hasNum(r.endurance_time_adjusted));
+  rows.forEach(r=>{
+    r.competition_total_entries=rows.length;r.competition_acceleration_entries=rows.filter(x=>hasNum(x.acceleration_best_adjusted_time)).length;r.competition_skidpad_entries=rows.filter(x=>hasNum(x.skidpad_best_adjusted_time)).length;r.competition_autocross_entries=rows.filter(x=>hasNum(x.autocross_best_adjusted_time)).length;r.competition_endurance_entries=rows.filter(x=>num(x.endurance_number_of_laps)>0).length;r.competition_endurance_finishers=finishers.length;
+    r.competition_best_acceleration_adjusted_time=mins.acceleration;r.competition_best_skidpad_adjusted_time=mins.skidpad;r.competition_best_autocross_adjusted_time=mins.autocross;r.competition_best_endurance_adjusted_time=mins.endurance;
+  });
+  return rows;
+}
+function efficiencyRow(r){
+  const c={...r},laps=num(c.endurance_number_of_laps),t=correctedTimes(c).endurance;
+  c.efficiency_laps_completed=laps;c.efficiency_adjusted_co2_kg=rowCO2(c);
+  c.efficiency_average_adjusted_co2_per_lap_kg=c.efficiency_adjusted_co2_kg&&laps?c.efficiency_adjusted_co2_kg/laps:null;
+  c.efficiency_time_average_adjusted=t&&laps?t/laps:null;
+  return c;
+}
+function canRecalculateEfficiency(r,fullLaps){
+  const laps=toNum(r.endurance_number_of_laps),time=correctedTimes(r).endurance,co2=rowCO2(r);
+  return fullLaps>0&&Number.isFinite(laps)&&laps>fullLaps/2&&Number.isFinite(time)&&Number.isFinite(co2)&&co2>0;
+}
+function scoreEfficiency(rows,fullLaps){
+  rows.forEach(r=>{r.efficiency_score=0;r.efficiency_fuel_efficiency_factor=null});
+  if(!fullLaps)return null;
+  const candidates=rows.filter(r=>num(r.efficiency_laps_completed)>fullLaps/2&&hasNum(r.efficiency_time_average_adjusted)&&hasNum(r.efficiency_average_adjusted_co2_per_lap_kg));
+  const completed=candidates.filter(r=>num(r.endurance_number_of_laps)>=fullLaps);
+  const fastestAvg=Math.min(...completed.map(r=>toNum(r.efficiency_time_average_adjusted)));
+  if(!Number.isFinite(fastestAvg))return null;
+  const eligible=candidates.filter(r=>{
+    const limit=(fuelKind(r)==='electric'?20.02:60.06)/100*22/fullLaps;
+    return toNum(r.efficiency_time_average_adjusted)<=1.45*fastestAvg&&toNum(r.efficiency_average_adjusted_co2_per_lap_kg)<=limit;
+  });
+  const minCO2=Math.min(...eligible.map(r=>toNum(r.efficiency_average_adjusted_co2_per_lap_kg)));
+  if(!Number.isFinite(minCO2))return null;
+  eligible.forEach(r=>{r.efficiency_fuel_efficiency_factor=(fastestAvg/toNum(r.efficiency_time_average_adjusted))*(minCO2/toNum(r.efficiency_average_adjusted_co2_per_lap_kg))});
+  const efMax=Math.max(...eligible.map(r=>r.efficiency_fuel_efficiency_factor));
+  eligible.forEach(r=>{
+    const limit=(fuelKind(r)==='electric'?20.02:60.06)/100*22/fullLaps,efMin=(1/1.45)*(minCO2/limit),den=efMax-efMin;
+    r.efficiency_score=clamp(den>0?100*(r.efficiency_fuel_efficiency_factor-efMin)/den:100,0,100);
+  });
+  return {fastestAvg,minCO2,efMax};
+}
+function updateSimSummary(result){
+  if(!$('simEnabled').checked){$('simSummary').textContent='Enable the simulator to add the hypothetical team.';return}
+  const r=result?.row;if(!r){$('simSummary').textContent='No matching competition field was found.';return}
+  const complete=result.fullLaps>0&&num(r.endurance_number_of_laps)>=result.fullLaps;
+  $('simSummary').innerHTML=`<b><span class="simStar">★</span> ${fmt(r.total_score_clean,'total_score_clean')} pts · P${fmt(r.overall_place,'overall_place')}/${result.fieldSize}</b> · C ${fmt(r.cost_score,'cost_score')} · A ${fmt(r.acceleration_score,'acceleration_score')} · S ${fmt(r.skidpad_score,'skidpad_score')} · AX ${fmt(r.autocross_score,'autocross_score')} · E ${fmt(r.endurance_score,'endurance_score')} · Eff ${fmt(r.efficiency_score,'efficiency_score')}<br>Laps ${fmt(r.endurance_number_of_laps,'endurance_number_of_laps')}/${fmt(result.fullLaps,'endurance_number_of_laps')} · ${complete?'complete':'incomplete'}`;
+}
 function observeChartSize(){if('ResizeObserver' in window)new ResizeObserver(()=>{if(ready)schedulePlotRedraw()}).observe($('chartWrap'))}
 function initPanelSizes(){let rows=$('rowsPanel'); rows.style.width=rows.getBoundingClientRect().width+'px'; rows.style.flexBasis=rows.style.width;}
 function applyNameMode(){DATA=$('cleanNames').checked?RAW_DATA.map(cleanRowStrings):RAW_DATA.map(r=>({...r})); populateSchoolSelect(); render();}
@@ -152,18 +510,18 @@ function applyTheme(theme){document.body.classList.toggle('light',theme==='light
 function toggleTheme(){let theme=$('darkTheme').checked?'dark':'light'; localStorage.setItem('fsaeTheme',theme); applyTheme(theme); render();}
 function checkedCompetitions(){return [...checked('comp')].sort()}
 function competitionColor(comp){let i=competitionColors[comp]??0; return competitionPalette[i%competitionPalette.length];}
-function filtered(){const comps=checked('comp'), yrs=checked('yr'), q=$('teamSearch').value.toLowerCase().trim(); const x=$('xMetric').value,y=$('yMetric').value,school=$('schoolTimeSelect')?.value||''; return DATA.filter(r=>comps.has(String(r.competition))&&yrs.has(String(r.year))&&(x===TIME_KEY?String(r.team)===school:(x===COMP_TIME_KEY||!q||String(r.team).toLowerCase().includes(q)))&&!omitted.has(rowKey(r))&&(!$('hideZeroWeight').checked || [r.weight_reported_kg,r.weight_complete_vehicle_kg,r.weight_with_accumulator_kg,r.weight_without_accumulator_kg].some(v=>hasNum(v)&&toNum(v)>0))).filter(r=>!$('omitBothZero').checked || x==='rank_by_y' || x===DIST_KEY || x===TIME_KEY || x===COMP_TIME_KEY || !([x,y].every(k=>hasMetricNum(r,k)&&metricNum(r,k)===0)));}
+function filtered(){const comps=checked('comp'), yrs=checked('yr'), q=$('teamSearch').value.toLowerCase().trim(); const x=$('xMetric').value,y=$('yMetric').value,school=$('schoolTimeSelect')?.value||''; return displayData().filter(r=>comps.has(String(r.competition))&&yrs.has(String(r.year))&&(x===TIME_KEY?String(r.team)===school:(x===COMP_TIME_KEY||!q||String(r.team).toLowerCase().includes(q)))&&!omitted.has(rowKey(r))&&(!$('hideZeroWeight').checked || r.__simulated || [r.weight_reported_kg,r.weight_complete_vehicle_kg,r.weight_with_accumulator_kg,r.weight_without_accumulator_kg].some(v=>hasNum(v)&&toNum(v)>0))).filter(r=>!$('omitBothZero').checked || r.__simulated || x==='rank_by_y' || x===DIST_KEY || x===TIME_KEY || x===COMP_TIME_KEY || !([x,y].every(k=>hasMetricNum(r,k)&&metricNum(r,k)===0)));}
 function rankRows(rows,y,includeMissing=false){const dir=metricMap[y]?.direction||'descending'; let ranked=rows.filter(r=>hasMetricNum(r,y)).sort((a,b)=>dir==='ascending'?metricNum(a,y)-metricNum(b,y):metricNum(b,y)-metricNum(a,y)).map((r,i)=>({...r,__rank:i+1,__x:i+1,__y:metricNum(r,y)})); if(!includeMissing)return ranked; let missing=rows.filter(r=>!hasMetricNum(r,y)).map(r=>({...r,__rank:'',__x:null,__y:null})); return ranked.concat(missing);}
 function extent(vals,key){const m=metricMap[key]||{}; if(m.fixed_min!==null&&m.fixed_min!==undefined&&m.fixed_max!==null&&m.fixed_max!==undefined)return [m.fixed_min,m.fixed_max]; let mn=Math.min(...vals),mx=Math.max(...vals); if(!Number.isFinite(mn)||!Number.isFinite(mx))return [0,1]; if(mn===mx){mn-=1;mx+=1} let pad=(mx-mn)*.07; return [Math.max(0,mn-pad),mx+pad];}
 function competitionRows(rows){let seen=new Set(); return rows.filter(r=>{let k=[r.competition,r.year,r.vehicle_type].join('|'); if(seen.has(k))return false; seen.add(k); return true}).map(r=>({...r,team:`${r.competition} ${fmt(r.year,'year')} ${r.vehicle_type||''}`.trim(),__competitionRow:true}))}
 function plotRows(rows,x,y,s=''){if(x===COMP_TIME_KEY||isCompetitionMetric(x)||isCompetitionMetric(y)||isCompetitionMetric(s))rows=competitionRows(rows); if(x===DIST_KEY)return rows.filter(r=>hasMetricNum(r,y)).map(r=>({...r,__y:metricNum(r,y)})); if(x===TIME_KEY||x===COMP_TIME_KEY)return rows.filter(r=>hasNum(r.year)&&hasMetricNum(r,y)).map(r=>({...r,__x:toNum(r.year),__y:metricNum(r,y)})); return x==='rank_by_y'?rankRows(rows,y):rows.filter(r=>hasMetricNum(r,x)&&hasMetricNum(r,y)).map(r=>({...r,__x:metricNum(r,x),__y:metricNum(r,y)}));}
-function render(){let x=$('xMetric').value,y=$('yMetric').value,s=$('sizeMetric').value; updateModeControls(x); let rows=filtered(); let plotted=plotRows(rows,x,y,s); draw(plotted,x,y,s); table(rows,x,y); let yrs=[...new Set(rows.map(r=>r.year))].sort((a,b)=>a-b); let comps=[...new Set(rows.map(r=>r.competition))].sort(); $('countPill').textContent=`${plotted.length} plotted / ${rows.length} rows`; $('yearsPill').textContent=`Years: ${yrs.map(v=>fmt(v,'year')).join(', ')||'none'}`; $('compsPill').textContent=`Competitions: ${comps.join(', ')||'none'}`; renderLegend(comps);}
+function render(){let x=$('xMetric').value,y=$('yMetric').value,s=$('sizeMetric').value; updateModeControls(x); if(!$('simEnabled').checked)updateSimSummary(null); let rows=filtered(); let plotted=plotRows(rows,x,y,s); draw(plotted,x,y,s); table(rows,x,y); let yrs=[...new Set(rows.map(r=>r.year))].sort((a,b)=>a-b); let comps=[...new Set(rows.map(r=>r.competition))].sort(); $('countPill').textContent=`${plotted.length} plotted / ${rows.length} rows`; $('yearsPill').textContent=`Years: ${yrs.map(v=>fmt(v,'year')).join(', ')||'none'}`; $('compsPill').textContent=`Competitions: ${comps.join(', ')||'none'}`; renderLegend(comps);}
 function updateModeControls(x){$('schoolTimeControl').classList.toggle('active',x===TIME_KEY);}
-function renderLegend(comps){$('legend').innerHTML=comps.map(c=>`<span><i class="sw" style="background:${competitionColor(c)}"></i>${esc(c)}</span>`).join('');}
+function renderLegend(comps){$('legend').innerHTML=comps.map(c=>`<span><i class="sw" style="background:${competitionColor(c)}"></i>${esc(c)}</span>`).join('')+($('simEnabled').checked?'<span><span class="simStar">★</span> Simulated Results</span>':'');}
 function chartMargins(W){return W<560?{l:56,r:12,t:22,b:54}:{l:90,r:22,t:24,b:62}}
 function addWatermark(svg,W,H){const m=chartMargins(W),fs=W<560?30:36,txt='opendyna.com',tw=txt.length*fs*.62,th=fs+10,p=Math.max(24,fs*.9),a={x:m.l,y:m.t,w:W-m.l-m.r,h:H-m.t-m.b}; let candidates=[{x:a.x+p,y:a.y+p+fs},{x:a.x+a.w-p-tw,y:a.y+p+fs},{x:a.x+p,y:a.y+a.h-p},{x:a.x+a.w-p-tw,y:a.y+a.h-p}].map(c=>({...c,r:{x:c.x,y:c.y-fs,w:tw,h:th}})); let marks=[...svg.querySelectorAll('.pt')],score=c=>marks.reduce((s,e)=>{if(e.tagName==='circle'){let x=+e.getAttribute('cx'),y=+e.getAttribute('cy'),r=(+e.getAttribute('r')||4)+4; return s+(x+r>c.r.x&&x-r<c.r.x+c.r.w&&y+r>c.r.y&&y-r<c.r.y+c.r.h?25:0)} if(e.tagName==='rect'){let x=+e.getAttribute('x'),y=+e.getAttribute('y'),w=+e.getAttribute('width'),h=+e.getAttribute('height'),ox=Math.max(0,Math.min(x+w,c.r.x+c.r.w)-Math.max(x,c.r.x)),oy=Math.max(0,Math.min(y+h,c.r.y+c.r.h)-Math.max(y,c.r.y)); return s+ox*oy/80} return s},0); candidates.sort((a,b)=>score(a)-score(b)); let c=candidates[0],t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',c.x); t.setAttribute('y',c.y); t.setAttribute('class','watermark'); t.textContent=txt; svg.appendChild(t)}
 function draw(rows,x,y,s){const svg=$('chart'),wrap=$('chartWrap'),tip=$('tip'); const W=wrap.clientWidth,H=wrap.clientHeight; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=''; if(W<120||H<120)return; if(x===DIST_KEY){drawDistribution(rows,y,W,H,svg,tip);return} if(x===TIME_KEY||x===COMP_TIME_KEY){drawTimeSeries(rows,y,W,H,svg,tip);return} const margin=chartMargins(W); const panels=$('splitMode').checked?['All']:[...new Set(rows.map(r=>r.competition))].sort(); const pw=(W-margin.l-margin.r)/Math.max(1,panels.length); rows.sort((a,b)=>String(a.competition).localeCompare(String(b.competition)));
- panels.forEach((p,pi)=>{let pr= p==='All'?rows:rows.filter(r=>r.competition===p); let xvals=pr.map(r=>r.__x), yvals=pr.map(r=>r.__y); let xKey=x==='rank_by_y'?'rank':x; let xr=x==='rank_by_y'?[0,Math.max(1,pr.length+1)]:extent(xvals,x), yr=extent(yvals,y); const x0=margin.l+pi*pw, y0=margin.t, w=Math.max(1,pw-12), h=Math.max(1,H-margin.t-margin.b); const sx=v=>x0+(v-xr[0])/(xr[1]-xr[0])*w; const sy=v=>y0+h-(v-yr[0])/(yr[1]-yr[0])*h; tickValues(xr,xKey).forEach(v=>{let xx=sx(v); line(xx,y0,xx,y0+h,'grid'); text(xx,y0+h+20,fmt(v,xKey),'tick','middle')}); tickValues(yr,y).forEach(v=>{let yy=sy(v); line(x0,yy,x0+w,yy,'grid'); text(x0-10,yy+4,fmt(v,y),'tick','end')}); line(x0,y0+h,x0+w,y0+h,'axis'); line(x0,y0,x0,y0+h,'axis'); if(panels.length>1)text(x0+w/2,y0+14,p,'axisLabel','middle'); pr.forEach(r=>{let rad=s&&hasMetricNum(r,s)?Math.max(3,Math.min(12,3+Math.sqrt(metricNum(r,s))/3)):5; let c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',sx(r.__x)); c.setAttribute('cy',sy(r.__y)); c.setAttribute('r',rad); c.setAttribute('fill',competitionColor(r.competition)); c.setAttribute('class','pt'); c.addEventListener('mousemove',e=>{tip.innerHTML=`<b>${esc(r.team)}</b><br>${fmt(r.year,'year')} ${esc(r.competition)} #${fmt(r.car_num,'car_num')}<br>${x==='rank_by_y'?'Rank':metricLabel(x)}: ${fmt(r.__x,xKey)}<br>${metricLabel(y)}: ${fmt(r.__y,y)}<br>Total: ${fmt(valueOf(r,'total_score_clean'),'total_score_clean')}<br>Weight basis: ${esc(r.weight_basis)}`; tip.style.display='block'; positionTip(e)}); c.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(c)}); }); text(W/2,H-18,(x==='rank_by_y'?'Rank by '+metricLabel(y):metricLabel(x)),'axisLabel','middle'); let yl=text(24,H/2,metricLabel(y),'axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
+ panels.forEach((p,pi)=>{let pr= p==='All'?rows:rows.filter(r=>r.competition===p); let xvals=pr.map(r=>r.__x), yvals=pr.map(r=>r.__y); let xKey=x==='rank_by_y'?'rank':x; let xr=x==='rank_by_y'?[0,Math.max(1,pr.length+1)]:extent(xvals,x), yr=extent(yvals,y); const x0=margin.l+pi*pw, y0=margin.t, w=Math.max(1,pw-12), h=Math.max(1,H-margin.t-margin.b); const sx=v=>x0+(v-xr[0])/(xr[1]-xr[0])*w; const sy=v=>y0+h-(v-yr[0])/(yr[1]-yr[0])*h; tickValues(xr,xKey).forEach(v=>{let xx=sx(v); line(xx,y0,xx,y0+h,'grid'); text(xx,y0+h+20,fmt(v,xKey),'tick','middle')}); tickValues(yr,y).forEach(v=>{let yy=sy(v); line(x0,yy,x0+w,yy,'grid'); text(x0-10,yy+4,fmt(v,y),'tick','end')}); line(x0,y0+h,x0+w,y0+h,'axis'); line(x0,y0,x0,y0+h,'axis'); if(panels.length>1)text(x0+w/2,y0+14,p,'axisLabel','middle'); pr.forEach(r=>{let rad=s&&hasMetricNum(r,s)?Math.max(3,Math.min(12,3+Math.sqrt(metricNum(r,s))/3)):5; let c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',sx(r.__x)); c.setAttribute('cy',sy(r.__y)); c.setAttribute('r',r.__simulated?9:rad); c.setAttribute('fill',r.__simulated?'var(--sim)':competitionColor(r.competition)); c.setAttribute('class',r.__simulated?'pt simPoint':'pt'); c.addEventListener('mousemove',e=>{tip.innerHTML=`<b>${r.__simulated?'<span class="simStar">★</span> ':''}${esc(r.team)}</b><br>${fmt(r.year,'year')} ${esc(r.competition)} #${fmt(r.car_num,'car_num')}<br>${x==='rank_by_y'?'Rank':metricLabel(x)}: ${fmt(r.__x,xKey)}<br>${metricLabel(y)}: ${fmt(r.__y,y)}<br>Total: ${fmt(valueOf(r,'total_score_clean'),'total_score_clean')}<br>Weight basis: ${esc(r.weight_basis)}`; tip.style.display='block'; positionTip(e)}); c.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(c)}); }); text(W/2,H-18,(x==='rank_by_y'?'Rank by '+metricLabel(y):metricLabel(x)),'axisLabel','middle'); let yl=text(24,H/2,metricLabel(y),'axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
  function line(x1,y1,x2,y2,cls){let l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('class',cls);svg.appendChild(l)} function text(x,y,t,cls,anchor){let el=document.createElementNS('http://www.w3.org/2000/svg','text'); el.setAttribute('x',x);el.setAttribute('y',y);el.setAttribute('class',cls);el.setAttribute('text-anchor',anchor||'start');el.textContent=t;svg.appendChild(el);return el}}
 function drawDistribution(rows,y,W,H,svg,tip){const margin=chartMargins(W); const panels=$('splitMode').checked?['All']:[...new Set(rows.map(r=>r.competition))].sort(); const pw=(W-margin.l-margin.r)/Math.max(1,panels.length); panels.forEach((p,pi)=>{let pr=p==='All'?rows:rows.filter(r=>r.competition===p); let yr=extent(pr.map(r=>r.__y),y); let bins=makeBins(pr,yr,y); let br=[bins[0]?.lo??yr[0],bins[bins.length-1]?.hi??yr[1]]; let maxCount=Math.max(1,...bins.map(b=>b.total)); let x0=margin.l+pi*pw,y0=margin.t,w=Math.max(1,pw-12),h=Math.max(1,H-margin.t-margin.b); let sx=i=>x0+i*w/bins.length, bw=Math.max(1,w/bins.length-2), sy=v=>y0+h-v/maxCount*h; for(let i=0;i<6;i++){let yy=y0+i*h/5; line(x0,yy,x0+w,yy,'grid'); text(x0-10,yy+4,fmt(maxCount-i*maxCount/5),'tick','end')} bins.forEach((b,i)=>{let stackY=y0+h; Object.entries(b.byComp).sort(([a],[b])=>a.localeCompare(b)).forEach(([comp,count])=>{let bh=count/maxCount*h; if(bh<=0)return; let rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x',sx(i)+1); rect.setAttribute('y',stackY-bh); rect.setAttribute('width',bw); rect.setAttribute('height',bh); rect.setAttribute('fill',competitionColor(comp)); rect.setAttribute('class','pt'); rect.addEventListener('mousemove',e=>{tip.innerHTML=distributionTip(b,y); tip.style.display='block'; positionTip(e)}); rect.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(rect); stackY-=bh})}); tickValues(br,y).forEach(v=>{let xx=x0+(v-br[0])/(br[1]-br[0])*w; text(xx,y0+h+20,fmt(v,y),'tick','middle')}); line(x0,y0+h,x0+w,y0+h,'axis'); line(x0,y0,x0,y0+h,'axis'); if(panels.length>1)text(x0+w/2,y0+14,p,'axisLabel','middle')}); text(W/2,H-18,metricLabel(y),'axisLabel','middle'); let yl=text(24,H/2,'Count','axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
  function line(x1,y1,x2,y2,cls){let l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('class',cls);svg.appendChild(l)} function text(x,y,t,cls,anchor){let el=document.createElementNS('http://www.w3.org/2000/svg','text'); el.setAttribute('x',x);el.setAttribute('y',y);el.setAttribute('class',cls);el.setAttribute('text-anchor',anchor||'start');el.textContent=t;svg.appendChild(el);return el}}
@@ -173,20 +531,20 @@ function isScoreKey(k){let m=metricMap[k]||{}; let s=[k,m.label,m.group].join(' 
 function scoreBinWidth(span){let raw=span/20; return [5,10,15,20,25,30,40,50,75,100,125,150,200,250,500].find(w=>w>=raw)||Math.ceil(raw/5)*5}
 function distributionTip(b,y){let parts=Object.entries(b.byComp).sort(([a],[b])=>a.localeCompare(b)).map(([c,n])=>`${esc(c)}: ${n}`).join('<br>'); return `<b>${metricLabel(y)}</b><br>${fmt(b.lo,y)} to ${fmt(b.hi,y)}<br>Total: ${b.total}${parts?'<br>'+parts:''}`}
 function drawTimeSeries(rows,y,W,H,svg,tip){const margin=chartMargins(W); const panels=$('splitMode').checked?['All']:[...new Set(rows.map(r=>r.competition))].sort(); const pw=(W-margin.l-margin.r)/Math.max(1,panels.length); panels.forEach((p,pi)=>{let pr=(p==='All'?rows:rows.filter(r=>r.competition===p)).sort((a,b)=>a.__x-b.__x||String(a.vehicle_type||'').localeCompare(String(b.vehicle_type||''))||String(a.competition).localeCompare(String(b.competition))); let xr=extent(pr.map(r=>r.__x),'year'),yr=extent(pr.map(r=>r.__y),y); const x0=margin.l+pi*pw,y0=margin.t,w=Math.max(1,pw-12),h=Math.max(1,H-margin.t-margin.b); const sx=v=>x0+(v-xr[0])/(xr[1]-xr[0])*w, sy=v=>y0+h-(v-yr[0])/(yr[1]-yr[0])*h; tickValues(xr,'year').forEach(v=>{let xx=sx(v); line(xx,y0,xx,y0+h,'grid'); text(xx,y0+h+20,fmt(v,'year'),'tick','middle')}); tickValues(yr,y).forEach(v=>{let yy=sy(v); line(x0,yy,x0+w,yy,'grid'); text(x0-10,yy+4,fmt(v,y),'tick','end')}); let groupKey=r=>r.__competitionRow?[r.competition,r.vehicle_type||''].join('|'):r.competition; let groups=Object.groupBy?Object.groupBy(pr,groupKey):groupBy(pr,groupKey); Object.values(groups).forEach(rs=>{let comp=rs[0]?.competition||''; let path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',rs.map((r,i)=>(i?'L':'M')+sx(r.__x)+' '+sy(r.__y)).join(' ')); path.setAttribute('stroke',competitionColor(comp)); path.setAttribute('class','linePath'); svg.appendChild(path); rs.forEach(r=>point(r,sx,sy,comp))}); line(x0,y0+h,x0+w,y0+h,'axis'); line(x0,y0,x0,y0+h,'axis'); if(panels.length>1)text(x0+w/2,y0+14,p,'axisLabel','middle');
- function point(r,sx,sy,comp){let c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',sx(r.__x)); c.setAttribute('cy',sy(r.__y)); c.setAttribute('r',5); c.setAttribute('fill',competitionColor(comp)); c.setAttribute('class','pt'); c.addEventListener('mousemove',e=>{let head=r.__competitionRow?`${fmt(r.year,'year')} ${esc(r.competition)} ${esc(r.vehicle_type||'')}`:`${fmt(r.year,'year')} ${esc(r.competition)} #${fmt(r.car_num,'car_num')}`; tip.innerHTML=`<b>${esc(r.team)}</b><br>${head}<br>${metricLabel(y)}: ${fmt(r.__y,y)}`; tip.style.display='block'; positionTip(e)}); c.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(c)} }); text(W/2,H-18,'Year','axisLabel','middle'); let yl=text(24,H/2,metricLabel(y),'axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
+ function point(r,sx,sy,comp){let c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',sx(r.__x)); c.setAttribute('cy',sy(r.__y)); c.setAttribute('r',r.__simulated?9:5); c.setAttribute('fill',r.__simulated?'var(--sim)':competitionColor(comp)); c.setAttribute('class',r.__simulated?'pt simPoint':'pt'); c.addEventListener('mousemove',e=>{let head=r.__competitionRow?`${fmt(r.year,'year')} ${esc(r.competition)} ${esc(r.vehicle_type||'')}`:`${fmt(r.year,'year')} ${esc(r.competition)} #${fmt(r.car_num,'car_num')}`; tip.innerHTML=`<b>${r.__simulated?'<span class="simStar">★</span> ':''}${esc(r.team)}</b><br>${head}<br>${metricLabel(y)}: ${fmt(r.__y,y)}`; tip.style.display='block'; positionTip(e)}); c.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(c)} }); text(W/2,H-18,'Year','axisLabel','middle'); let yl=text(24,H/2,metricLabel(y),'axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
  function line(x1,y1,x2,y2,cls){let l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('class',cls);svg.appendChild(l)} function text(x,y,t,cls,anchor){let el=document.createElementNS('http://www.w3.org/2000/svg','text'); el.setAttribute('x',x);el.setAttribute('y',y);el.setAttribute('class',cls);el.setAttribute('text-anchor',anchor||'start');el.textContent=t;svg.appendChild(el);return el}}
 function groupBy(rows,fn){return rows.reduce((acc,r)=>{let k=fn(r); (acc[k]??=[]).push(r); return acc},{})}
 function tickValues(range,key){if(!isIntegerKey(key))return [0,1,2,3,4,5].map(i=>range[0]+i*(range[1]-range[0])/5); let lo=Math.ceil(range[0]),hi=Math.floor(range[1]); if(hi<lo)return [Math.round((range[0]+range[1])/2)]; let step=niceIntStep(Math.max(1,(hi-lo)/5)); let start=Math.ceil(lo/step)*step, vals=[]; for(let v=start;v<=hi;v+=step)vals.push(v); return vals.length?vals:[lo]}
 function niceIntStep(raw){let pow=Math.pow(10,Math.floor(Math.log10(raw))); let n=raw/pow; let base=n<=1?1:n<=2?2:n<=5?5:10; return base*pow}
 function positionTip(e){const tip=$('tip'),wrap=$('chartWrap'),pad=8,gap=14; const W=wrap.clientWidth,H=wrap.clientHeight,tw=tip.offsetWidth,th=tip.offsetHeight; let left=e.offsetX+gap,top=e.offsetY+gap; if(left+tw+pad>W)left=e.offsetX-tw-gap; if(top+th+pad>H)top=e.offsetY-th-gap; tip.style.left=Math.max(pad,Math.min(left,W-tw-pad))+'px'; tip.style.top=Math.max(pad,Math.min(top,H-th-pad))+'px';}
 function table(rows,x,y){let xCol=x==='rank_by_y'?'rank':x; let cols=x===COMP_TIME_KEY?['plot','competition','year','vehicle_type',y]:(x===DIST_KEY||x===TIME_KEY)?['plot','team','competition','year','car_num',y]:['plot','team','competition','year','car_num',xCol,y]; let data=x===COMP_TIME_KEY?competitionRows(rows):(x==='rank_by_y'?rankRows(rows,y,true):rows); data.sort((a,b)=>{let av=sortCol==='rank'?a.__rank:valueOf(a,sortCol), bv=sortCol==='rank'?b.__rank:valueOf(b,sortCol); let na=+av, nb=+bv; let cmp=Number.isFinite(na)&&Number.isFinite(nb)?na-nb:String(av??'').localeCompare(String(bv??'')); return sortDir==='asc'?cmp:-cmp}); tableState={cols,data,rowH:31}; const th=cols.map(c=>`<th data-c="${c}">${tableLabel(c)}</th>`).join(''); $('rowsTable').innerHTML=`<thead><tr>${th}</tr></thead><tbody></tbody>`; document.querySelectorAll('#rowsTable th').forEach(h=>h.onclick=()=>{let c=h.dataset.c;if(c==='plot')return; sortDir=(sortCol===c&&sortDir==='asc')?'desc':'asc';sortCol=c;$('tableWrap').scrollTop=0;render()}); renderVirtualRows();}
-function renderVirtualRows(){let tbody=$('rowsTable').tBodies[0]; if(!tbody)return; let wrap=$('tableWrap'),{cols,data,rowH}=tableState,overscan=12; let visible=Math.ceil(wrap.clientHeight/rowH)+overscan*2; let maxStart=Math.max(0,data.length-visible); let start=Math.min(maxStart,Math.max(0,Math.floor(wrap.scrollTop/rowH)-overscan)); let end=Math.min(data.length,start+visible); let top=start*rowH,bottom=Math.max(0,(data.length-end)*rowH); let rows=[]; if(top)rows.push(`<tr style="height:${top}px"><td colspan="${cols.length}" style="padding:0;border:0"></td></tr>`); rows.push(...data.slice(start,end).map(r=>`<tr>${cols.map(c=>cellHtml(r,c)).join('')}</tr>`)); if(bottom)rows.push(`<tr style="height:${bottom}px"><td colspan="${cols.length}" style="padding:0;border:0"></td></tr>`); tbody.innerHTML=rows.join(''); tbody.querySelectorAll('.plotToggle').forEach(cb=>cb.onchange=e=>{if(!e.target.checked)omitted.add(e.target.dataset.k);render()});}
-function cellHtml(r,c){if(c==='plot')return `<td><input type="checkbox" checked data-k="${esc(rowKey(r))}" class="plotToggle"></td>`; return c==='rank'?`<td>${fmt(r.__rank,'rank')}</td>`:`<td>${esc(fmt(valueOf(r,c),c))}</td>`}
+function renderVirtualRows(){let tbody=$('rowsTable').tBodies[0]; if(!tbody)return; let wrap=$('tableWrap'),{cols,data,rowH}=tableState,overscan=12; let visible=Math.ceil(wrap.clientHeight/rowH)+overscan*2; let maxStart=Math.max(0,data.length-visible); let start=Math.min(maxStart,Math.max(0,Math.floor(wrap.scrollTop/rowH)-overscan)); let end=Math.min(data.length,start+visible); let top=start*rowH,bottom=Math.max(0,(data.length-end)*rowH); let rows=[]; if(top)rows.push(`<tr style="height:${top}px"><td colspan="${cols.length}" style="padding:0;border:0"></td></tr>`); rows.push(...data.slice(start,end).map(r=>`<tr${r.__simulated?' class="simRow"':''}>${cols.map(c=>cellHtml(r,c)).join('')}</tr>`)); if(bottom)rows.push(`<tr style="height:${bottom}px"><td colspan="${cols.length}" style="padding:0;border:0"></td></tr>`); tbody.innerHTML=rows.join(''); tbody.querySelectorAll('.plotToggle').forEach(cb=>cb.onchange=e=>{if(!e.target.checked)omitted.add(e.target.dataset.k);render()});}
+function cellHtml(r,c){if(c==='plot')return `<td><input type="checkbox" checked data-k="${esc(rowKey(r))}" class="plotToggle"></td>`; if(c==='team'&&r.__simulated)return `<td><span class="simStar">★</span> ${esc(r.team)}</td>`; return c==='rank'?`<td>${fmt(r.__rank,'rank')}</td>`:`<td>${esc(fmt(valueOf(r,c),c))}</td>`}
 let tableRenderQueued=false;
 function scheduleTableRender(){if(tableRenderQueued)return; tableRenderQueued=true; requestAnimationFrame(()=>{tableRenderQueued=false; renderVirtualRows()});}
 function tableLabel(c){return {plot:'Plot',competition:'Competition',year:'Year',vehicle_type:'Class',car_num:'Car Num',team:'Team',rank:'Rank'}[c]||metricLabel(c)}
 function redrawPlot(){let x=$('xMetric').value,y=$('yMetric').value,s=$('sizeMetric').value; draw(plotRows(filtered(),x,y,s),x,y,s);}
-function splitters(){drag($('splitLeft'),dx=>{let p=$('leftPanel'); p.style.width=Math.max(230,Math.min(520,p.offsetWidth+dx))+'px'; schedulePlotRedraw()}); drag($('splitRows'),dx=>{let p=$('rowsPanel'),w=Math.max(260,Math.min(780,p.getBoundingClientRect().width-dx))+'px'; p.style.width=w; p.style.flexBasis=w; schedulePlotRedraw()}); function drag(el,fn){let sx=0,active=false; el.onpointerdown=e=>{active=true; sx=e.clientX; el.setPointerCapture(e.pointerId); document.body.style.userSelect='none'}; el.onpointermove=e=>{if(!active)return; fn(e.clientX-sx); sx=e.clientX}; el.onpointerup=el.onpointercancel=e=>{if(!active)return; active=false; if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId); document.body.style.userSelect=''; schedulePlotRedraw()}}}
+function splitters(){drag($('splitLeft'),dx=>{let p=$('leftPanel'); p.style.width=Math.max(230,Math.min(520,p.offsetWidth+dx))+'px'; schedulePlotRedraw()}); drag($('splitRows'),dx=>{let p=$('rowsPanel'),w=Math.max(260,Math.min(780,p.getBoundingClientRect().width-dx))+'px'; p.style.width=w; p.style.flexBasis=w; schedulePlotRedraw()}); dragY($('splitSimulator'),dy=>{let p=$('simPanel'); if(p.classList.contains('collapsed'))return; let max=$('rowsPanel').clientHeight-130,h=Math.max(92,Math.min(max,p.getBoundingClientRect().height-dy)); p.style.height=h+'px';p.style.flex='0 0 '+h+'px';renderVirtualRows()}); function drag(el,fn){let sx=0,active=false; el.onpointerdown=e=>{active=true; sx=e.clientX; el.setPointerCapture(e.pointerId); document.body.style.userSelect='none'}; el.onpointermove=e=>{if(!active)return; fn(e.clientX-sx); sx=e.clientX}; el.onpointerup=el.onpointercancel=e=>{if(!active)return; active=false; if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId); document.body.style.userSelect=''; schedulePlotRedraw()}} function dragY(el,fn){let sy=0,active=false; el.onpointerdown=e=>{active=true;sy=e.clientY;el.setPointerCapture(e.pointerId);document.body.style.userSelect='none'};el.onpointermove=e=>{if(!active)return;fn(e.clientY-sy);sy=e.clientY};el.onpointerup=el.onpointercancel=e=>{if(!active)return;active=false;if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);document.body.style.userSelect='';schedulePlotRedraw()}}}
 let plotRedrawQueued=false, plotRedrawPending=false;
 function schedulePlotRedraw(){if(plotRedrawQueued){plotRedrawPending=true;return} plotRedrawQueued=true; requestAnimationFrame(()=>requestAnimationFrame(()=>{plotRedrawQueued=false; redrawPlot(); if(plotRedrawPending){plotRedrawPending=false; schedulePlotRedraw()}}));}
 window.addEventListener('resize',render); load().catch(e=>{$('countPill').textContent='Load failed: '+e.message; console.error(e)});
