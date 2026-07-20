@@ -12,6 +12,21 @@
 .simSetupGrid .simContextGrid{grid-template-columns:minmax(130px,1.7fr) 64px}.simStaticGrid{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:3px}.simStaticGrid .simField{display:block}.simStaticGrid .label{display:block;margin:0 0 1px;white-space:nowrap;font-size:8px;line-height:1}.simField input,.simField select{height:22px;min-height:22px}.simStaticGrid input{height:20px;min-height:20px}.simEventHeader,.simEvent{grid-template-columns:88px minmax(96px,1fr) 60px 60px}.simEvent{align-items:start;padding:2px 0}.simEventName{padding-top:6px}.simEvent .simField:nth-child(2) input{text-align:right}.simEvent .simField:nth-child(3) input,.simEvent .simField:nth-child(4) input{text-align:center}.simRef{min-height:8px;font-size:8px}.simSummary{margin-top:2px;line-height:1.15}.simNote{margin-top:0}.simBody{padding-bottom:0}
 .simPanel input[type=number]{appearance:textfield;-moz-appearance:textfield}.simPanel input[type=number]::-webkit-inner-spin-button,.simPanel input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.simPanel input::placeholder{color:var(--muted);font-size:9px;opacity:.8}
 .simHead button{font-size:12px}.simHead .inlineCheck{font-size:12px}.simBody{font-size:12px}.simField .label{font-size:10px}.simField input,.simField select{font-size:12px}.simStaticGrid .label{font-size:9px}.simSectionTitle{font-size:10px}.simEventHeader{font-size:9px}.simEvent{padding:1px 0}.simEventName{font-size:11px}.simEvent .simField:nth-child(2) input{text-align:left}.simRef{font-size:9px}.simSummary{font-size:11px}.simNote{font-size:9px}.simStar{font-size:14px}.simPanel input::placeholder{font-size:10px}
+@media (min-width:901px){
+  .left{padding:7px 8px;font-size:12px}
+  .left h1{font-size:15px;margin-bottom:6px}
+  .left .controls{gap:5px}
+  .left .card{padding:6px;border-radius:6px}
+  .left .panelTitle{font-size:10px;margin-bottom:4px}
+  .left .label{font-size:10px;margin-bottom:2px}
+  .left button,.left input,.left select{height:28px;min-height:28px;border-radius:5px;padding:0 7px;font-size:11px}
+  .left input[type=checkbox]{width:13px;height:13px;min-width:13px;min-height:13px;padding:0}
+  .left input[type=checkbox]::after{width:7px;height:7px}
+  .left .checkgrid{gap:2px 7px}
+  .left .checkgrid label,.left .inlineCheck{gap:5px;font-size:11px;line-height:1.15}
+  .left .btnrow{gap:5px;margin-top:5px}
+  .left .modeControl.active{margin-top:4px}
+}
 @media (max-width:900px){
   :root{--h:38px}
   body{overflow:auto}
