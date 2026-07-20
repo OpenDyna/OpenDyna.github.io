@@ -117,7 +117,7 @@
       <section class="simPanel" id="simPanel">
         <div class="simHead">
           <label class="inlineCheck"><input type="checkbox" id="simEnabled"> <span class="simStar">★</span> Simulated Results</label>
-          <button id="simAllFirst" type="button" title="Populate the best observed values">All First</button>
+          <button id="simAllFirst" type="button" title="Populate the best observed adjusted values">All First</button>
           <button id="simClear" type="button" title="Clear all simulated result values">Clear</button>
           <button id="simCollapse" type="button" aria-expanded="true" aria-controls="simBody">Collapse</button>
         </div>
@@ -137,7 +137,7 @@
           <div class="simSection">
             <div class="simSectionTitle">Dynamic event best runs</div>
             <div class="simEventHeader" aria-hidden="true">
-              <span>Event</span><span>Time / observed range</span><span>Cones</span><span>Off-course</span>
+              <span>Event</span><span>Raw / adjusted range</span><span>Cones</span><span>Off-course</span>
             </div>
             <div class="simEvent">
               <div class="simEventName">Acceleration</div>
@@ -270,11 +270,12 @@ function setRange(id,values,unit,digits=3){
 function updateSimReferences(){
   if(!DATA.length||!$('simCompetition').value||!$('simYear').value)return;
   const comp=$('simCompetition').value,year=+$('simYear').value,type=simVehicleType(),field=DATA.filter(r=>r.competition===comp&&+r.year===year&&r.vehicle_type===type);
-  setRange('simAccelerationRange',field.map(r=>r.acceleration_best_time_raw),'s');
-  setRange('simSkidpadRange',field.map(r=>r.skidpad_best_time_raw_average),'s');
-  setRange('simAutocrossRange',field.map(r=>r.autocross_best_time_raw),'s');
-  setRange('simEnduranceRange',field.map(r=>r.endurance_time_raw),'s',0);
   const maxLaps=Math.max(0,...field.map(r=>num(r.endurance_number_of_laps)));
+  const enduranceFinishers=field.filter(r=>maxLaps>0&&num(r.endurance_number_of_laps)>=maxLaps);
+  setRange('simAccelerationRange',field.map(r=>r.acceleration_best_adjusted_time),'s');
+  setRange('simSkidpadRange',field.map(r=>r.skidpad_best_adjusted_time),'s');
+  setRange('simAutocrossRange',field.map(r=>r.autocross_best_adjusted_time),'s');
+  setRange('simEnduranceRange',enduranceFinishers.map(r=>r.endurance_time_adjusted),'s',0);
   $('simLapsRange').textContent=maxLaps?`Max ${fmt(maxLaps,'endurance_number_of_laps')} laps`:'No data';
   $('simEnduranceLaps').max=maxLaps||'';
   const costs=field.map(r=>toNum(r.cost_adjusted_cost)).filter(v=>Number.isFinite(v)&&v>0);
@@ -324,17 +325,19 @@ function applySimPreset(mode){
   const comp=$('simCompetition').value,year=+$('simYear').value,type=simVehicleType(),field=DATA.filter(r=>r.competition===comp&&+r.year===year&&r.vehicle_type===type);
   const fields=[
     ['simPresentation','presentation_score',true],['simDesign','design_score',true],
-    ['simAccelerationTime','acceleration_best_time_raw'],['simAccelerationCones','acceleration_best_time_cones',false,true],['simAccelerationOC','acceleration_off_course',false,true],
-    ['simSkidpadTime','skidpad_best_time_raw_average'],['simSkidpadCones','skidpad_best_time_cones',false,true],['simSkidpadOC','skidpad_off_course',false,true],
-    ['simAutocrossTime','autocross_best_time_raw'],['simAutocrossCones','autocross_best_time_cones',false,true],['simAutocrossOC','autocross_best_time_off_course',false,true],
-    ['simEnduranceTime','endurance_time_raw'],['simEnduranceCones','endurance_cones',false,true],['simEnduranceOC','endurance_off_course',false,true],
+    ['simAccelerationTime','acceleration_best_adjusted_time'],['simAccelerationCones','acceleration_best_time_cones',false,true],['simAccelerationOC','acceleration_off_course',false,true],
+    ['simSkidpadTime','skidpad_best_adjusted_time'],['simSkidpadCones','skidpad_best_time_cones',false,true],['simSkidpadOC','skidpad_off_course',false,true],
+    ['simAutocrossTime','autocross_best_adjusted_time'],['simAutocrossCones','autocross_best_time_cones',false,true],['simAutocrossOC','autocross_best_time_off_course',false,true],
+    ['simEnduranceCones','endurance_cones',false,true],['simEnduranceOC','endurance_off_course',false,true],
     ['simEnduranceLaps','endurance_number_of_laps',true]
   ];
   fields.forEach(([id,key,highIsGood=false,zeroIsBest=false])=>{let v=observedExtreme(field.map(r=>r[key]),mode,highIsGood,zeroIsBest);$(id).value=v===null?'':String(v)});
   let adjustedCost=observedExtreme(field.map(r=>r.cost_adjusted_cost),mode),judged=observedExtreme(costJudgedValues(field),mode,true);
   $('simAdjustedCost').value=adjustedCost===null?'':String(adjustedCost);
   $('simCostJudged').value=judged===null?'':String(judged);
-  const kind=$('simFuelType').value,fullLaps=Math.max(0,...field.map(r=>num(r.endurance_number_of_laps))),fuelValues=field.filter(r=>fuelKind(r)===kind&&fullLaps>0&&num(r.endurance_number_of_laps)>=fullLaps).map(r=>kind==='electric'?r.efficiency_energy_used_kwh:r.efficiency_fuel_used_ltr);
+  const kind=$('simFuelType').value,fullLaps=Math.max(0,...field.map(r=>num(r.endurance_number_of_laps))),finishers=field.filter(r=>fullLaps>0&&num(r.endurance_number_of_laps)>=fullLaps),fuelValues=finishers.filter(r=>fuelKind(r)===kind).map(r=>kind==='electric'?r.efficiency_energy_used_kwh:r.efficiency_fuel_used_ltr);
+  const enduranceTime=observedExtreme(finishers.map(r=>r.endurance_time_adjusted),mode);
+  $('simEnduranceTime').value=enduranceTime===null?'':String(enduranceTime);
   let fuel=observedExtreme(fuelValues,mode);
   $('simFuelUsed').value=fuel===null?'':String(fuel);
   $('simEnabled').checked=true;
