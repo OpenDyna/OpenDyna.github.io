@@ -1,0 +1,394 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  --policy-bg: #070512;
+  --policy-panel: #100c23;
+  --policy-line: rgba(136, 114, 255, 0.32);
+  --policy-text: #f7f4ff;
+  --policy-muted: #c2bbd6;
+  --policy-cyan: #00d9ff;
+  --policy-pink: #ff2aa1;
+  --policy-violet: #9d6cff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 20% 6%, rgba(157, 108, 255, 0.24), transparent 30rem),
+    linear-gradient(180deg, #10092a 0, var(--policy-bg) 38rem);
+  color: var(--policy-text);
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+a {
+  color: var(--policy-cyan);
+}
+
+.policy-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background:
+    linear-gradient(rgba(255, 42, 161, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 217, 255, 0.1) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, black, transparent 65%);
+}
+
+.policy-header,
+.policy-layout,
+.policy-footer {
+  position: relative;
+  z-index: 1;
+  width: min(1120px, calc(100% - 40px));
+  margin-inline: auto;
+}
+
+.policy-header {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  border-bottom: 1px solid var(--policy-line);
+}
+
+.policy-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--policy-text);
+  text-decoration: none;
+}
+
+.policy-brand-mark {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--policy-cyan);
+  background: #09071a;
+  box-shadow: 4px 4px 0 var(--policy-pink);
+  font: 700 16px/1 "IBM Plex Mono", monospace;
+}
+
+.policy-brand > span:last-child {
+  display: grid;
+  gap: 1px;
+}
+
+.policy-brand strong {
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.policy-brand small {
+  color: var(--policy-muted);
+  font: 500 10px/1.2 "IBM Plex Mono", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.policy-header nav,
+.policy-footer nav {
+  display: flex;
+  gap: 24px;
+}
+
+.policy-header nav a,
+.policy-footer nav a {
+  color: var(--policy-muted);
+  font: 600 11px/1 "IBM Plex Mono", monospace;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.policy-header nav a:hover,
+.policy-header nav a:focus-visible,
+.policy-footer nav a:hover,
+.policy-footer nav a:focus-visible {
+  color: var(--policy-cyan);
+}
+
+.policy-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  align-items: start;
+  gap: 56px;
+  padding: 72px 0 90px;
+}
+
+.policy-layout > *,
+.policy-summary,
+.policy-document,
+.policy-content {
+  min-width: 0;
+}
+
+.policy-summary {
+  position: sticky;
+  top: 30px;
+}
+
+.policy-eyebrow,
+.policy-effective,
+.policy-contact span {
+  font-family: "IBM Plex Mono", monospace;
+  text-transform: uppercase;
+}
+
+.policy-eyebrow {
+  margin: 0 0 18px;
+  color: var(--policy-cyan);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+}
+
+.policy-summary h1 {
+  margin: 0;
+  font-size: clamp(44px, 6vw, 66px);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.policy-effective {
+  margin: 22px 0;
+  color: #ff82c3;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.policy-summary > p:not(.policy-eyebrow, .policy-effective) {
+  color: var(--policy-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.policy-contact {
+  display: grid;
+  gap: 8px;
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid var(--policy-line);
+}
+
+.policy-contact span {
+  color: var(--policy-muted);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.policy-contact a {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.policy-document {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--policy-violet);
+  background: rgba(16, 12, 35, 0.94);
+  box-shadow:
+    12px 12px 0 rgba(255, 42, 161, 0.2),
+    -8px -8px 0 rgba(0, 217, 255, 0.08);
+}
+
+.policy-titlebar {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--policy-violet);
+  padding: 0 14px;
+  background: linear-gradient(90deg, #21106f, #64156f);
+  font: 600 10px/1 "IBM Plex Mono", monospace;
+  letter-spacing: 0.08em;
+}
+
+.policy-titlebar span:last-child {
+  color: #ded7f2;
+}
+
+.policy-content {
+  padding: 38px 44px 50px;
+}
+
+.policy-content > p:first-child {
+  margin-top: 0;
+  color: #ded8ed;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.policy-content section {
+  margin-top: 42px;
+  padding-top: 36px;
+  border-top: 1px solid var(--policy-line);
+}
+
+.policy-content h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 0 0 18px;
+  font-size: 25px;
+  letter-spacing: -0.025em;
+}
+
+.policy-content h2 span {
+  color: var(--policy-cyan);
+  font: 600 10px/1 "IBM Plex Mono", monospace;
+  letter-spacing: 0.08em;
+}
+
+.policy-content p,
+.policy-content li {
+  color: var(--policy-muted);
+  font-size: 15px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.policy-content ul {
+  padding-left: 22px;
+}
+
+.policy-content li {
+  margin-bottom: 9px;
+  padding-left: 4px;
+}
+
+.policy-content li::marker {
+  color: var(--policy-pink);
+}
+
+.policy-content strong {
+  color: var(--policy-text);
+}
+
+.policy-content a:hover,
+.policy-content a:focus-visible {
+  color: #7cecff;
+}
+
+.policy-footer {
+  min-height: 120px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 36px;
+  padding: 28px 0;
+  border-top: 1px solid var(--policy-line);
+  color: var(--policy-muted);
+  font: 500 12px/1.5 "IBM Plex Mono", monospace;
+}
+
+.policy-footer > div {
+  display: grid;
+  gap: 3px;
+}
+
+.policy-footer strong {
+  color: var(--policy-text);
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 17px;
+}
+
+@media (max-width: 820px) {
+  .policy-layout {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .policy-summary {
+    position: static;
+    max-width: 620px;
+  }
+}
+
+@media (max-width: 600px) {
+  .policy-header,
+  .policy-layout,
+  .policy-footer {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    margin-inline: 12px;
+  }
+
+  .policy-header {
+    min-height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 16px 0;
+  }
+
+  .policy-header nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--policy-line);
+  }
+
+  .policy-header nav a {
+    text-align: center;
+  }
+
+  .policy-header nav a:first-child {
+    text-align: left;
+  }
+
+  .policy-header nav a:last-child {
+    text-align: right;
+  }
+
+  .policy-layout {
+    padding-top: 48px;
+  }
+
+  .policy-summary h1 {
+    font-size: 46px;
+  }
+
+  .policy-summary > p,
+  .policy-contact,
+  .policy-document {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .policy-document {
+    box-shadow: 6px 6px 0 rgba(255, 42, 161, 0.2);
+  }
+
+  .policy-content {
+    padding: 28px 20px 36px;
+  }
+
+  .policy-content h2 {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 22px;
+  }
+
+  .policy-footer {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}

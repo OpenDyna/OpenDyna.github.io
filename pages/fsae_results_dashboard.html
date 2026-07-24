@@ -6,12 +6,14 @@
 <title>FSAE Results Dashboard</title>
 <style>
 .watermark{fill:var(--muted);font-size:36px;font-weight:700;letter-spacing:.04em;opacity:.5;pointer-events:none}
-:root{--bg:#0b0b0c;--panel:#151516;--panel2:#101011;--line:#343436;--text:#eeeeee;--muted:#a3a3a3;--control:#202124;--controlHover:#2a2b2e;--tableHead:#1d1d1f;--rowHover:#242426;--shadow:#0008;--pointStroke:#050505;--pointHover:#fff;--scrollThumb:#4b4b4f;--scrollTrack:#151516;--check:#d4d4d8;--checkMark:#111;--sim:#facc15;--gap:7px;--h:32px;--r:8px;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}body.light{--bg:#f4f4f5;--panel:#ffffff;--panel2:#fafafa;--line:#d4d4d8;--text:#18181b;--muted:#71717a;--control:#f4f4f5;--controlHover:#e4e4e7;--tableHead:#eeeeef;--rowHover:#f0f0f1;--shadow:#0002;--pointStroke:#fff;--pointHover:#000;--scrollThumb:#a1a1aa;--scrollTrack:#f4f4f5;--check:#27272a;--checkMark:#fff;--sim:#d97706}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-size:13px;overflow:hidden}button,input,select{height:var(--h);border:1px solid var(--line);border-radius:8px;background:var(--control);color:var(--text);padding:0 10px;font:inherit}button{cursor:pointer}button:hover{background:var(--controlHover);border-color:var(--muted)}select{width:100%;min-height:var(--h)}input[type=checkbox]{appearance:none;width:14px;height:14px;min-width:14px;padding:0;border:1px solid var(--line);border-radius:3px;background:var(--control);display:grid;place-content:center}input[type=checkbox]::after{content:"";width:8px;height:8px;transform:scale(0);background:var(--checkMark);clip-path:polygon(14% 44%,0 59%,40% 100%,100% 18%,84% 6%,38% 68%)}input[type=checkbox]:checked{background:var(--check);border-color:var(--check)}input[type=checkbox]:checked::after{transform:scale(1)}.app{height:100vh;display:flex;gap:0}.panel{background:var(--panel);border-right:1px solid var(--line);overflow:auto}.left{width:310px;min-width:230px;max-width:520px;padding:10px}.main{flex:1;display:flex;min-width:0;background:var(--bg)}.plotPane{flex:1 1 auto;min-width:320px;padding:10px;display:flex;flex-direction:column;gap:var(--gap)}.rowsPane{width:430px;flex:0 0 430px;min-width:260px;max-width:780px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}.splitter{width:0;position:relative;cursor:col-resize;z-index:10;touch-action:none;user-select:none}.splitter::after{content:"";position:absolute;top:0;bottom:0;left:-4px;width:8px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px}.controls{display:flex;flex-direction:column;gap:7px}.panelTitle{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin:0 0 6px}.row{display:flex;gap:var(--gap);align-items:center}.row>*{flex:1}.label{font-size:11px;color:var(--muted);margin:0 0 3px}.checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px}#competitionChecks{grid-template-columns:1fr}#yearChecks{grid-template-columns:1fr 1fr 1fr}.checkgrid label,.inlineCheck{display:flex;gap:6px;align-items:center;color:var(--text);white-space:nowrap;line-height:1.25}.btnrow{display:flex;gap:var(--gap);margin-top:7px}.btnrow button{flex:1}.searchGap{margin-bottom:6px}.modeControl{display:none}.modeControl.active{display:block;margin-top:6px}h1{font-size:16px;margin:0 0 9px}.small{font-size:12px;color:var(--muted)}#chartWrap{flex:1;min-height:420px;position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}svg{width:100%;height:100%;display:block}.tooltip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:0 8px 26px var(--shadow);color:var(--text);font-size:12px;max-width:320px;display:none;z-index:20}.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:999px;padding:3px 8px;background:var(--control)}.rowsHead{padding:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:var(--gap)}.tableWrap{overflow:auto;min-height:0;flex:1}.panel,.tableWrap,.simBody{scrollbar-color:var(--scrollThumb) var(--scrollTrack);scrollbar-width:thin}.panel::-webkit-scrollbar,.tableWrap::-webkit-scrollbar,.simBody::-webkit-scrollbar{width:10px;height:10px}.panel::-webkit-scrollbar-track,.tableWrap::-webkit-scrollbar-track,.simBody::-webkit-scrollbar-track{background:var(--scrollTrack)}.panel::-webkit-scrollbar-thumb,.tableWrap::-webkit-scrollbar-thumb,.simBody::-webkit-scrollbar-thumb{background:var(--scrollThumb);border:2px solid var(--scrollTrack);border-radius:999px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}th{position:sticky;top:0;background:var(--tableHead);z-index:1;cursor:pointer;color:var(--text)}tr:hover{background:var(--rowHover)}tr.simRow{background:color-mix(in srgb,var(--sim) 15%,transparent)}tr.simRow td:first-child{box-shadow:inset 3px 0 var(--sim)}.muted{color:var(--muted)}.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sw{display:inline-block;width:10px;height:10px;border:1px solid var(--line);border-radius:99px;margin-right:5px}.sectionTitle{font-weight:700;margin-top:4px}.note{line-height:1.35}.linePath{fill:none;stroke-width:2;opacity:.85}.axisLabel{fill:var(--text);font-size:14px}.tick{fill:var(--muted);font-size:12px}.grid{stroke:var(--line);stroke-width:1}.axis{stroke:var(--muted);stroke-width:1}.pt{stroke:var(--pointStroke);stroke-width:1;opacity:.86}.pt:hover{opacity:1;stroke:var(--pointHover);stroke-width:2}.simPoint{fill:var(--sim);stroke:var(--pointHover);stroke-width:1.5;opacity:1}.simSplit{height:8px;flex:0 0 8px;position:relative;cursor:row-resize;touch-action:none;user-select:none;border-top:1px solid var(--line)}.simSplit::after{content:"";position:absolute;left:0;right:0;top:-4px;height:8px}.simPanel{height:330px;flex:0 0 330px;min-height:92px;max-height:70%;display:flex;flex-direction:column;overflow:hidden;background:var(--panel2);border-top:1px solid var(--line)}.simPanel.collapsed{height:46px!important;flex-basis:46px!important;min-height:46px}.simPanel.collapsed .simBody{display:none}.simPanel.collapsed+.simSplit{display:none}.simHead{height:45px;flex:0 0 45px;padding:7px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}.simHead .inlineCheck{font-weight:700;flex:1}.simHead button{height:30px;padding:0 9px}.simBody{padding:9px 10px 14px;overflow:auto}.simGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.simGrid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.simField{min-width:0}.simField input,.simField select{width:100%;min-width:0}.simSection{margin-top:12px;padding-top:9px;border-top:1px solid var(--line)}.simSection:first-child{margin-top:0;padding-top:0;border-top:0}.simSectionTitle{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}.simEvent{display:grid;grid-template-columns:minmax(92px,1.25fr) repeat(3,minmax(64px,1fr));gap:6px;align-items:end;margin-bottom:7px}.simEventName{font-weight:600;padding-bottom:8px}.simSummary{margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);line-height:1.45}.simStar{color:var(--sim);font-size:16px;line-height:1}
+:root{--bg:#0b0b0c;--panel:#151516;--panel2:#101011;--line:#343436;--text:#eeeeee;--muted:#a3a3a3;--control:#202124;--controlHover:#2a2b2e;--tableHead:#1d1d1f;--rowHover:#242426;--shadow:#0008;--pointStroke:#050505;--pointHover:#fff;--scrollThumb:#4b4b4f;--scrollTrack:#151516;--check:#d4d4d8;--checkMark:#111;--sim:#facc15;--gap:7px;--h:32px;--r:8px;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}body.light{--bg:#f4f4f5;--panel:#ffffff;--panel2:#fafafa;--line:#d4d4d8;--text:#18181b;--muted:#71717a;--control:#f4f4f5;--controlHover:#e4e4e7;--tableHead:#eeeeef;--rowHover:#f0f0f1;--shadow:#0002;--pointStroke:#fff;--pointHover:#000;--scrollThumb:#a1a1aa;--scrollTrack:#f4f4f5;--check:#27272a;--checkMark:#fff;--sim:#d97706}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-size:13px;overflow:hidden}button,input,select{height:var(--h);border:1px solid var(--line);border-radius:8px;background:var(--control);color:var(--text);padding:0 10px;font:inherit}button{cursor:pointer}button:hover{background:var(--controlHover);border-color:var(--muted)}select{width:100%;min-height:var(--h)}input[type=checkbox]{appearance:none;width:14px;height:14px;min-width:14px;padding:0;border:1px solid var(--line);border-radius:3px;background:var(--control);display:grid;place-content:center}input[type=checkbox]::after{content:"";width:8px;height:8px;transform:scale(0);background:var(--checkMark);clip-path:polygon(14% 44%,0 59%,40% 100%,100% 18%,84% 6%,38% 68%)}input[type=checkbox]:checked{background:var(--check);border-color:var(--check)}input[type=checkbox]:checked::after{transform:scale(1)}.app{height:100vh;display:flex;gap:0}.panel{background:var(--panel);border-right:1px solid var(--line);overflow:auto}.left{width:310px;min-width:230px;max-width:520px;padding:10px}.main{flex:1;display:flex;min-width:0;background:var(--bg)}.plotPane{flex:1 1 auto;min-width:320px;padding:10px;display:flex;flex-direction:column;gap:var(--gap)}.rowsPane{width:430px;flex:0 0 430px;min-width:260px;max-width:780px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}.splitter{width:0;position:relative;cursor:col-resize;z-index:10;touch-action:none;user-select:none}.splitter::after{content:"";position:absolute;top:0;bottom:0;left:-4px;width:8px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px}.controls{display:flex;flex-direction:column;gap:7px}.panelTitle{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin:0 0 6px}.row{display:flex;gap:var(--gap);align-items:center}.row>*{flex:1}.label{font-size:11px;color:var(--muted);margin:0 0 3px}.checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px}#competitionChecks{grid-template-columns:1fr}#yearChecks{grid-template-columns:1fr 1fr 1fr}.checkgrid label,.inlineCheck{display:flex;gap:6px;align-items:center;color:var(--text);white-space:nowrap;line-height:1.25}.btnrow{display:flex;gap:var(--gap);margin-top:7px}.btnrow button{flex:1}.searchGap{margin-bottom:6px}.modeControl{display:none}.modeControl.active{display:block;margin-top:6px}h1{font-size:16px;margin:0 0 9px}.small{font-size:12px;color:var(--muted)}#chartWrap{flex:1;min-height:420px;position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}svg{width:100%;height:100%;display:block}.tooltip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:0 8px 26px var(--shadow);color:var(--text);font-size:12px;max-width:320px;display:none;z-index:20}.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:999px;padding:3px 8px;background:var(--control)}.rowsHead{padding:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:var(--gap)}.tableWrap{overflow:auto;min-height:0;flex:1}.panel,.tableWrap,.simBody{scrollbar-color:var(--scrollThumb) var(--scrollTrack);scrollbar-width:thin}.panel::-webkit-scrollbar,.tableWrap::-webkit-scrollbar,.simBody::-webkit-scrollbar{width:10px;height:10px}.panel::-webkit-scrollbar-track,.tableWrap::-webkit-scrollbar-track,.simBody::-webkit-scrollbar-track{background:var(--scrollTrack)}.panel::-webkit-scrollbar-thumb,.tableWrap::-webkit-scrollbar-thumb,.simBody::-webkit-scrollbar-thumb{background:var(--scrollThumb);border:2px solid var(--scrollTrack);border-radius:999px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}th{position:sticky;top:0;background:var(--tableHead);z-index:1;cursor:pointer;color:var(--text)}tr:hover{background:var(--rowHover)}tr.simRow{background:color-mix(in srgb,var(--sim) 15%,transparent)}tr.simRow td:first-child{box-shadow:inset 3px 0 var(--sim)}.muted{color:var(--muted)}.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sw{display:inline-block;width:10px;height:10px;border:1px solid var(--line);border-radius:99px;margin-right:5px}.sectionTitle{font-weight:700;margin-top:4px}.note{line-height:1.35}.linePath{fill:none;stroke-width:2;opacity:.85}.axisLabel{fill:var(--text);font-size:14px}.tick{fill:var(--muted);font-size:12px}.grid{stroke:var(--line);stroke-width:1}.axis{stroke:var(--muted);stroke-width:1}.pt{stroke:var(--pointStroke);stroke-width:1;opacity:.86}.pt:hover{opacity:1;stroke:var(--pointHover);stroke-width:2}.simPoint{fill:var(--sim);stroke:var(--pointHover);stroke-width:1.5;opacity:1}.simPointStar{font-size:25px;font-weight:700;text-anchor:middle;dominant-baseline:central;paint-order:stroke fill}.simSplit{height:8px;flex:0 0 8px;position:relative;cursor:row-resize;touch-action:none;user-select:none;border-top:1px solid var(--line)}.simSplit::after{content:"";position:absolute;left:0;right:0;top:-4px;height:8px}.simPanel{height:330px;flex:0 0 330px;min-height:92px;max-height:70%;display:flex;flex-direction:column;overflow:hidden;background:var(--panel2);border-top:1px solid var(--line)}.simPanel.collapsed{height:46px!important;flex-basis:46px!important;min-height:46px}.simPanel.collapsed .simBody{display:none}.simPanel.collapsed+.simSplit{display:none}.simHead{height:45px;flex:0 0 45px;padding:7px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}.simHead .inlineCheck{font-weight:700;flex:1}.simHead button{height:30px;padding:0 9px}.simBody{padding:9px 10px 14px;overflow:auto}.simGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.simGrid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.simField{min-width:0}.simField input,.simField select{width:100%;min-width:0}.simSection{margin-top:12px;padding-top:9px;border-top:1px solid var(--line)}.simSection:first-child{margin-top:0;padding-top:0;border-top:0}.simSectionTitle{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}.simEvent{display:grid;grid-template-columns:minmax(92px,1.25fr) repeat(3,minmax(64px,1fr));gap:6px;align-items:end;margin-bottom:7px}.simEventName{font-weight:600;padding-bottom:8px}.simSummary{margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);line-height:1.45}.simStar{color:var(--sim);font-size:16px;line-height:1}
 .simPanel{height:260px;flex-basis:260px}.simPanel.collapsed{height:39px!important;flex:0 0 39px!important;min-height:39px}.simHead{height:38px;flex-basis:38px;padding:4px 8px}.simHead button{height:28px}.simBody{padding:6px 8px 9px}.simField input,.simField select{height:27px;min-height:27px;padding:0 7px;font-size:12px}.simSection{margin-top:7px;padding-top:6px}.simSectionTitle{margin-bottom:4px}.simGrid{gap:5px}.simEvent{gap:4px;margin-bottom:4px}.simEventName{padding-bottom:6px;font-size:12px}.simSummary{margin-top:7px;padding:6px;font-size:11px}.simRef{display:block;min-height:11px;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tableWrap{flex:1 1 0}.simPanel{height:auto;flex:1 1 0;min-height:120px;max-height:none}.simHead{height:34px;flex-basis:34px;padding:3px 7px}.simHead button{height:25px;border-radius:4px;font-size:11px}.simHead .inlineCheck{font-size:11px}.simBody{padding:5px 7px 7px;font-size:11px}.simGrid{gap:4px}.simGrid.two{grid-template-columns:minmax(0,1.6fr) minmax(72px,.7fr)}.simField .label{font-size:9px;line-height:1.1}.simField input,.simField select{height:24px;min-height:24px;border-radius:3px;padding:0 5px;font-size:11px}.simSection{margin-top:5px;padding-top:5px}.simSectionTitle{margin-bottom:3px;font-size:9px;letter-spacing:.07em}.simEventHeader,.simEvent{display:grid;grid-template-columns:88px minmax(96px,1fr) 54px 64px;gap:4px}.simEventHeader{padding:0 0 2px;color:var(--muted);font-size:8px;line-height:1;text-transform:uppercase;letter-spacing:.03em}.simEventHeader span:nth-child(n+3){text-align:center}.simEvent{align-items:center;margin:0;padding:3px 0;border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent)}.simEventName{padding:0;font-size:10px;font-weight:700}.simEvent .simField{display:block}.simEvent .simField input{text-align:right}.simRef{min-height:9px;margin-top:1px;font-size:8px;line-height:1}.simSummary{margin-top:5px;padding:4px 5px;border-radius:3px;font-size:10px;line-height:1.25}.simNote{margin-top:3px;color:var(--muted);font-size:8px;line-height:1.1}.simStar{font-size:13px}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .simSetupGrid .simContextGrid{grid-template-columns:minmax(130px,1.7fr) 64px}.simStaticGrid{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:3px}.simStaticGrid .simField{display:block}.simStaticGrid .label{display:block;margin:0 0 1px;white-space:nowrap;font-size:8px;line-height:1}.simField input,.simField select{height:22px;min-height:22px}.simStaticGrid input{height:20px;min-height:20px}.simEventHeader,.simEvent{grid-template-columns:88px minmax(96px,1fr) 60px 60px}.simEvent{align-items:start;padding:2px 0}.simEventName{padding-top:6px}.simEvent .simField:nth-child(2) input{text-align:right}.simEvent .simField:nth-child(3) input,.simEvent .simField:nth-child(4) input{text-align:center}.simRef{min-height:8px;font-size:8px}.simSummary{margin-top:2px;line-height:1.15}.simNote{margin-top:0}.simBody{padding-bottom:0}
 .simPanel input[type=number]{appearance:textfield;-moz-appearance:textfield}.simPanel input[type=number]::-webkit-inner-spin-button,.simPanel input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.simPanel input::placeholder{color:var(--muted);font-size:9px;opacity:.8}
 .simHead button{font-size:12px}.simHead .inlineCheck{font-size:12px}.simBody{font-size:12px}.simField .label{font-size:10px}.simField input,.simField select{font-size:12px}.simStaticGrid .label{font-size:9px}.simSectionTitle{font-size:10px}.simEventHeader{font-size:9px}.simEvent{padding:1px 0}.simEventName{font-size:11px}.simEvent .simField:nth-child(2) input{text-align:left}.simRef{font-size:9px}.simSummary{font-size:11px}.simNote{font-size:9px}.simStar{font-size:14px}.simPanel input::placeholder{font-size:10px}
+.leftTitleRow{display:block}.leftActionRow{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:0 0 7px}.leftActionRow button{width:100%;white-space:nowrap}
+.issueDialog{width:min(94vw,680px);max-height:min(88vh,760px);padding:0;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);box-shadow:0 18px 60px #000a;overflow:hidden}.issueDialog.disclaimerDialog{width:min(92vw,520px)}.issueDialog::backdrop{background:#000b;backdrop-filter:blur(2px)}.issueDialogHeader{display:flex;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid var(--line);background:var(--panel2)}.issueDialogHeader h2{flex:1;margin:0;font-size:16px}.issueDialogClose{width:30px;min-width:30px;height:30px;padding:0;font-size:18px}.issueDialogBody{padding:15px;overflow:auto;max-height:calc(88vh - 58px)}.issueDialogBody p{margin:0 0 11px;line-height:1.5}.issueDialogBody p:last-child{margin-bottom:0}.issueDialogActions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}.primaryAction{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:700}.primaryAction:hover{background:var(--muted);border-color:var(--muted)}.ticketGrid{display:grid;grid-template-columns:1fr 110px;gap:10px}.ticketField{display:flex;flex-direction:column;gap:4px;min-width:0}.ticketField.wide{grid-column:1/-1}.ticketField span{font-size:11px;color:var(--muted)}.ticketField input,.ticketField select,.ticketField textarea{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--control);color:var(--text);font:inherit}.ticketField textarea{min-height:76px;padding:8px 10px;resize:vertical}.ticketField input,.ticketField select{height:32px}.ticketHelp{margin-top:10px!important;color:var(--muted);font-size:11px}.ticketStatus{min-height:18px;margin-top:10px;font-size:12px}.ticketStatus.error{color:#fb7185}.ticketStatus.success{color:#4ade80}.ticketHoneypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}.ticketFallback[hidden]{display:none}
 @media (min-width:901px){
   .left{padding:7px 8px;font-size:12px}
   .left h1{font-size:15px;margin-bottom:6px}
@@ -26,6 +28,8 @@
   .left .checkgrid label,.left .inlineCheck{gap:5px;font-size:11px;line-height:1.15}
   .left .btnrow{gap:5px;margin-top:5px}
   .left .modeControl.active{margin-top:4px}
+  .leftActionRow{margin-bottom:5px}
+  .leftActionRow button{height:25px;min-height:25px;font-size:10px}
 }
 @media (max-width:900px){
   :root{--h:38px}
@@ -56,17 +60,103 @@
   .axisLabel{font-size:12px}
   .tick{font-size:10px}
   .tooltip{max-width:calc(100vw - 32px)}
+  .ticketGrid{grid-template-columns:1fr}
+  .ticketField.wide{grid-column:auto}
+  .issueDialogActions{flex-wrap:wrap}
   .simGrid,.simGrid.two{grid-template-columns:1fr 1fr}
   .simEvent{grid-template-columns:1fr 1fr}
   .simEventName{grid-column:1/-1;padding-bottom:0}
+  .simEvent .simField:nth-child(2){grid-column:1/-1}
   .simEventHeader{display:none}
+}
+.mobileChrome,.mobileScopePill{display:none}
+.rowsTitle{display:flex;align-items:center;gap:7px}.rowsTitle b{flex:1}.rowsTitle button{height:27px;padding:0 8px}
+.app.tableMaximized .plotPane,.app.tableMaximized #splitRows,.app.tableMaximized .simPanel,.app.tableMaximized .simSplit{display:none}.app.tableMaximized .rowsPane{width:auto!important;max-width:none!important;flex:1 1 auto!important;border-left:0}.app.tableMaximized .tableWrap{flex:1}
+th,td{border-right:1px solid var(--line)}th:last-child,td:last-child{border-right:0}
+.columnDialog{width:min(94vw,560px)}.columnAddRow{display:grid;grid-template-columns:1fr auto;gap:5px;align-items:end}.columnAddRow label{grid-column:1/-1;color:var(--muted);font-size:11px}.columnAddRow select{min-width:0}.columnList{display:flex;flex-direction:column;gap:4px;margin-top:10px}.columnItem{display:grid;grid-template-columns:minmax(0,1fr) 30px 30px 30px;gap:4px;align-items:center;padding:4px 5px 4px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel2)}.columnItem span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.columnItem button{width:30px;height:27px;padding:0}.columnHelp{margin:8px 0 0!important;color:var(--muted);font-size:11px}
+.helpDialog{width:min(94vw,650px)}.helpBody{display:grid;grid-template-columns:1fr 1fr;gap:8px}.helpBody section{padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel2)}.helpBody section:last-of-type{grid-column:1/-1}.helpBody h3{margin:0 0 4px;font-size:12px}.helpBody section p{margin:0;font-size:12px;line-height:1.4}.helpNote{grid-column:1/-1;margin:2px 0 0!important;color:var(--muted);font-size:11px}.helpBody .issueDialogActions{grid-column:1/-1;margin-top:3px}
+@media (min-width:901px){
+  .rowsPane{width:580px;flex-basis:580px;max-width:1000px}
+  .rowsHead{padding:6px 7px;gap:5px;flex-direction:row;align-items:center}
+  .rowsTitle{flex:0 0 auto}
+  .rowsHead input{height:28px;min-width:100px;flex:1}
+  table{font-size:11px}
+  th,td{padding:4px 6px;line-height:18px}
+}
+@media (max-width:900px){
+  body{overflow:hidden}
+  .mobileChrome{height:86px;display:flex;flex-direction:column;background:var(--panel);border-bottom:1px solid var(--line)}
+  .mobileBrand{height:42px;flex:0 0 42px;display:flex;align-items:center;gap:8px;padding:5px 8px}
+  .mobileBrand b{flex:1;font-size:14px}
+  .mobileBrand button{height:30px;padding:0 9px;font-size:11px}
+  .mobileTabs{height:44px;flex:0 0 44px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px 8px 6px}
+  .mobileTabs button{height:34px;min-width:0;padding:0 4px;border-radius:5px;font-size:12px}
+  .mobileTabs button[aria-selected="true"]{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:700}
+  .app{height:calc(100dvh - 86px);min-height:0;overflow:hidden}
+  .leftTitleRow{display:none}
+  .leftActionRow{display:none}
+  .app[data-mobile-view="filters"] .left{display:block;height:100%;overflow:auto}
+  .app[data-mobile-view="filters"] .main{display:none}
+  .app:not([data-mobile-view="filters"]) .left{display:none}
+  .app:not([data-mobile-view="filters"]) .main{display:block;height:100%;min-height:0}
+  .app[data-mobile-view="chart"] .plotPane{display:flex;height:100%;min-height:0}
+  .app[data-mobile-view="chart"] .rowsPane{display:none}
+  .app[data-mobile-view="table"] .plotPane,.app[data-mobile-view="simulator"] .plotPane{display:none}
+  .app[data-mobile-view="table"] .rowsPane,.app[data-mobile-view="simulator"] .rowsPane{display:flex;width:100%!important;height:100%;min-height:0;border-top:0}
+  .app[data-mobile-view="table"] .simPanel,.app[data-mobile-view="table"] .simSplit{display:none}
+  .app[data-mobile-view="simulator"] .rowsHead,.app[data-mobile-view="simulator"] .tableWrap,.app[data-mobile-view="simulator"] .simSplit{display:none}
+  .app[data-mobile-view="simulator"] .simPanel{display:flex!important;height:auto!important;min-height:0!important;max-height:none!important;flex:1 1 auto!important;border-top:0}
+  .app[data-mobile-view="simulator"] .simPanel.collapsed .simBody{display:block}
+  .app[data-mobile-view="simulator"] .simHead{height:auto;min-height:43px;flex:0 0 auto;padding:6px 8px;flex-wrap:wrap}
+  .app[data-mobile-view="simulator"] #simCollapse{display:none}
+  .app[data-mobile-view="simulator"] .simBody{flex:1;min-height:0;overflow:auto;padding:9px 10px 20px}
+  .app[data-mobile-view="simulator"] .simField input,.app[data-mobile-view="simulator"] .simField select{height:34px;min-height:34px;font-size:12px}
+  .app[data-mobile-view="simulator"] .simStaticGrid input{height:32px;min-height:32px}
+  .tableMaximizeButton{display:none}
+  .plotPane{padding:6px}
+  #chartWrap{min-height:0;flex:1}
+  .status{padding:6px;gap:5px;max-height:116px;overflow:hidden}
+  #yearsPill,#compsPill{display:none}
+  .mobileScopePill{display:inline-flex}
+  .legend{width:100%;flex-wrap:nowrap;overflow-x:auto;gap:10px;padding:1px 0 3px;white-space:nowrap;scrollbar-width:thin}
+  .rowsHead{padding:6px;gap:5px}
+  .rowsTitle button{height:30px}
+  .rowsHead input{height:34px}
+  .tableWrap{flex:1;min-height:0}
+  .columnDialog .issueDialogBody{padding:11px}
+  .helpBody{grid-template-columns:1fr}
+  .helpBody section:last-of-type,.helpNote,.helpBody .issueDialogActions{grid-column:auto}
+}
+@media (max-width:420px){
+  .mobileBrand b{font-size:13px}
+  .mobileTabs{padding-left:5px;padding-right:5px;gap:3px}
+  .mobileTabs button{font-size:11px}
+  .simHead .inlineCheck{min-width:150px}
 }
 </style>
 </head>
 <body>
-<div class="app">
+<header class="mobileChrome">
+  <div class="mobileBrand">
+    <b>FSAE Results Dashboard</b>
+    <button id="mobileReportDataIssue" type="button">Report Error</button>
+  </div>
+  <nav class="mobileTabs" aria-label="Dashboard views">
+    <button type="button" data-mobile-view="filters">Filters</button>
+    <button type="button" data-mobile-view="chart">Chart</button>
+    <button type="button" data-mobile-view="table">Table</button>
+    <button type="button" data-mobile-view="simulator">Simulator</button>
+  </nav>
+</header>
+<div class="app" id="dashboardApp" data-mobile-view="chart">
   <aside class="panel left" id="leftPanel">
-    <h1>FSAE Results Dashboard</h1>
+    <div class="leftTitleRow">
+      <h1>FSAE Results Dashboard</h1>
+    </div>
+    <div class="leftActionRow">
+      <button class="reportIssueButton" id="reportDataIssue" type="button">Report Data Error</button>
+      <button id="openDashboardHelp" type="button">How to Use</button>
+    </div>
     <div class="controls">
       <div class="card">
         <div class="panelTitle">Competitions</div><div id="competitionChecks" class="checkgrid"></div>
@@ -90,8 +180,7 @@
         <label class="inlineCheck"><input type="checkbox" id="zeroAsNull"> Hide Zero Values</label>
         <label class="inlineCheck"><input type="checkbox" id="omitBothZero" checked> Hide Zero/Zero Values</label>
         <label class="inlineCheck"><input type="checkbox" id="hideZeroWeight"> Hide No Weight Entries</label>
-        <label class="inlineCheck"><input type="checkbox" id="splitMode" checked> Overaly Competitions</label>
-        <div class="btnrow"><button id="downloadRawSchools">Download Raw Schools</button></div>
+        <label class="inlineCheck"><input type="checkbox" id="splitMode" checked> Overlay Competitions</label>
       </div>
     </div>
   </aside>
@@ -102,6 +191,7 @@
         <span class="pill" id="countPill">Loading...</span>
         <span class="pill" id="yearsPill"></span>
         <span class="pill" id="compsPill"></span>
+        <span class="pill mobileScopePill" id="mobileScopePill"></span>
         <span class="legend" id="legend"></span>
       </div>
       <div id="chartWrap"><svg id="chart"></svg><div id="tip" class="tooltip"></div></div>
@@ -109,7 +199,7 @@
     <div class="splitter" id="splitRows"></div>
     <aside class="rowsPane" id="rowsPanel">
       <div class="rowsHead">
-        <b>Table Summary</b>
+        <div class="rowsTitle"><b>Table Summary</b><button id="manageTableColumns" type="button">Columns</button><button class="tableMaximizeButton" id="toggleTableMaximize" type="button" aria-pressed="false">Maximize Table</button></div>
         <input id="teamSearch" placeholder="Search team..." />
       </div>
       <div class="tableWrap" id="tableWrap"><table id="rowsTable"></table></div>
@@ -176,9 +266,146 @@
     </aside>
   </main>
 </div>
+<dialog class="issueDialog helpDialog" id="dashboardHelpDialog" aria-labelledby="dashboardHelpTitle">
+  <div class="issueDialogHeader">
+    <h2 id="dashboardHelpTitle">How to use the FSAE Results Dashboard</h2>
+    <button class="issueDialogClose" id="closeDashboardHelp" type="button" aria-label="Close">&times;</button>
+  </div>
+  <div class="issueDialogBody helpBody">
+    <section>
+      <h3>Choose the field</h3>
+      <p>Competition and year filters control the results included everywhere. All available data is selected when the dashboard first loads.</p>
+    </section>
+    <section>
+      <h3>Build a plot</h3>
+      <p>Select result metrics for X and Y to create competition-result cross-plots, with an optional metric controlling point size. The X menu also provides School Timeseries for tracking a selected school’s metric across years and Competition Timeseries for plotting competition-level metrics over time. Hover or tap a point for its team and values. Overlay Competitions combines events on one plot; turn it off to separate them.</p>
+    </section>
+    <section>
+      <h3>Work with the table</h3>
+      <p>Search for a team, select a heading to sort, and use Columns to add, remove, or reorder fields. Clearing a Plot checkbox hides only that point and leaves its table row in place. Maximize Table uses the full workspace to the right of the filters.</p>
+    </section>
+    <section>
+      <h3>Handle missing and zero results</h3>
+      <p>Hide Zero Values treats individual zero metric values as unavailable. Hide Zero/Zero Values removes a row only when both plotted values are zero. Hide No Weight Entries excludes teams without a recorded vehicle weight.</p>
+    </section>
+    <section>
+      <h3>Run a simulated result</h3>
+      <p>Enable Simulated Results, choose a competition and year, then enter static scores and dynamic-event inputs. All First fills the best observed reference values. The starred team is rescored with the field using 2026 formulas as a historical approximation.</p>
+    </section>
+    <p class="helpNote">Official competition PDFs remain authoritative. Use Report Data Error if a dashboard value appears incorrect.</p>
+    <div class="issueDialogActions">
+      <button class="primaryAction" id="acknowledgeDashboardHelp" type="button">Got It</button>
+    </div>
+  </div>
+</dialog>
+<dialog class="issueDialog disclaimerDialog" id="dataDisclaimer" aria-labelledby="dataDisclaimerTitle">
+  <div class="issueDialogHeader">
+    <h2 id="dataDisclaimerTitle">FSAE results data disclaimer</h2>
+  </div>
+  <div class="issueDialogBody">
+    <p>OpenDyna results are transcribed and processed from official competition documents and may contain small errors or discrepancies.</p>
+    <p>The official released PDFs remain authoritative. If you identify an issue, please submit a data correction ticket so it can be reviewed.</p>
+    <div class="issueDialogActions">
+      <button id="disclaimerReportIssue" type="button">Report Data Error</button>
+      <button class="primaryAction" id="acceptDataDisclaimer" type="button" autofocus>Acknowledge</button>
+    </div>
+  </div>
+</dialog>
+<dialog class="issueDialog columnDialog" id="tableColumnsDialog" aria-labelledby="tableColumnsTitle">
+  <div class="issueDialogHeader">
+    <h2 id="tableColumnsTitle">Table columns</h2>
+    <button class="issueDialogClose" id="closeTableColumns" type="button" aria-label="Close">&times;</button>
+  </div>
+  <div class="issueDialogBody">
+    <div class="columnAddRow">
+      <label for="tableColumnAdd">Add a column</label>
+      <select id="tableColumnAdd"></select>
+      <button id="addTableColumn" type="button">Add</button>
+    </div>
+    <div class="columnList" id="tableColumnList"></div>
+    <p class="columnHelp">Use the arrows to change the left-to-right order. The Plot column remains fixed.</p>
+    <div class="issueDialogActions">
+      <button id="resetTableColumns" type="button">Reset Columns</button>
+      <button class="primaryAction" id="applyTableColumns" type="button">Done</button>
+    </div>
+  </div>
+</dialog>
+<dialog class="issueDialog" id="dataTicketDialog" aria-labelledby="dataTicketTitle">
+  <div class="issueDialogHeader">
+    <h2 id="dataTicketTitle">Report an FSAE data error</h2>
+    <button class="issueDialogClose" id="closeDataTicket" type="button" aria-label="Close">&times;</button>
+  </div>
+  <div class="issueDialogBody">
+    <form id="dataTicketForm">
+      <div class="ticketGrid">
+        <label class="ticketField">
+          <span>Competition</span>
+          <input id="ticketCompetition" name="competition" list="ticketCompetitionOptions" maxlength="100" autocomplete="off">
+          <datalist id="ticketCompetitionOptions"></datalist>
+        </label>
+        <label class="ticketField">
+          <span>Year</span>
+          <input id="ticketYear" name="year" type="number" min="1980" max="2100" step="1">
+        </label>
+        <label class="ticketField">
+          <span>Team or school</span>
+          <input id="ticketTeam" name="team" maxlength="160" autocomplete="organization">
+        </label>
+        <label class="ticketField">
+          <span>Event or field</span>
+          <select id="ticketEvent" name="event">
+            <option value="">Select one</option>
+            <option>Overall results</option>
+            <option>Presentation</option>
+            <option>Cost</option>
+            <option>Design</option>
+            <option>Acceleration</option>
+            <option>Skidpad</option>
+            <option>Autocross</option>
+            <option>Endurance</option>
+            <option>Efficiency</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label class="ticketField">
+          <span>Displayed value</span>
+          <input id="ticketDisplayedValue" name="displayedValue" maxlength="120">
+        </label>
+        <label class="ticketField">
+          <span>Expected correction</span>
+          <input id="ticketExpectedValue" name="expectedValue" maxlength="120">
+        </label>
+        <label class="ticketField wide">
+          <span>Official PDF, page, or source reference</span>
+          <input id="ticketSourceReference" name="sourceReference" maxlength="500" placeholder="Example: 2026 Michigan Results PDF, page 4">
+        </label>
+        <label class="ticketField wide">
+          <span>What appears to be wrong? *</span>
+          <textarea id="ticketDescription" name="description" minlength="10" maxlength="3000" required></textarea>
+        </label>
+        <label class="ticketField wide">
+          <span>Your email *</span>
+          <input id="ticketReporterEmail" name="reporterEmail" type="email" maxlength="254" required autocomplete="email">
+        </label>
+        <label class="ticketHoneypot" aria-hidden="true">
+          <span>Website</span>
+          <input id="ticketWebsite" name="website" tabindex="-1" autocomplete="off">
+        </label>
+      </div>
+      <p class="ticketHelp">Do not include passwords, access tokens, or other private credentials. Submissions are stored by OpenDyna and sent to support@opendyna.com. See the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+      <div class="ticketStatus" id="ticketStatus" role="status" aria-live="polite"></div>
+      <div class="issueDialogActions">
+        <button class="ticketFallback" id="ticketEmailFallback" type="button" hidden>Email Instead</button>
+        <button id="cancelDataTicket" type="button">Cancel</button>
+        <button class="primaryAction" id="submitDataTicket" type="submit">Submit Ticket</button>
+      </div>
+    </form>
+  </div>
+</dialog>
 <script src="fsae_school_canonicalization.js"></script>
+<script src="../js/supabase-config.js"></script>
 <script>
-let RAW_DATA=[], DATA=[], METRICS=[], metricMap={}, omitted=new Set(), sortCol='total_score_clean', sortDir='desc', competitionColors={}, tableState={cols:[],data:[],rowH:31}, ready=false, lastSimResult=null;
+let RAW_DATA=[], DATA=[], METRICS=[], metricMap={}, omitted=new Set(), sortCol='total_score_clean', sortDir='desc', competitionColors={}, tableState={cols:[],data:[],rowH:27}, ready=false, lastSimResult=null, customTableColumns=null, tableColumnDraft=[];
 const competitionPalette=['#38bdf8','#f97316','#22c55e','#e879f9','#f43f5e','#a3e635','#8b5cf6','#facc15'];
 const integerKeys=new Set(['rank','rank_by_y','year','car_num','engine_cylinders','num_motors']);
 const DIST_KEY='__y_distribution';
@@ -189,6 +416,113 @@ const toNum=v=>v===null||v===undefined||v===''?NaN:+v;
 const hasNum=v=>Number.isFinite(toNum(v));
 const num=v=>Number.isFinite(toNum(v))?toNum(v):0;
 const rowKey=r=>r.entry_id || [r.competition,r.year,r.vehicle_type,r.car_num,r.team].join('|');
+const plotKey=r=>r.__competitionRow?[r.competition,r.year,r.vehicle_type,'competition'].join('|'):rowKey(r);
+const DATA_DISCLAIMER_KEY='opendynaFsaeDataDisclaimerV1';
+function openIssueDialog(dialog){if(!dialog.open){if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','')}}
+function closeIssueDialog(dialog){if(dialog.open&&typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open')}
+function dataDisclaimerAccepted(){try{return localStorage.getItem(DATA_DISCLAIMER_KEY)==='accepted'}catch{return false}}
+function acceptDataDisclaimer(){try{localStorage.setItem(DATA_DISCLAIMER_KEY,'accepted')}catch{} closeIssueDialog($('dataDisclaimer'))}
+function refreshTicketOptions(){
+  const comps=[...new Set(DATA.map(r=>String(r.competition||'')).filter(Boolean))].sort(),years=[...new Set(DATA.map(r=>+r.year).filter(Number.isFinite))].sort((a,b)=>b-a);
+  $('ticketCompetitionOptions').innerHTML=comps.map(c=>`<option value="${esc(c)}"></option>`).join('');
+  $('ticketYear').setAttribute('list','ticketYearOptions');
+  let yearsList=$('ticketYearOptions');
+  if(!yearsList){yearsList=document.createElement('datalist');yearsList.id='ticketYearOptions';$('dataTicketForm').appendChild(yearsList)}
+  yearsList.innerHTML=years.map(y=>`<option value="${y}"></option>`).join('');
+}
+function ticketSingleChecked(cls){const values=[...document.querySelectorAll('.'+cls+':checked')].map(e=>e.value);return values.length===1?values[0]:''}
+function populateTicketContext(){
+  refreshTicketOptions();
+  const simOn=$('simEnabled')?.checked;
+  $('ticketCompetition').value=simOn?$('simCompetition').value:ticketSingleChecked('comp');
+  $('ticketYear').value=simOn?$('simYear').value:ticketSingleChecked('yr');
+  $('ticketTeam').value=$('teamSearch')?.value.trim()||'';
+}
+function ticketPayload(){
+  const form=new FormData($('dataTicketForm')),text=name=>String(form.get(name)||'').trim();
+  return {
+    competition:text('competition'),year:text('year')?Number(text('year')):null,team:text('team'),event:text('event'),
+    displayedValue:text('displayedValue'),expectedValue:text('expectedValue'),sourceReference:text('sourceReference'),
+    description:text('description'),reporterEmail:text('reporterEmail'),website:text('website'),
+    pageUrl:location.href.slice(0,500)
+  };
+}
+function ticketMailto(){
+  const p=ticketPayload(),subject=`FSAE data correction: ${p.year||''} ${p.competition||''} - ${p.team||''}`.trim();
+  const body=[
+    `Competition: ${p.competition}`,`Year: ${p.year||''}`,`Team: ${p.team}`,`Event/field: ${p.event}`,
+    `Displayed value: ${p.displayedValue}`,`Expected correction: ${p.expectedValue}`,`Source: ${p.sourceReference}`,
+    '',p.description,'',`Page: ${p.pageUrl}`,p.reporterEmail?`Reporter email: ${p.reporterEmail}`:''
+  ].filter((line,i,all)=>line!==''||all[i-1]!== '').join('\n');
+  location.href=`mailto:support@opendyna.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+function setTicketStatus(message,type=''){
+  const status=$('ticketStatus');status.textContent=message;status.className='ticketStatus'+(type?' '+type:'');
+}
+async function submitDataTicket(event){
+  event.preventDefault();
+  const form=$('dataTicketForm');
+  if(!form.reportValidity())return;
+  const payload=ticketPayload();
+  if(payload.description.length<10){
+    setTicketStatus('Please provide at least 10 characters describing the data issue.','error');
+    $('ticketDescription').focus();
+    return;
+  }
+  const config=window.OPENDYNA_AUTH_CONFIG||{},url=String(config.supabaseUrl||'').replace(/\/$/,'');
+  if(!url||!config.supabasePublishableKey){
+    setTicketStatus('Ticket service is not configured. Please use Email Instead.','error');
+    $('ticketEmailFallback').hidden=false;
+    return;
+  }
+  const submit=$('submitDataTicket');submit.disabled=true;$('ticketEmailFallback').hidden=true;setTicketStatus('Submitting ticket...');
+  try{
+    const response=await fetch(`${url}/functions/v1/submit-fsae-ticket`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':config.supabasePublishableKey},
+      body:JSON.stringify(payload)
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||`Submission failed (${response.status}).`);
+    const shortId=String(result.ticketId||'').split('-')[0];
+    setTicketStatus(`Ticket ${shortId||'received'} was submitted${result.emailed===false?' and saved; email delivery is pending.':'. Thank you.'}`,'success');
+  }catch(error){
+    setTicketStatus(`${error.message||'Ticket submission failed'} You can send the report with Email Instead.`,'error');
+    $('ticketEmailFallback').hidden=false;
+    submit.disabled=false;
+  }
+}
+function openDataTicket(){
+  acceptDataDisclaimer();
+  $('dataTicketForm').reset();$('submitDataTicket').disabled=false;$('ticketEmailFallback').hidden=true;setTicketStatus('');
+  populateTicketContext();openIssueDialog($('dataTicketDialog'));
+}
+function initDataIssueReporting(){
+  $('dataDisclaimer').addEventListener('cancel',event=>event.preventDefault());
+  $('reportDataIssue').onclick=openDataTicket;$('mobileReportDataIssue').onclick=openDataTicket;$('disclaimerReportIssue').onclick=openDataTicket;
+  $('openDashboardHelp').onclick=()=>openIssueDialog($('dashboardHelpDialog'));
+  $('closeDashboardHelp').onclick=$('acknowledgeDashboardHelp').onclick=()=>closeIssueDialog($('dashboardHelpDialog'));
+  $('acceptDataDisclaimer').onclick=acceptDataDisclaimer;$('closeDataTicket').onclick=()=>closeIssueDialog($('dataTicketDialog'));
+  $('cancelDataTicket').onclick=()=>closeIssueDialog($('dataTicketDialog'));$('ticketEmailFallback').onclick=ticketMailto;
+  $('dataTicketForm').addEventListener('submit',submitDataTicket);
+  if(!dataDisclaimerAccepted())openIssueDialog($('dataDisclaimer'));
+}
+function setMobileView(view){
+  const app=$('dashboardApp');
+  app.dataset.mobileView=view;
+  document.querySelectorAll('[data-mobile-view]').forEach(button=>{
+    if(button===app)return;
+    button.setAttribute('aria-selected',String(button.dataset.mobileView===view));
+  });
+  if(view==='chart')schedulePlotRedraw();
+  if(view==='table')renderVirtualRows();
+}
+function initMobileViews(){
+  document.querySelectorAll('.mobileTabs [data-mobile-view]').forEach(button=>{
+    button.onclick=()=>setMobileView(button.dataset.mobileView);
+  });
+  setMobileView('chart');
+}
 function metricLabel(k){return metricMap[k]?.label||k}
 function isIntegerKey(k){return integerKeys.has(k)||metricMap[k]?.integer===true}
 function fmt(v,k){if(v===null||v===undefined||v==='')return ''; let n=+v; if(!Number.isFinite(n))return String(v); if(isIntegerKey(k))return String(Math.round(n)); return Math.abs(n)>=100? n.toFixed(1): n.toFixed(2).replace(/\.00$/,'')}
@@ -221,8 +555,8 @@ function initControls(){
   $('allComps').onclick=()=>{document.querySelectorAll('.comp').forEach(x=>x.checked=true);render()}; $('noComps').onclick=()=>{document.querySelectorAll('.comp').forEach(x=>x.checked=false);render()};
   $('cleanNames').onchange=applyNameMode;
   $('darkTheme').onchange=toggleTheme;
-  $('downloadRawSchools').onclick=downloadRawSchools;
   applyTheme(localStorage.getItem('fsaeTheme')||'dark');
+  initTableColumnManager();
   initPanelSizes();
   observeChartSize();
   splitters();
@@ -518,28 +852,41 @@ function updateSimSummary(result){
   $('simSummary').innerHTML=`<b><span class="simStar">★</span> ${fmt(r.total_score_clean,'total_score_clean')} pts · P${fmt(r.overall_place,'overall_place')}/${result.fieldSize}</b> · C ${fmt(r.cost_score,'cost_score')} · A ${fmt(r.acceleration_score,'acceleration_score')} · S ${fmt(r.skidpad_score,'skidpad_score')} · AX ${fmt(r.autocross_score,'autocross_score')} · E ${fmt(r.endurance_score,'endurance_score')} · Eff ${fmt(r.efficiency_score,'efficiency_score')}<br>Laps ${fmt(r.endurance_number_of_laps,'endurance_number_of_laps')}/${fmt(result.fullLaps,'endurance_number_of_laps')} · ${complete?'complete':'incomplete'}`;
 }
 function observeChartSize(){if('ResizeObserver' in window)new ResizeObserver(()=>{if(ready)schedulePlotRedraw()}).observe($('chartWrap'))}
-function initPanelSizes(){let rows=$('rowsPanel'); rows.style.width=rows.getBoundingClientRect().width+'px'; rows.style.flexBasis=rows.style.width;}
+function initPanelSizes(){let rows=$('rowsPanel');if(matchMedia('(max-width:900px)').matches){rows.style.width='';rows.style.flexBasis='';return}rows.style.width=rows.getBoundingClientRect().width+'px';rows.style.flexBasis=rows.style.width;}
 function applyNameMode(){DATA=$('cleanNames').checked?RAW_DATA.map(cleanRowStrings):RAW_DATA.map(r=>({...r})); populateSchoolSelect(); render();}
 function populateSchoolSelect(){let teams=[...new Set(DATA.map(r=>String(r.team||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b)); $('schoolTimeSelect').innerHTML=teams.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');}
-function downloadRawSchools(){let schools=[...new Set(RAW_DATA.map(r=>String(r.team||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b)); let text=schools.join('\n')+'\n'; let blob=new Blob([text],{type:'text/plain;charset=utf-8'}); let url=URL.createObjectURL(blob); let a=document.createElement('a'); a.href=url; a.download='fsae_raw_school_names.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function checked(cls){return new Set([...document.querySelectorAll('.'+cls+':checked')].map(x=>x.value))}
 function applyTheme(theme){document.body.classList.toggle('light',theme==='light'); $('darkTheme').checked=theme!=='light';}
 function toggleTheme(){let theme=$('darkTheme').checked?'dark':'light'; localStorage.setItem('fsaeTheme',theme); applyTheme(theme); render();}
 function checkedCompetitions(){return [...checked('comp')].sort()}
 function competitionColor(comp){let i=competitionColors[comp]??0; return competitionPalette[i%competitionPalette.length];}
-function filtered(){const comps=checked('comp'), yrs=checked('yr'), q=$('teamSearch').value.toLowerCase().trim(); const x=$('xMetric').value,y=$('yMetric').value,school=$('schoolTimeSelect')?.value||''; return displayData().filter(r=>comps.has(String(r.competition))&&yrs.has(String(r.year))&&(x===TIME_KEY?String(r.team)===school:(x===COMP_TIME_KEY||!q||String(r.team).toLowerCase().includes(q)))&&!omitted.has(rowKey(r))&&(!$('hideZeroWeight').checked || r.__simulated || [r.weight_reported_kg,r.weight_complete_vehicle_kg,r.weight_with_accumulator_kg,r.weight_without_accumulator_kg].some(v=>hasNum(v)&&toNum(v)>0))).filter(r=>!$('omitBothZero').checked || r.__simulated || x==='rank_by_y' || x===DIST_KEY || x===TIME_KEY || x===COMP_TIME_KEY || !([x,y].every(k=>hasMetricNum(r,k)&&metricNum(r,k)===0)));}
+function filtered(){const comps=checked('comp'), yrs=checked('yr'), q=$('teamSearch').value.toLowerCase().trim(); const x=$('xMetric').value,y=$('yMetric').value,school=$('schoolTimeSelect')?.value||''; return displayData().filter(r=>comps.has(String(r.competition))&&yrs.has(String(r.year))&&(x===TIME_KEY?String(r.team)===school:(x===COMP_TIME_KEY||!q||String(r.team).toLowerCase().includes(q)))&&(!$('hideZeroWeight').checked || r.__simulated || [r.weight_reported_kg,r.weight_complete_vehicle_kg,r.weight_with_accumulator_kg,r.weight_without_accumulator_kg].some(v=>hasNum(v)&&toNum(v)>0))).filter(r=>!$('omitBothZero').checked || r.__simulated || x==='rank_by_y' || x===DIST_KEY || x===TIME_KEY || x===COMP_TIME_KEY || !([x,y].every(k=>hasMetricNum(r,k)&&metricNum(r,k)===0)));}
 function rankRows(rows,y,includeMissing=false){const dir=metricMap[y]?.direction||'descending'; let ranked=rows.filter(r=>hasMetricNum(r,y)).sort((a,b)=>dir==='ascending'?metricNum(a,y)-metricNum(b,y):metricNum(b,y)-metricNum(a,y)).map((r,i)=>({...r,__rank:i+1,__x:i+1,__y:metricNum(r,y)})); if(!includeMissing)return ranked; let missing=rows.filter(r=>!hasMetricNum(r,y)).map(r=>({...r,__rank:'',__x:null,__y:null})); return ranked.concat(missing);}
 function extent(vals,key){const m=metricMap[key]||{}; if(m.fixed_min!==null&&m.fixed_min!==undefined&&m.fixed_max!==null&&m.fixed_max!==undefined)return [m.fixed_min,m.fixed_max]; let mn=Math.min(...vals),mx=Math.max(...vals); if(!Number.isFinite(mn)||!Number.isFinite(mx))return [0,1]; if(mn===mx){mn-=1;mx+=1} let pad=(mx-mn)*.07; return [Math.max(0,mn-pad),mx+pad];}
 function competitionRows(rows){let seen=new Set(); return rows.filter(r=>{let k=[r.competition,r.year,r.vehicle_type].join('|'); if(seen.has(k))return false; seen.add(k); return true}).map(r=>({...r,team:`${r.competition} ${fmt(r.year,'year')} ${r.vehicle_type||''}`.trim(),__competitionRow:true}))}
-function plotRows(rows,x,y,s=''){if(x===COMP_TIME_KEY||isCompetitionMetric(x)||isCompetitionMetric(y)||isCompetitionMetric(s))rows=competitionRows(rows); if(x===DIST_KEY)return rows.filter(r=>hasMetricNum(r,y)).map(r=>({...r,__y:metricNum(r,y)})); if(x===TIME_KEY||x===COMP_TIME_KEY)return rows.filter(r=>hasNum(r.year)&&hasMetricNum(r,y)).map(r=>({...r,__x:toNum(r.year),__y:metricNum(r,y)})); return x==='rank_by_y'?rankRows(rows,y):rows.filter(r=>hasMetricNum(r,x)&&hasMetricNum(r,y)).map(r=>({...r,__x:metricNum(r,x),__y:metricNum(r,y)}));}
-function render(){let x=$('xMetric').value,y=$('yMetric').value,s=$('sizeMetric').value; updateModeControls(x); if(!$('simEnabled').checked)updateSimSummary(null); let rows=filtered(); let plotted=plotRows(rows,x,y,s); draw(plotted,x,y,s); table(rows,x,y); let yrs=[...new Set(rows.map(r=>r.year))].sort((a,b)=>a-b); let comps=[...new Set(rows.map(r=>r.competition))].sort(); $('countPill').textContent=`${plotted.length} plotted / ${rows.length} rows`; $('yearsPill').textContent=`Years: ${yrs.map(v=>fmt(v,'year')).join(', ')||'none'}`; $('compsPill').textContent=`Competitions: ${comps.join(', ')||'none'}`; renderLegend(comps);}
+function plotRows(rows,x,y,s=''){if(x===COMP_TIME_KEY||isCompetitionMetric(x)||isCompetitionMetric(y)||isCompetitionMetric(s))rows=competitionRows(rows); if(x===DIST_KEY)rows=rows.filter(r=>hasMetricNum(r,y)).map(r=>({...r,__y:metricNum(r,y)})); else if(x===TIME_KEY||x===COMP_TIME_KEY)rows=rows.filter(r=>hasNum(r.year)&&hasMetricNum(r,y)).map(r=>({...r,__x:toNum(r.year),__y:metricNum(r,y)})); else rows=x==='rank_by_y'?rankRows(rows,y):rows.filter(r=>hasMetricNum(r,x)&&hasMetricNum(r,y)).map(r=>({...r,__x:metricNum(r,x),__y:metricNum(r,y)})); return rows.filter(r=>!omitted.has(plotKey(r)));}
+function render(){let x=$('xMetric').value,y=$('yMetric').value,s=$('sizeMetric').value; updateModeControls(x); if(!$('simEnabled').checked)updateSimSummary(null); let rows=filtered(); let plotted=plotRows(rows,x,y,s); draw(plotted,x,y,s); table(rows,x,y); let yrs=[...new Set(rows.map(r=>r.year))].sort((a,b)=>a-b); let comps=[...new Set(rows.map(r=>r.competition))].sort(); $('countPill').textContent=`${plotted.length} plotted / ${rows.length} rows`; $('yearsPill').textContent=`Years: ${yrs.map(v=>fmt(v,'year')).join(', ')||'none'}`; $('compsPill').textContent=`Competitions: ${comps.join(', ')||'none'}`; $('mobileScopePill').textContent=`${yrs.length} year${yrs.length===1?'':'s'} · ${comps.length} competition${comps.length===1?'':'s'}`; renderLegend(comps);}
 function updateModeControls(x){$('schoolTimeControl').classList.toggle('active',x===TIME_KEY);}
 function renderLegend(comps){$('legend').innerHTML=comps.map(c=>`<span><i class="sw" style="background:${competitionColor(c)}"></i>${esc(c)}</span>`).join('')+($('simEnabled').checked?'<span><span class="simStar">★</span> Simulated Results</span>':'');}
+function chartMarker(r,x,y,radius,fill){
+  const marker=document.createElementNS('http://www.w3.org/2000/svg',r.__simulated?'text':'circle');
+  if(r.__simulated){marker.setAttribute('x',x);marker.setAttribute('y',y);marker.setAttribute('class','pt simPoint simPointStar');marker.textContent='★'}
+  else{marker.setAttribute('cx',x);marker.setAttribute('cy',y);marker.setAttribute('r',radius);marker.setAttribute('fill',fill);marker.setAttribute('class','pt')}
+  return marker;
+}
 function chartMargins(W){return W<560?{l:56,r:12,t:22,b:54}:{l:90,r:22,t:24,b:62}}
-function addWatermark(svg,W,H){const m=chartMargins(W),fs=W<560?30:36,txt='opendyna.com',tw=txt.length*fs*.62,th=fs+10,p=Math.max(24,fs*.9),a={x:m.l,y:m.t,w:W-m.l-m.r,h:H-m.t-m.b}; let candidates=[{x:a.x+p,y:a.y+p+fs},{x:a.x+a.w-p-tw,y:a.y+p+fs},{x:a.x+p,y:a.y+a.h-p},{x:a.x+a.w-p-tw,y:a.y+a.h-p}].map(c=>({...c,r:{x:c.x,y:c.y-fs,w:tw,h:th}})); let marks=[...svg.querySelectorAll('.pt')],score=c=>marks.reduce((s,e)=>{if(e.tagName==='circle'){let x=+e.getAttribute('cx'),y=+e.getAttribute('cy'),r=(+e.getAttribute('r')||4)+4; return s+(x+r>c.r.x&&x-r<c.r.x+c.r.w&&y+r>c.r.y&&y-r<c.r.y+c.r.h?25:0)} if(e.tagName==='rect'){let x=+e.getAttribute('x'),y=+e.getAttribute('y'),w=+e.getAttribute('width'),h=+e.getAttribute('height'),ox=Math.max(0,Math.min(x+w,c.r.x+c.r.w)-Math.max(x,c.r.x)),oy=Math.max(0,Math.min(y+h,c.r.y+c.r.h)-Math.max(y,c.r.y)); return s+ox*oy/80} return s},0); candidates.sort((a,b)=>score(a)-score(b)); let c=candidates[0],t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',c.x); t.setAttribute('y',c.y); t.setAttribute('class','watermark'); t.textContent=txt; svg.appendChild(t)}
+function addWatermark(svg,W,H){
+  const m=chartMargins(W),fs=W<560?30:36,txt='opendyna.com',tw=txt.length*fs*.62,th=fs+10,p=Math.max(24,fs*.9),a={x:m.l,y:m.t,w:W-m.l-m.r,h:H-m.t-m.b};
+  let candidates=[{x:a.x+p,y:a.y+p+fs},{x:a.x+a.w-p-tw,y:a.y+p+fs},{x:a.x+p,y:a.y+a.h-p},{x:a.x+a.w-p-tw,y:a.y+a.h-p}].map(c=>({...c,r:{x:c.x,y:c.y-fs,w:tw,h:th}}));
+  let marks=[...svg.querySelectorAll('.pt')],score=c=>marks.reduce((s,e)=>{if(e.tagName==='circle'){let x=+e.getAttribute('cx'),y=+e.getAttribute('cy'),r=(+e.getAttribute('r')||4)+4; return s+(x+r>c.r.x&&x-r<c.r.x+c.r.w&&y+r>c.r.y&&y-r<c.r.y+c.r.h?25:0)} if(e.tagName==='rect'){let x=+e.getAttribute('x'),y=+e.getAttribute('y'),w=+e.getAttribute('width'),h=+e.getAttribute('height'),ox=Math.max(0,Math.min(x+w,c.r.x+c.r.w)-Math.max(x,c.r.x)),oy=Math.max(0,Math.min(y+h,c.r.y+c.r.h)-Math.max(y,c.r.y)); return s+ox*oy/80} return s},0);
+  candidates.sort((a,b)=>score(a)-score(b));
+  let c=candidates[0],t=document.createElementNS('http://www.w3.org/2000/svg','text');
+  t.setAttribute('x',c.x);t.setAttribute('y',c.y);t.setAttribute('class','watermark');t.textContent=txt;svg.appendChild(t);
+  svg.querySelectorAll('.simPoint').forEach(marker=>svg.appendChild(marker));
+}
 function draw(rows,x,y,s){const svg=$('chart'),wrap=$('chartWrap'),tip=$('tip'); const W=wrap.clientWidth,H=wrap.clientHeight; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=''; if(W<120||H<120)return; if(x===DIST_KEY){drawDistribution(rows,y,W,H,svg,tip);return} if(x===TIME_KEY||x===COMP_TIME_KEY){drawTimeSeries(rows,y,W,H,svg,tip);return} const margin=chartMargins(W); const panels=$('splitMode').checked?['All']:[...new Set(rows.map(r=>r.competition))].sort(); const pw=(W-margin.l-margin.r)/Math.max(1,panels.length); rows.sort((a,b)=>String(a.competition).localeCompare(String(b.competition)));
- panels.forEach((p,pi)=>{let pr= p==='All'?rows:rows.filter(r=>r.competition===p); let xvals=pr.map(r=>r.__x), yvals=pr.map(r=>r.__y); let xKey=x==='rank_by_y'?'rank':x; let xr=x==='rank_by_y'?[0,Math.max(1,pr.length+1)]:extent(xvals,x), yr=extent(yvals,y); const x0=margin.l+pi*pw, y0=margin.t, w=Math.max(1,pw-12), h=Math.max(1,H-margin.t-margin.b); const sx=v=>x0+(v-xr[0])/(xr[1]-xr[0])*w; const sy=v=>y0+h-(v-yr[0])/(yr[1]-yr[0])*h; tickValues(xr,xKey).forEach(v=>{let xx=sx(v); line(xx,y0,xx,y0+h,'grid'); text(xx,y0+h+20,fmt(v,xKey),'tick','middle')}); tickValues(yr,y).forEach(v=>{let yy=sy(v); line(x0,yy,x0+w,yy,'grid'); text(x0-10,yy+4,fmt(v,y),'tick','end')}); line(x0,y0+h,x0+w,y0+h,'axis'); line(x0,y0,x0,y0+h,'axis'); if(panels.length>1)text(x0+w/2,y0+14,p,'axisLabel','middle'); pr.forEach(r=>{let rad=s&&hasMetricNum(r,s)?Math.max(3,Math.min(12,3+Math.sqrt(metricNum(r,s))/3)):5; let c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',sx(r.__x)); c.setAttribute('cy',sy(r.__y)); c.setAttribute('r',r.__simulated?9:rad); c.setAttribute('fill',r.__simulated?'var(--sim)':competitionColor(r.competition)); c.setAttribute('class',r.__simulated?'pt simPoint':'pt'); c.addEventListener('mousemove',e=>{tip.innerHTML=`<b>${r.__simulated?'<span class="simStar">★</span> ':''}${esc(r.team)}</b><br>${fmt(r.year,'year')} ${esc(r.competition)} #${fmt(r.car_num,'car_num')}<br>${x==='rank_by_y'?'Rank':metricLabel(x)}: ${fmt(r.__x,xKey)}<br>${metricLabel(y)}: ${fmt(r.__y,y)}<br>Total: ${fmt(valueOf(r,'total_score_clean'),'total_score_clean')}<br>Weight basis: ${esc(r.weight_basis)}`; tip.style.display='block'; positionTip(e)}); c.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(c)}); }); text(W/2,H-18,(x==='rank_by_y'?'Rank by '+metricLabel(y):metricLabel(x)),'axisLabel','middle'); let yl=text(24,H/2,metricLabel(y),'axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
+ panels.forEach((p,pi)=>{let pr= p==='All'?rows:rows.filter(r=>r.competition===p); let xvals=pr.map(r=>r.__x), yvals=pr.map(r=>r.__y); let xKey=x==='rank_by_y'?'rank':x; let xr=x==='rank_by_y'?[0,Math.max(1,pr.length+1)]:extent(xvals,x), yr=extent(yvals,y); const x0=margin.l+pi*pw, y0=margin.t, w=Math.max(1,pw-12), h=Math.max(1,H-margin.t-margin.b); const sx=v=>x0+(v-xr[0])/(xr[1]-xr[0])*w; const sy=v=>y0+h-(v-yr[0])/(yr[1]-yr[0])*h; tickValues(xr,xKey).forEach(v=>{let xx=sx(v); line(xx,y0,xx,y0+h,'grid'); text(xx,y0+h+20,fmt(v,xKey),'tick','middle')}); tickValues(yr,y).forEach(v=>{let yy=sy(v); line(x0,yy,x0+w,yy,'grid'); text(x0-10,yy+4,fmt(v,y),'tick','end')}); line(x0,y0+h,x0+w,y0+h,'axis'); line(x0,y0,x0,y0+h,'axis'); if(panels.length>1)text(x0+w/2,y0+14,p,'axisLabel','middle'); pr.forEach(r=>{let rad=s&&hasMetricNum(r,s)?Math.max(3,Math.min(12,3+Math.sqrt(metricNum(r,s))/3)):5; let c=chartMarker(r,sx(r.__x),sy(r.__y),rad,competitionColor(r.competition)); c.addEventListener('mousemove',e=>{tip.innerHTML=`<b>${r.__simulated?'<span class="simStar">★</span> ':''}${esc(r.team)}</b><br>${fmt(r.year,'year')} ${esc(r.competition)} #${fmt(r.car_num,'car_num')}<br>${x==='rank_by_y'?'Rank':metricLabel(x)}: ${fmt(r.__x,xKey)}<br>${metricLabel(y)}: ${fmt(r.__y,y)}<br>Total: ${fmt(valueOf(r,'total_score_clean'),'total_score_clean')}<br>Weight basis: ${esc(r.weight_basis)}`; tip.style.display='block'; positionTip(e)}); c.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(c)}); }); text(W/2,H-18,(x==='rank_by_y'?'Rank by '+metricLabel(y):metricLabel(x)),'axisLabel','middle'); let yl=text(24,H/2,metricLabel(y),'axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
  function line(x1,y1,x2,y2,cls){let l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('class',cls);svg.appendChild(l)} function text(x,y,t,cls,anchor){let el=document.createElementNS('http://www.w3.org/2000/svg','text'); el.setAttribute('x',x);el.setAttribute('y',y);el.setAttribute('class',cls);el.setAttribute('text-anchor',anchor||'start');el.textContent=t;svg.appendChild(el);return el}}
 function drawDistribution(rows,y,W,H,svg,tip){const margin=chartMargins(W); const panels=$('splitMode').checked?['All']:[...new Set(rows.map(r=>r.competition))].sort(); const pw=(W-margin.l-margin.r)/Math.max(1,panels.length); panels.forEach((p,pi)=>{let pr=p==='All'?rows:rows.filter(r=>r.competition===p); let yr=extent(pr.map(r=>r.__y),y); let bins=makeBins(pr,yr,y); let br=[bins[0]?.lo??yr[0],bins[bins.length-1]?.hi??yr[1]]; let maxCount=Math.max(1,...bins.map(b=>b.total)); let x0=margin.l+pi*pw,y0=margin.t,w=Math.max(1,pw-12),h=Math.max(1,H-margin.t-margin.b); let sx=i=>x0+i*w/bins.length, bw=Math.max(1,w/bins.length-2), sy=v=>y0+h-v/maxCount*h; for(let i=0;i<6;i++){let yy=y0+i*h/5; line(x0,yy,x0+w,yy,'grid'); text(x0-10,yy+4,fmt(maxCount-i*maxCount/5),'tick','end')} bins.forEach((b,i)=>{let stackY=y0+h; Object.entries(b.byComp).sort(([a],[b])=>a.localeCompare(b)).forEach(([comp,count])=>{let bh=count/maxCount*h; if(bh<=0)return; let rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x',sx(i)+1); rect.setAttribute('y',stackY-bh); rect.setAttribute('width',bw); rect.setAttribute('height',bh); rect.setAttribute('fill',competitionColor(comp)); rect.setAttribute('class','pt'); rect.addEventListener('mousemove',e=>{tip.innerHTML=distributionTip(b,y); tip.style.display='block'; positionTip(e)}); rect.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(rect); stackY-=bh})}); tickValues(br,y).forEach(v=>{let xx=x0+(v-br[0])/(br[1]-br[0])*w; text(xx,y0+h+20,fmt(v,y),'tick','middle')}); line(x0,y0+h,x0+w,y0+h,'axis'); line(x0,y0,x0,y0+h,'axis'); if(panels.length>1)text(x0+w/2,y0+14,p,'axisLabel','middle')}); text(W/2,H-18,metricLabel(y),'axisLabel','middle'); let yl=text(24,H/2,'Count','axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
  function line(x1,y1,x2,y2,cls){let l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('class',cls);svg.appendChild(l)} function text(x,y,t,cls,anchor){let el=document.createElementNS('http://www.w3.org/2000/svg','text'); el.setAttribute('x',x);el.setAttribute('y',y);el.setAttribute('class',cls);el.setAttribute('text-anchor',anchor||'start');el.textContent=t;svg.appendChild(el);return el}}
@@ -549,22 +896,100 @@ function isScoreKey(k){let m=metricMap[k]||{}; let s=[k,m.label,m.group].join(' 
 function scoreBinWidth(span){let raw=span/20; return [5,10,15,20,25,30,40,50,75,100,125,150,200,250,500].find(w=>w>=raw)||Math.ceil(raw/5)*5}
 function distributionTip(b,y){let parts=Object.entries(b.byComp).sort(([a],[b])=>a.localeCompare(b)).map(([c,n])=>`${esc(c)}: ${n}`).join('<br>'); return `<b>${metricLabel(y)}</b><br>${fmt(b.lo,y)} to ${fmt(b.hi,y)}<br>Total: ${b.total}${parts?'<br>'+parts:''}`}
 function drawTimeSeries(rows,y,W,H,svg,tip){const margin=chartMargins(W); const panels=$('splitMode').checked?['All']:[...new Set(rows.map(r=>r.competition))].sort(); const pw=(W-margin.l-margin.r)/Math.max(1,panels.length); panels.forEach((p,pi)=>{let pr=(p==='All'?rows:rows.filter(r=>r.competition===p)).sort((a,b)=>a.__x-b.__x||String(a.vehicle_type||'').localeCompare(String(b.vehicle_type||''))||String(a.competition).localeCompare(String(b.competition))); let xr=extent(pr.map(r=>r.__x),'year'),yr=extent(pr.map(r=>r.__y),y); const x0=margin.l+pi*pw,y0=margin.t,w=Math.max(1,pw-12),h=Math.max(1,H-margin.t-margin.b); const sx=v=>x0+(v-xr[0])/(xr[1]-xr[0])*w, sy=v=>y0+h-(v-yr[0])/(yr[1]-yr[0])*h; tickValues(xr,'year').forEach(v=>{let xx=sx(v); line(xx,y0,xx,y0+h,'grid'); text(xx,y0+h+20,fmt(v,'year'),'tick','middle')}); tickValues(yr,y).forEach(v=>{let yy=sy(v); line(x0,yy,x0+w,yy,'grid'); text(x0-10,yy+4,fmt(v,y),'tick','end')}); let groupKey=r=>r.__competitionRow?[r.competition,r.vehicle_type||''].join('|'):r.competition; let groups=Object.groupBy?Object.groupBy(pr,groupKey):groupBy(pr,groupKey); Object.values(groups).forEach(rs=>{let comp=rs[0]?.competition||''; let path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',rs.map((r,i)=>(i?'L':'M')+sx(r.__x)+' '+sy(r.__y)).join(' ')); path.setAttribute('stroke',competitionColor(comp)); path.setAttribute('class','linePath'); svg.appendChild(path); rs.forEach(r=>point(r,sx,sy,comp))}); line(x0,y0+h,x0+w,y0+h,'axis'); line(x0,y0,x0,y0+h,'axis'); if(panels.length>1)text(x0+w/2,y0+14,p,'axisLabel','middle');
- function point(r,sx,sy,comp){let c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',sx(r.__x)); c.setAttribute('cy',sy(r.__y)); c.setAttribute('r',r.__simulated?9:5); c.setAttribute('fill',r.__simulated?'var(--sim)':competitionColor(comp)); c.setAttribute('class',r.__simulated?'pt simPoint':'pt'); c.addEventListener('mousemove',e=>{let head=r.__competitionRow?`${fmt(r.year,'year')} ${esc(r.competition)} ${esc(r.vehicle_type||'')}`:`${fmt(r.year,'year')} ${esc(r.competition)} #${fmt(r.car_num,'car_num')}`; tip.innerHTML=`<b>${r.__simulated?'<span class="simStar">★</span> ':''}${esc(r.team)}</b><br>${head}<br>${metricLabel(y)}: ${fmt(r.__y,y)}`; tip.style.display='block'; positionTip(e)}); c.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(c)} }); text(W/2,H-18,'Year','axisLabel','middle'); let yl=text(24,H/2,metricLabel(y),'axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
+ function point(r,sx,sy,comp){let c=chartMarker(r,sx(r.__x),sy(r.__y),5,competitionColor(comp)); c.addEventListener('mousemove',e=>{let head=r.__competitionRow?`${fmt(r.year,'year')} ${esc(r.competition)} ${esc(r.vehicle_type||'')}`:`${fmt(r.year,'year')} ${esc(r.competition)} #${fmt(r.car_num,'car_num')}`; tip.innerHTML=`<b>${r.__simulated?'<span class="simStar">★</span> ':''}${esc(r.team)}</b><br>${head}<br>${metricLabel(y)}: ${fmt(r.__y,y)}`; tip.style.display='block'; positionTip(e)}); c.addEventListener('mouseleave',()=>tip.style.display='none'); svg.appendChild(c)} }); text(W/2,H-18,'Year','axisLabel','middle'); let yl=text(24,H/2,metricLabel(y),'axisLabel','middle'); yl.setAttribute('transform',`rotate(-90 24 ${H/2})`); addWatermark(svg,W,H);
  function line(x1,y1,x2,y2,cls){let l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('class',cls);svg.appendChild(l)} function text(x,y,t,cls,anchor){let el=document.createElementNS('http://www.w3.org/2000/svg','text'); el.setAttribute('x',x);el.setAttribute('y',y);el.setAttribute('class',cls);el.setAttribute('text-anchor',anchor||'start');el.textContent=t;svg.appendChild(el);return el}}
 function groupBy(rows,fn){return rows.reduce((acc,r)=>{let k=fn(r); (acc[k]??=[]).push(r); return acc},{})}
 function tickValues(range,key){if(!isIntegerKey(key))return [0,1,2,3,4,5].map(i=>range[0]+i*(range[1]-range[0])/5); let lo=Math.ceil(range[0]),hi=Math.floor(range[1]); if(hi<lo)return [Math.round((range[0]+range[1])/2)]; let step=niceIntStep(Math.max(1,(hi-lo)/5)); let start=Math.ceil(lo/step)*step, vals=[]; for(let v=start;v<=hi;v+=step)vals.push(v); return vals.length?vals:[lo]}
 function niceIntStep(raw){let pow=Math.pow(10,Math.floor(Math.log10(raw))); let n=raw/pow; let base=n<=1?1:n<=2?2:n<=5?5:10; return base*pow}
 function positionTip(e){const tip=$('tip'),wrap=$('chartWrap'),pad=8,gap=14; const W=wrap.clientWidth,H=wrap.clientHeight,tw=tip.offsetWidth,th=tip.offsetHeight; let left=e.offsetX+gap,top=e.offsetY+gap; if(left+tw+pad>W)left=e.offsetX-tw-gap; if(top+th+pad>H)top=e.offsetY-th-gap; tip.style.left=Math.max(pad,Math.min(left,W-tw-pad))+'px'; tip.style.top=Math.max(pad,Math.min(top,H-th-pad))+'px';}
-function table(rows,x,y){let xCol=x==='rank_by_y'?'rank':x; let cols=x===COMP_TIME_KEY?['plot','competition','year','vehicle_type',y]:(x===DIST_KEY||x===TIME_KEY)?['plot','team','competition','year','car_num',y]:['plot','team','competition','year','car_num',xCol,y]; let data=x===COMP_TIME_KEY?competitionRows(rows):(x==='rank_by_y'?rankRows(rows,y,true):rows); data.sort((a,b)=>{let av=sortCol==='rank'?a.__rank:valueOf(a,sortCol), bv=sortCol==='rank'?b.__rank:valueOf(b,sortCol); let na=+av, nb=+bv; let cmp=Number.isFinite(na)&&Number.isFinite(nb)?na-nb:String(av??'').localeCompare(String(bv??'')); return sortDir==='asc'?cmp:-cmp}); tableState={cols,data,rowH:31}; const th=cols.map(c=>`<th data-c="${c}">${tableLabel(c)}</th>`).join(''); $('rowsTable').innerHTML=`<thead><tr>${th}</tr></thead><tbody></tbody>`; document.querySelectorAll('#rowsTable th').forEach(h=>h.onclick=()=>{let c=h.dataset.c;if(c==='plot')return; sortDir=(sortCol===c&&sortDir==='asc')?'desc':'asc';sortCol=c;$('tableWrap').scrollTop=0;render()}); renderVirtualRows();}
-function renderVirtualRows(){let tbody=$('rowsTable').tBodies[0]; if(!tbody)return; let wrap=$('tableWrap'),{cols,data,rowH}=tableState,overscan=12; let visible=Math.ceil(wrap.clientHeight/rowH)+overscan*2; let maxStart=Math.max(0,data.length-visible); let start=Math.min(maxStart,Math.max(0,Math.floor(wrap.scrollTop/rowH)-overscan)); let end=Math.min(data.length,start+visible); let top=start*rowH,bottom=Math.max(0,(data.length-end)*rowH); let rows=[]; if(top)rows.push(`<tr style="height:${top}px"><td colspan="${cols.length}" style="padding:0;border:0"></td></tr>`); rows.push(...data.slice(start,end).map(r=>`<tr${r.__simulated?' class="simRow"':''}>${cols.map(c=>cellHtml(r,c)).join('')}</tr>`)); if(bottom)rows.push(`<tr style="height:${bottom}px"><td colspan="${cols.length}" style="padding:0;border:0"></td></tr>`); tbody.innerHTML=rows.join(''); tbody.querySelectorAll('.plotToggle').forEach(cb=>cb.onchange=e=>{if(!e.target.checked)omitted.add(e.target.dataset.k);render()});}
-function cellHtml(r,c){if(c==='plot')return `<td><input type="checkbox" checked data-k="${esc(rowKey(r))}" class="plotToggle"></td>`; if(c==='team'&&r.__simulated)return `<td><span class="simStar">★</span> ${esc(r.team)}</td>`; return c==='rank'?`<td>${fmt(r.__rank,'rank')}</td>`:`<td>${esc(fmt(valueOf(r,c),c))}</td>`}
+function defaultTableColumns(x,y){
+  const xCol=x==='rank_by_y'?'rank':x;
+  const cols=x===COMP_TIME_KEY?['plot','competition','year',y]:x===DIST_KEY?['plot','team',y,'competition','year']:x===TIME_KEY?['plot','team','year',y,'competition']:['plot','team',xCol,y,'competition','year'];
+  return [...new Set(cols.filter(Boolean))];
+}
+function activeTableColumns(x,y){
+  if(!customTableColumns)return defaultTableColumns(x,y);
+  const valid=new Set(tableColumnChoices().map(option=>option.key));
+  return ['plot',...customTableColumns.filter(key=>valid.has(key))];
+}
+function table(rows,x,y){let cols=activeTableColumns(x,y); let data=x===COMP_TIME_KEY?competitionRows(rows):(x==='rank_by_y'?rankRows(rows,y,true):rows); data.sort((a,b)=>{let av=sortCol==='rank'?a.__rank:valueOf(a,sortCol), bv=sortCol==='rank'?b.__rank:valueOf(b,sortCol); let na=+av, nb=+bv; let cmp=Number.isFinite(na)&&Number.isFinite(nb)?na-nb:String(av??'').localeCompare(String(bv??'')); return sortDir==='asc'?cmp:-cmp}); tableState={cols,data,rowH:matchMedia('(max-width:900px)').matches?34:27}; const th=cols.map(c=>{let sorted=sortCol===c,arrow=sorted?(sortDir==='asc'?' ▲':' ▼'):'';return `<th scope="col" data-c="${c}" aria-sort="${sorted?(sortDir==='asc'?'ascending':'descending'):'none'}">${esc(tableLabel(c))}${arrow}</th>`}).join(''); $('rowsTable').innerHTML=`<thead><tr>${th}</tr></thead><tbody></tbody>`; document.querySelectorAll('#rowsTable th').forEach(h=>h.onclick=()=>{let c=h.dataset.c;if(c==='plot')return; sortDir=(sortCol===c&&sortDir==='asc')?'desc':'asc';sortCol=c;$('tableWrap').scrollTop=0;render()}); renderVirtualRows();}
+function renderVirtualRows(){let tbody=$('rowsTable').tBodies[0]; if(!tbody)return; let wrap=$('tableWrap'),{cols,data,rowH}=tableState,overscan=12; let visible=Math.ceil(wrap.clientHeight/rowH)+overscan*2; let maxStart=Math.max(0,data.length-visible); let start=Math.min(maxStart,Math.max(0,Math.floor(wrap.scrollTop/rowH)-overscan)); let end=Math.min(data.length,start+visible); let top=start*rowH,bottom=Math.max(0,(data.length-end)*rowH); let rows=[]; if(top)rows.push(`<tr style="height:${top}px"><td colspan="${cols.length}" style="padding:0;border:0"></td></tr>`); rows.push(...data.slice(start,end).map(r=>`<tr${r.__simulated?' class="simRow"':''}>${cols.map(c=>cellHtml(r,c)).join('')}</tr>`)); if(bottom)rows.push(`<tr style="height:${bottom}px"><td colspan="${cols.length}" style="padding:0;border:0"></td></tr>`); tbody.innerHTML=rows.join(''); tbody.querySelectorAll('.plotToggle').forEach(cb=>cb.onchange=e=>{if(e.target.checked)omitted.delete(e.target.dataset.k);else omitted.add(e.target.dataset.k);render()});}
+function cellHtml(r,c){if(c==='plot'){const key=plotKey(r);return `<td><input type="checkbox" ${omitted.has(key)?'':'checked '}data-k="${esc(key)}" class="plotToggle" aria-label="Plot ${esc(r.team||r.competition||'row')}"></td>`} if(c==='team'&&r.__simulated)return `<td><span class="simStar">★</span> ${esc(r.team)}</td>`; return c==='rank'?`<td>${fmt(r.__rank,'rank')}</td>`:`<td>${esc(fmt(valueOf(r,c),c))}</td>`}
 let tableRenderQueued=false;
 function scheduleTableRender(){if(tableRenderQueued)return; tableRenderQueued=true; requestAnimationFrame(()=>{tableRenderQueued=false; renderVirtualRows()});}
 function tableLabel(c){return {plot:'Plot',competition:'Competition',year:'Year',vehicle_type:'Class',car_num:'Car Num',team:'Team',rank:'Rank'}[c]||metricLabel(c)}
+function tableColumnChoices(){
+  const base=[
+    {key:'team',label:'Team',group:'Identity'},{key:'competition',label:'Competition',group:'Identity'},
+    {key:'year',label:'Year',group:'Identity'},{key:'vehicle_type',label:'Class',group:'Identity'},
+    {key:'car_num',label:'Car Num',group:'Identity'},{key:'rank',label:'Y-Metric Rank',group:'Special'}
+  ];
+  const seen=new Set(base.map(option=>option.key));
+  METRICS.forEach(metric=>{
+    if(metric.key==='rank_by_y'||seen.has(metric.key))return;
+    base.push({key:metric.key,label:metric.label,group:metric.group||'Metrics'});
+    seen.add(metric.key);
+  });
+  return base;
+}
+function populateTableColumnAdd(){
+  const select=$('tableColumnAdd'),groups={};
+  tableColumnChoices().forEach(option=>(groups[option.group]??=[]).push(option));
+  select.innerHTML='';
+  Object.entries(groups).forEach(([group,options])=>{
+    const optgroup=document.createElement('optgroup');optgroup.label=group;
+    options.forEach(option=>{const element=document.createElement('option');element.value=option.key;element.textContent=option.label;element.disabled=tableColumnDraft.includes(option.key);optgroup.appendChild(element)});
+    select.appendChild(optgroup);
+  });
+  const first=[...select.options].find(option=>!option.disabled);if(first)select.value=first.value;
+}
+function renderTableColumnManager(){
+  populateTableColumnAdd();
+  $('tableColumnList').innerHTML=tableColumnDraft.map((key,index)=>`<div class="columnItem"><span title="${esc(tableLabel(key))}">${esc(tableLabel(key))}</span><button type="button" data-column-up="${index}" aria-label="Move ${esc(tableLabel(key))} left" ${index===0?'disabled':''}>↑</button><button type="button" data-column-down="${index}" aria-label="Move ${esc(tableLabel(key))} right" ${index===tableColumnDraft.length-1?'disabled':''}>↓</button><button type="button" data-column-remove="${index}" aria-label="Remove ${esc(tableLabel(key))}">×</button></div>`).join('')||'<div class="muted">Only the fixed Plot column is shown.</div>';
+  $('tableColumnList').querySelectorAll('[data-column-up]').forEach(button=>button.onclick=()=>moveTableColumn(+button.dataset.columnUp,-1));
+  $('tableColumnList').querySelectorAll('[data-column-down]').forEach(button=>button.onclick=()=>moveTableColumn(+button.dataset.columnDown,1));
+  $('tableColumnList').querySelectorAll('[data-column-remove]').forEach(button=>button.onclick=()=>{tableColumnDraft.splice(+button.dataset.columnRemove,1);commitTableColumns()});
+}
+function moveTableColumn(index,direction){
+  const destination=index+direction;if(destination<0||destination>=tableColumnDraft.length)return;
+  [tableColumnDraft[index],tableColumnDraft[destination]]=[tableColumnDraft[destination],tableColumnDraft[index]];
+  commitTableColumns();
+}
+function commitTableColumns(){
+  customTableColumns=[...tableColumnDraft];
+  try{localStorage.setItem('fsaeTableColumnsV1',JSON.stringify(customTableColumns))}catch{}
+  render();renderTableColumnManager();
+}
+function resetTableColumns(){
+  customTableColumns=null;
+  try{localStorage.removeItem('fsaeTableColumnsV1')}catch{}
+  render();
+  tableColumnDraft=tableState.cols.filter(key=>key!=='plot');
+  renderTableColumnManager();
+}
+function initTableColumnManager(){
+  try{
+    const saved=JSON.parse(localStorage.getItem('fsaeTableColumnsV1')||'null');
+    if(Array.isArray(saved)){const valid=new Set(tableColumnChoices().map(option=>option.key));customTableColumns=saved.filter(key=>valid.has(key))}
+  }catch{}
+  $('manageTableColumns').onclick=()=>{tableColumnDraft=(customTableColumns||tableState.cols.filter(key=>key!=='plot')).slice();renderTableColumnManager();openIssueDialog($('tableColumnsDialog'))};
+  $('toggleTableMaximize').onclick=toggleTableMaximize;
+  $('closeTableColumns').onclick=$('applyTableColumns').onclick=()=>closeIssueDialog($('tableColumnsDialog'));
+  $('addTableColumn').onclick=()=>{const key=$('tableColumnAdd').value;if(key&&!tableColumnDraft.includes(key)){tableColumnDraft.push(key);commitTableColumns()}};
+  $('resetTableColumns').onclick=resetTableColumns;
+}
+function toggleTableMaximize(){
+  const app=$('dashboardApp'),button=$('toggleTableMaximize'),maximized=app.classList.toggle('tableMaximized');
+  button.textContent=maximized?'Restore Layout':'Maximize Table';
+  button.setAttribute('aria-pressed',String(maximized));
+  requestAnimationFrame(()=>{render();schedulePlotRedraw()});
+}
 function redrawPlot(){let x=$('xMetric').value,y=$('yMetric').value,s=$('sizeMetric').value; draw(plotRows(filtered(),x,y,s),x,y,s);}
-function splitters(){drag($('splitLeft'),dx=>{let p=$('leftPanel'); p.style.width=Math.max(230,Math.min(520,p.offsetWidth+dx))+'px'; schedulePlotRedraw()}); drag($('splitRows'),dx=>{let p=$('rowsPanel'),w=Math.max(260,Math.min(780,p.getBoundingClientRect().width-dx))+'px'; p.style.width=w; p.style.flexBasis=w; schedulePlotRedraw()}); dragY($('splitSimulator'),dy=>{let p=$('simPanel'); if(p.classList.contains('collapsed'))return; let max=$('rowsPanel').clientHeight-130,h=Math.max(92,Math.min(max,p.getBoundingClientRect().height-dy)); p.style.height=h+'px';p.style.flex='0 0 '+h+'px';renderVirtualRows()}); function drag(el,fn){let sx=0,active=false; el.onpointerdown=e=>{active=true; sx=e.clientX; el.setPointerCapture(e.pointerId); document.body.style.userSelect='none'}; el.onpointermove=e=>{if(!active)return; fn(e.clientX-sx); sx=e.clientX}; el.onpointerup=el.onpointercancel=e=>{if(!active)return; active=false; if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId); document.body.style.userSelect=''; schedulePlotRedraw()}} function dragY(el,fn){let sy=0,active=false; el.onpointerdown=e=>{active=true;sy=e.clientY;el.setPointerCapture(e.pointerId);document.body.style.userSelect='none'};el.onpointermove=e=>{if(!active)return;fn(e.clientY-sy);sy=e.clientY};el.onpointerup=el.onpointercancel=e=>{if(!active)return;active=false;if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);document.body.style.userSelect='';schedulePlotRedraw()}}}
+function splitters(){drag($('splitLeft'),dx=>{let p=$('leftPanel'); p.style.width=Math.max(230,Math.min(520,p.offsetWidth+dx))+'px'; schedulePlotRedraw()}); drag($('splitRows'),dx=>{let p=$('rowsPanel'),w=Math.max(260,Math.min(1000,p.getBoundingClientRect().width-dx))+'px'; p.style.width=w; p.style.flexBasis=w; schedulePlotRedraw()}); dragY($('splitSimulator'),dy=>{let p=$('simPanel'); if(p.classList.contains('collapsed'))return; let max=$('rowsPanel').clientHeight-130,h=Math.max(92,Math.min(max,p.getBoundingClientRect().height-dy)); p.style.height=h+'px';p.style.flex='0 0 '+h+'px';renderVirtualRows()}); function drag(el,fn){let sx=0,active=false; el.onpointerdown=e=>{active=true; sx=e.clientX; el.setPointerCapture(e.pointerId); document.body.style.userSelect='none'}; el.onpointermove=e=>{if(!active)return; fn(e.clientX-sx); sx=e.clientX}; el.onpointerup=el.onpointercancel=e=>{if(!active)return; active=false; if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId); document.body.style.userSelect=''; schedulePlotRedraw()}} function dragY(el,fn){let sy=0,active=false; el.onpointerdown=e=>{active=true;sy=e.clientY;el.setPointerCapture(e.pointerId);document.body.style.userSelect='none'};el.onpointermove=e=>{if(!active)return;fn(e.clientY-sy);sy=e.clientY};el.onpointerup=el.onpointercancel=e=>{if(!active)return;active=false;if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);document.body.style.userSelect='';schedulePlotRedraw()}}}
 let plotRedrawQueued=false, plotRedrawPending=false;
 function schedulePlotRedraw(){if(plotRedrawQueued){plotRedrawPending=true;return} plotRedrawQueued=true; requestAnimationFrame(()=>requestAnimationFrame(()=>{plotRedrawQueued=false; redrawPlot(); if(plotRedrawPending){plotRedrawPending=false; schedulePlotRedraw()}}));}
-window.addEventListener('resize',render); load().catch(e=>{$('countPill').textContent='Load failed: '+e.message; console.error(e)});
+initDataIssueReporting();
+initMobileViews();
+window.addEventListener('resize',()=>{if(matchMedia('(max-width:900px)').matches)initPanelSizes();render()}); load().catch(e=>{$('countPill').textContent='Load failed: '+e.message; console.error(e)});
 </script>
 </body></html>
